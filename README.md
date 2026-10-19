@@ -1,21 +1,21 @@
-# CareerOS
+# CareerOC
 
-[![CareerOS demo checks](https://github.com/hskl18/public-careeros/actions/workflows/public-ci.yml/badge.svg)](https://github.com/hskl18/public-careeros/actions/workflows/public-ci.yml)
+[![CareerOC demo checks](https://github.com/hskl18/public-careeroc/actions/workflows/public-ci.yml/badge.svg)](https://github.com/hskl18/public-careeroc/actions/workflows/public-ci.yml)
 
-![CareerOS judge demo: recruiting mailbox evidence becomes a review-gated application pipeline](docs/media/judge-demo.png)
+![CareerOC judge demo: recruiting mailbox evidence becomes a review-gated application pipeline](docs/media/judge-demo.png)
 
-CareerOS is the primary public name for this recruiting-inbox workflow.
+CareerOC is the public name for this recruiting-inbox workflow.
 It turns bounded email evidence into proposed application updates, then requires review before risky changes reach tracker state.
-The separately hosted product uses the name Other Candidate at `careeroc.com`; this repository is its sanitized hackathon demo and does not contain the hosted product source.
+The separately hosted product lives at `careeroc.com`; this repository is its sanitized hackathon demo and does not contain the hosted product source.
 
-![CareerOS architecture: bounded mailbox evidence, agent extraction, review gate, and application state](docs/media/architecture.png)
+![CareerOC architecture: bounded mailbox evidence, agent extraction, review gate, and application state](docs/media/architecture.png)
 
 Project links:
 
 - [Public judge demo](https://public-careeros.vercel.app/judge-demo)
 - [Demo video](https://youtu.be/PTrMwv0bF4E)
 - [Hosted product](https://www.careeroc.com)
-- [Source repository](https://github.com/hskl18/public-careeros)
+- [Source repository](https://github.com/hskl18/public-careeroc)
 
 Run it with:
 
@@ -45,7 +45,7 @@ What judges should see immediately:
 
 | Judging signal | What this repo proves |
 | --- | --- |
-| Real-world impact | Job-search state is trapped in recruiting email; CareerOS turns it into reminders, application stages, and reviewable actions. |
+| Real-world impact | Job-search state is trapped in recruiting email; CareerOC turns it into reminders, application stages, and reviewable actions. |
 | Agent path | Bounded triage, extraction, evidence review, resume context, and notification layers produce inspectable handoffs rather than a chat transcript. |
 | Safety boundary | Risky updates stop at review gates; traces retain provider, confidence, bounded evidence, and fallback status without raw Gmail bodies or provider keys. |
 | Reproducibility | `pnpm eval:generate && pnpm eval:pipeline` regenerates 130 labeled deterministic fixtures, metrics, error cases, JSON results, and the proof graph. |
@@ -53,7 +53,7 @@ What judges should see immediately:
 
 ## Eval Proof
 
-![CareerOS pipeline eval results](docs/media/eval-results.png)
+![CareerOC pipeline eval results](docs/media/eval-results.png)
 
 `pnpm eval:pipeline` runs 130 versioned, sanitized synthetic fixtures across application receipts, recruiter replies, assessments, interviews, offers, rejections, ambiguous updates, suspicious jobs, adversarial content, and non-recruiting noise.
 Current deterministic result: **118/130 passed** with a 90.8% contract pass rate and a 95% Wilson interval of 84.6% to 94.6%.
@@ -98,7 +98,7 @@ Runtime pinning:
   Node 24 instead of auto-upgrading to a future major Node release.
 - `.node-version` also pins local and CI tooling to Node 24.
 
-CareerOS turns recruiting email into structured application state with a multi-agent workflow:
+CareerOC turns recruiting email into structured application state with a multi-agent workflow:
 
 1. Mailbox triage
 2. Workflow extraction
@@ -111,7 +111,7 @@ The implementation scope is one Next.js app with local JSON state, optional Gmai
 
 ## Agent Contract
 
-The public demo keeps the original CareerOS operating model:
+The public demo keeps the original CareerOC operating model:
 
 | Agent layer | Can do | Cannot do |
 | --- | --- | --- |
@@ -159,7 +159,7 @@ sanitized Kaggle story without credentials or local workspace writes, open
 
 ## Optional: Gemma Through Ollama Cloud
 
-CareerOS calls the Ollama Cloud API from the Next.js server. Users do not set
+CareerOC calls the Ollama Cloud API from the Next.js server. Users do not set
 up a desktop model runtime. Create an Ollama Cloud API key, then create
 `.env.local`:
 
@@ -187,7 +187,7 @@ checks the configured Gemma model through Ollama Cloud.
 
 Mental model:
 
-- `http://localhost:3000` is the CareerOS Next.js app.
+- `http://localhost:3000` is the CareerOC Next.js app.
 - `https://ollama.com/api` is the remote Ollama Cloud API.
 - The browser never sees `OLLAMA_API_KEY`; server routes read it from
   `.env.local`, call Ollama Cloud, validate JSON, and send proposals to review.
@@ -221,7 +221,7 @@ mail**.
 Token boundary: the Gmail token is stored as a version 2 AES-GCM envelope at `.careeros-data/gmail-oauth.json`.
 The envelope includes a key identifier but never stores key material or token plaintext.
 Set `CAREEROS_TOKEN_KEY_ID` with `CAREEROS_TOKEN_SECRET` for an explicit current key.
-During rotation, set `CAREEROS_TOKEN_PREVIOUS_KEY_ID` and `CAREEROS_TOKEN_PREVIOUS_SECRET` long enough for CareerOS to recover and atomically rewrite the envelope with the current key.
+During rotation, set `CAREEROS_TOKEN_PREVIOUS_KEY_ID` and `CAREEROS_TOKEN_PREVIOUS_SECRET` long enough for CareerOC to recover and atomically rewrite the envelope with the current key.
 If neither key can recover the envelope, Settings shows `reconnect required` without exposing provider or token details.
 
 Sync requests readonly Gmail metadata and bounded snippets, then converts them into import records without persisting full Gmail bodies.
