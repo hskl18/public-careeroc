@@ -1,319 +1,157 @@
 # Architecture
 
-For positioning and surface area, see [design.md](design.md). This doc is the
-**runtime, agent layers, and data boundaries**.
+This document describes how the code is organized and how data moves through it.
+[DESIGN.md](../DESIGN.md) explains why it is built this way, [UI.md](../UI.md) covers the interface, and [routing.md](routing.md) lists the routes.
 
-## Runtime
+## Projects and layers
 
-```text
-Browser
-  ↓
-Next.js agentic pipeline console (App Router)
-  ↓
-Next.js route-handler API  ←─── lib/store.ts (single mutation entry point)
-  ↓                              │
-local JSON state store           ├─ lib/pipeline.ts        (deterministic ingest)
-   │                             ├─ lib/review.ts          (review-gated mutations)
-   │                             ├─ lib/review-queries.ts  (review queue filters)
-   │                             ├─ lib/notifications.ts   (derived read model)
-   │                             ├─ lib/reminder-queries.ts (history/timeline)
-   │                             ├─ lib/evidence-queries.ts (evidence groups)
-   │                             ├─ lib/workspace-import.ts (strict JSON import)
-   │                             ├─ lib/agent-pipeline.ts  (judge demo snapshot)
-   ▼                             ├─ lib/model-analysis.ts  (optional Gemma import path)
-                                 ├─ lib/resume-model-analysis.ts (optional Gemma resume path)
-                                 ├─ lib/providers/index.ts (provider registry)
-                                 └─ lib/agent-constraints.ts (handoff/guardrail limits)
-.careeros-data/state.json
-                                 ↑
-                                 ├─ optional Gmail readonly connector
-                                 └─ optional Ollama Cloud / Gemma endpoint
-```
+| Project | Owns |
+|---|---|
+| `src/Careeroc.Domain` | Entities and enums, with no persistence or transport concerns |
+| `src/Careeroc.Contracts` | API DTOs shared by the endpoints and the web app |
+| `src/Careeroc.Application` | Workflow decisions, agent services, query services, and the abstractions they need |
+| `src/Careeroc.Infrastructure` | EF Core and migrations, the Gmail client, the demo inbox, parsers, the database queue and leases, the agent runtime client |
+| `apps/api` | HTTP endpoints, auth middleware, the MCP server, composition, and the background workers |
+| `apps/web` | The Next.js public site, the workspace under `/app`, and the signed API proxy |
+| `services/agent-runtime` | The LangGraph review graph, its checkpoints in a database of their own, and the A2A endpoint |
 
-Persistence: the `StateRepository` interface in `lib/persistence.ts` uses
-`JsonFileStateRepository` by default and `MemoryStateRepository` in tests. Data
-lives under `CAREEROS_DATA_DIR` when set. Local development defaults to
-`.careeros-data/`; Vercel deployments default to ephemeral
-`/tmp/.careeros-data` so public `/judge-demo` can render without a database,
-private keys, or a writable repository directory. The same boundary makes a
-future database adapter straightforward without using experimental Node SQLite
-APIs in the public demo.
+Dependencies point inward.
+Domain knows nothing about EF Core, Gmail, HTTP, models, or Next.js.
+Application depends only on Domain, Contracts, and its own abstractions; when it needs a side effect, it declares an interface in `Application/Abstractions` and Infrastructure implements it.
+Endpoints resolve the user, validate the request shape, call one application service, and return a contract DTO; parsing, matching, reminders, and analytics never live in an endpoint.
 
-## Core product loop
+### Entities
 
-1. User opens the local CareerOS pipeline console.
-2. Readonly Gmail sync or strict local import provides recruiting evidence. The
-   sanitized judge/demo sample is separate from workspace state.
-3. **Mailbox triage agent** classifies relevance, urgency, company, role, and
-   required action with deterministic local rules.
-4. **Workflow extraction agent** converts mailbox events into typed
-   application-update proposals.
-5. **Evidence/review agent** attaches bounded evidence and blocks risky or
-   model-backed mutations behind review.
-6. **Resume/context agent** keeps local candidate context available.
-7. **Reminder/notification agent** derives read models from reviewed state.
-8. If Ollama Cloud is enabled with `OLLAMA_API_KEY` and passes a bounded
-   health prompt, Gemma-backed analysis can summarize import updates into
-   typed suggestions and enrich resume evaluation.
-9. High-confidence, low-risk deterministic updates become application
-   activity.
-10. Risky, low-confidence, invalid, or model-backed updates enter the manual
-    review queue before mutation.
-11. The console shows pipeline state, agent handoffs, agent contracts, applications, reminders,
-    notifications, recent changes, model traces, and resume intelligence.
+- Mailbox and pipeline: `User`, `InboxAccount`, `InboxEmail`, `EmailProcessingJob`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `RecruitingContact`, `ApplicationArtifactEvidence`
+- Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeCorrection`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`, `UserSoulProfile`
+- Operations: `ModelCallEvent`, `AuditEvent`, `PersonalAccessToken`
 
-## LangGraph-Style Workflow Discipline
+Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate on purpose: ingestion can be replayed or corrected without rewriting history.
 
-CareerOS should be built with a LangGraph-style operating model even though the
-public repo does not need a LangGraph dependency. "LangGraph-style" means the
-workflow is explicit, checkpointable, interruptible, and replayable.
+### Application services
 
-Target node graph:
+- Mailbox: `EmailSyncService` imports messages and queues analysis; `EmailIntelligenceService` runs the agent chain; `ApplicationWorkflowService` matches or creates applications, moves status, and manages reminders.
+- Review and correction: `ManualReviewQueryService` and `ManualReviewService`.
+- Read models: `DashboardQueryService`, `ApplicationDetailQueryService`, `AnalyticsQueryService`, `RecruitingContactQueryService`.
+- Evidence: `ApplicationArtifactEvidenceService` and `EmailAttachmentEvidenceImportService` turn supported PDFs and images into evidence cards.
+- Setup and profile: `InboxSetupService`, `UserProfileService`, `DemoWorkspaceService`.
+- Resume and strategy: `ResumeIntelligenceService`, `ResumeMailboxContextBuilder`, `UserMemoryProposalService`, `UserAgentContextSnapshotService`, `CareerOrchestratorService`.
+- Assistant access: `PersonalAccessTokenService` and `AgentQueryService`.
 
-```text
-Recruiting evidence
-  -> classify thread
-  -> extract application state
-  -> retrieve local context
-  -> score confidence and risk
-  -> interrupt for review when uncertain
-  -> persist approved mutation
-  -> derive reminders and notifications
-```
+## Email pipeline
 
-Working rules:
+1. Gmail OAuth (or the demo inbox) creates an `InboxAccount`.
+2. The sync worker imports messages into `InboxEmail`; after the first backfill it uses Gmail `historyId` sync and falls back to a bounded search when the cursor expires.
+3. Each new or stale message gets an `EmailProcessingJob` through `IEmailProcessingQueue`, which owns duplicate checks and backpressure (at most 5000 active jobs by default, `EmailProcessing__MaxActiveJobs`).
+4. Workers claim jobs with `FOR UPDATE SKIP LOCKED`, so several API replicas can drain the queue safely.
+   A worker also holds a per-user Postgres advisory lease while it processes a job, so two replicas never match one user's emails at the same time; a job whose user is busy goes back to the queue without spending an attempt.
+5. The agent chain runs in order, each step writing structured output for the next:
+   - inbox triage: is this about recruiting?
+   - workflow extraction: category, company, role, action, due date, confidence
+   - recruiter identity: who is driving the thread
+   - scam check: payment, equipment, banking, or identity requests never move the pipeline
+   - application matching: thread first, then company and role
+   - review evidence: is it safe to write, or does it need a person?
+   - follow-up planning: the reminder, if action is required
+6. The workflow service writes the status transition, an event, reminders, and contact links.
+   An offer closes open interview and assessment reminders and asks the user to review the offer; a rejection or closure closes every open reminder.
+7. Supported attachments (PDF, PNG, JPEG, WebP) are imported as evidence cards only after the email is linked to an application; raw bytes are never stored.
+8. Query services shape the result for each page.
 
-- Every node has typed input and output.
-- Every node records bounded evidence, confidence, fallback, or deterministic
-  reason.
-- The local `CareerOSState` is the checkpointable state boundary.
-- Manual review is an interrupt before mutation, not a label added after a
-  state change.
-- Model output is a proposal. Accepted or corrected review decisions are the
-  mutation boundary.
-- Tests should replay node edges from sanitized fixtures without Gmail,
-  provider keys, or network calls.
+Every step is a narrow, typed decision, not a free-form agent, so a wrong result can be traced to one stage.
+The specs for each agent are in [agents/](agents/README.md).
 
-## Agent layers
+### Rules that protect the pipeline
 
-| Layer                   | Responsibility                                                       |
-| ----------------------- | -------------------------------------------------------------------- |
-| Mailbox triage          | Recruiting relevance, urgency, company, role, required action        |
-| Workflow extraction     | Mailbox events → typed application-update proposals                  |
-| Evidence / review       | Bounded source snippets and confidence on every risky/model mutation |
-| Resume / context        | Local candidate context for triage and next-action suggestions       |
-| Reminder / notification | Due dates, follow-ups, recruiter replies, blocked-automation alerts  |
-| Model router / provider | Prefers Gemma via Ollama Cloud; falls back to deterministic          |
+- **Company and role** pollute analytics and timelines when wrong.
+  Never infer a company from the user's school or mailbox domain, ignore no-reply and mail-infrastructure domains unless the body confirms the employer, preserve display names while normalizing suffixes for matching, and send uncertain cases to review.
+- **Review queue** entries are for ambiguity only: low classification or match confidence, an unextractable role, a likely scam, or an agency that hides the employer.
+  Receipts, thank-you notes, and security codes never go there.
+  A correction reruns the same workflow rules as automation.
+- **Reminders** are work, not a log.
+  Terminal applications keep no open reminders, far-future and stale reminders stay out of "needs attention", and duplicates refresh instead of multiplying.
+- **Idempotency**: importing or processing the same message updates or skips; it never duplicates applications, events, or reminders, and an admin can retry a failed job.
+- **One bad email stays one failure**: header values are clipped to their columns, a failed save discards its pending changes before the failure is recorded, and a job that times out on its last attempt is marked failed so it shows up for retry.
 
-## CareerOS alignment
+## Background work and freshness
 
-The full private CareerOS / Other Candidate system has more specialist
-"agent soul" documents. The public repo stays lightweight by folding those
-specialists into six visible local layers instead of shipping a larger service
-mesh.
+The sync worker, recovery of jobs whose worker died, demo cleanup, and queue draining all run inside the API host.
+In Development the sync worker runs every 300 seconds; hosted deployments should use 900 seconds or more and `SyncWorker__RunOnStartup=false`.
+The web app can ask for a bounded inbox check, but it never owns the pipeline.
+Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`, and a refresh after a change reloads the whole dashboard once.
+Gmail push notifications are not implemented; [backend/gmail-push-plan.md](backend/gmail-push-plan.md) describes the design.
 
-| Full CareerOS family        | Full agents                                                                                                          | Public demo layer                                                           |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Mailbox agents              | Inbox Triage, Workflow Extraction, Recruiter Identity, Scam Checker, Review Evidence, Follow-Up Task, Entity Hygiene | Mailbox triage, workflow extraction, evidence/review, reminder/notification |
-| Resume agents               | Resume Extraction, Resume Evaluation                                                                                 | Resume/context                                                              |
-| Career orchestration agents | Career Orchestrator, User Memory Steward, Guidance Maintenance                                                       | Visible pipeline state, model router, local candidate context               |
+## Resume intelligence
 
-Deliberate public-demo choices:
+1. The user uploads a PDF or image, or pastes text, on `/app/resume`.
+2. The API stores a `ResumeDocument`; PDF extraction keeps link annotations as an allow-list, so a model cannot invent GitHub or LinkedIn URLs.
+3. `ResumeIntelligenceService` runs schema-locked extraction into a `ResumeVersion`.
+4. User edits become `ResumeCorrection` rows or structured patches, both user-scoped and audited.
+5. Evaluation reviews the version against target roles and the mailbox evidence from `ResumeMailboxContextBuilder`, without writing to applications.
 
-- Recruiter identity is represented by contact fields and bounded source
-  relationships, not a separate autonomous service.
-- Scam checking is represented by review-blocked risky evidence. Suspicious
-  messages must not create application updates or reminders automatically.
-- Entity hygiene is represented by extraction guards, `Unknown Company` /
-  `Unknown Role` behavior, and review-only correction.
-- Follow-up task logic is deterministic notification/reminder derivation.
-- User memory is local candidate context plus compact review-correction facts,
-  not hidden autobiography. User note text is untrusted evidence and must not
-  become executable instruction.
-- The Career Orchestrator is visible as pipeline state and ranked action
-  surfaces. This public repo does not ship a hidden general agent that can
-  mutate applications, resume facts, memory, or guidance.
-- Guidance maintenance remains out of scope for the public demo because
-  self-editing agent guidance requires an evaluation gate.
+## Memory
 
-## Agent operating contract
+Memory lives in the database, not in prompt files.
+Each `UserMemoryEntry` has a source, a confidence, a confirmation state, and timestamps; `UserSoulProfile` holds communication and goal preferences.
+Agents and the mailbox may propose memory, but only the user's own edits and confirmations are authoritative, and model inferences stay pending until confirmed.
+`memory.md` and `soul.md` are rendered from those rows when an agent needs compact context, and `/app/memory` lets the user inspect, edit, confirm, reject, export, or clear them.
 
-The public repo should preserve CareerOS as a multi-agent mailbox pipeline. A
-new route or feature is allowed only if it keeps these contracts intact.
+Recruiting-email guidance for the optional model pass is a markdown playbook in [agent-memory/recruiting-email-playbook.md](agent-memory/recruiting-email-playbook.md), plus an optional, untracked feedback file of the user's corrections (`Ollama__UserFeedbackFilePath`, on by default only in Development).
+The file is shared by everyone on an install, so leave it unset when several people or demo visitors use one install.
+Guidance is developer-owned context; email content can never override it.
 
-| Agent                 | Prompting/input boundary                                                                            | Memory/state boundary                                                                                     | Can do                                                                                     | Cannot do                                                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Mailbox triage        | Reads subject, bounded snippets, source labels, and local candidate context                         | Writes compact `AgentRun` traces and downstream proposals only                                            | Detect recruiting relevance, urgency, company, role, and required action                   | Store full mailbox bodies, call hosted providers, or mutate applications                                                                  |
-| Workflow extraction   | Reads bounded triage output and bounded snippets                                                    | Emits typed `ProposedMutation` shape through deterministic import or model suggestion                     | Propose stage, deadline, follow-up, contact, and event summary                             | Apply model-backed proposals directly or invent unsupported fields                                                                        |
-| Evidence/review       | Reads proposal, confidence, source message ids, and bounded evidence snippets                       | Writes `EvidenceSnippet` and `ReviewItem`; accepted/corrected reviews mutate through `lib/review.ts`      | Block low-confidence, risky, invalid, or model-backed changes                              | Hide blocked changes or bypass the manual review gate                                                                                     |
-| Resume/context        | Reads local resume text, target roles, skills, preferences, resume keywords, and correction facts   | Writes local `ResumeDocument`, `ResumeEvaluation`, and compact feedback memory records                    | Provide candidate context, correction hints, and Gemma-backed resume feedback when enabled | Send resume text to hosted providers in this public demo or treat notes as executable instructions                                        |
-| Reminder/notification | Reads reviewed applications, reminders, reviews, connector health, model status, and resume results | Derives `Notification` records with stable dedupe keys                                                    | Surface due dates, follow-ups, review blocks, connector/model health                       | Become canonical workflow state or keep stale reminders after later-stage signals                                                         |
-| Model router/provider | Reads explicit runtime settings, env key availability, and cloud readiness before model calls       | Writes `ModelTrace` with provider, model tag, task, latency, confidence, fallback, and bounded diagnostic | Route to deterministic fallback or Gemma via Ollama Cloud                                  | Store API keys in workspace state, require API keys for first run, store raw prompts/responses, or claim roadmap adapters are implemented |
+## Multi-agent review and interop
 
-Prompt rules:
+`CareerOrchestratorService` builds a bounded snapshot and calls the LangGraph runtime through `ICareerAgentGraphClient`.
+The graph can propose follow-up reminders; a review that proposes any, or that fails the evidence gate, pauses on an interrupt and is stored as pending memory.
+When the user approves it, the API creates the reminders itself, after checking each application belongs to the user, writes the decision back to the stored review, and resumes the paused graph so its trace ends with the decision.
+A pending review never replaces the last confirmed one until the user approves it, and earlier reviews are not fed back to the agents as facts about the user.
+The graph, its human-review interrupt, and the A2A endpoint are described in [DESIGN.md](../DESIGN.md#multi-agent-review) and [backend/agentic-workflow-engine-decision.md](backend/agentic-workflow-engine-decision.md).
+The MCP server (`apps/api/Mcp`) and the `/agent/v1/*` endpoints are read-only and authorized by personal access tokens through `PersonalAccessTokenMiddleware`.
 
-- Gemma prompts must use bounded text and ask for strict JSON output.
-- The public import-analysis prompt is limited to career workflow fields:
-  confidence, summary, reason, stage, deadline, follow-up, and contact.
-- Temperature stays deterministic for extraction-style tasks.
-- Model output must pass schema validation before it becomes a review item.
-- Model output never directly mutates `Application`, `Reminder`, or
-  `CandidateContext`.
-- User corrections become compact local feedback facts. Later deterministic and
-  Gemma-backed imports may use those facts as hints, but they still cannot
-  bypass schema validation or review gates.
+## Models and fallback
 
-Memory rules:
+- Email parsing runs deterministic heuristics first; the optional Ollama pass replaces the result only when it is available, returns valid JSON, and is above `Ollama:MinimumConfidence`.
+- Review evidence starts from a deterministic decision; the model can only add evidence.
+- Artifact extraction produces evidence cards and never changes stage or reminders directly.
+- Calls are bounded by retries, concurrency limits, timeouts, and a circuit breaker, and each is recorded as a `ModelCallEvent` without prompts or email bodies.
+- There is one model route; when it fails, the deterministic result stands rather than a second model being tried.
 
-- Local agent memory is the normalized CareerOS state under `.careeros-data`.
-- Long-term state is applications, mailbox thread metadata, bounded evidence,
-  review items, candidate context, compact correction facts, reminders, resume
-  evaluations, model traces, connector account state, local audit events, and
-  agent runs.
-- Raw Gmail bodies, OAuth tokens, provider keys, raw model responses, full
-  prompts, private paths, and local exports are not agent memory.
-- Audit events are bounded observability records for import, review, reminder,
-  Gmail, and local-data lifecycle actions. They store action/status/summary,
-  source id/type, timestamp, and scalar metadata only.
-- Workspace import/export must keep the same boundary and reject token-like or
-  raw-body fields before writing state.
+## Read models
 
-Cost and runtime rules:
+Query services return page-specific DTOs, never raw entities.
+The dashboard gets near-term actions, ranked recent changes, a compact sync overview, and capped application summaries.
+Application detail gets the full evidence, source messages, open reminders, and correction affordances.
+Analytics gets aggregates and breakdowns and never mutates workflow state.
+Filtering of irrelevant or stale data happens in these services, not only in the UI.
 
-- First run has zero model/API cost and starts clean. Users connect Gmail to
-  process real recruiting mail; `/judge-demo` carries the credential-free sample
-  story.
-- Ollama/Gemma is optional and user-managed through `OLLAMA_API_KEY`; CareerOS
-  only connects to `https://ollama.com/api` from server-side route handlers.
-- Model requests use short timeouts and bounded output. Latency is recorded in
-  `ModelTrace`; raw prompts, raw responses, and API keys are never stored.
-- OpenAI, Anthropic, OpenRouter, MLX, llama.cpp, LiteRT, vLLM, SGLang, and MTP
-  drafters remain roadmap adapters until they have real code, credential or
-  runtime boundaries, tests, and smoke evidence.
+## Web app
 
-## Model provider boundary
+Route files in `apps/web/src/app` stay thin: they load data, handle redirects, and pass a stable snapshot to a workspace component in `src/components`.
+Server data comes from `src/lib/*-server.ts` helpers, deduplicated with React `cache()` when the layout and the page need the same snapshot.
+Client components exist only for interaction, polling, or local UI state.
 
-Gemma via Ollama Cloud is the **only implemented** model path. Provider claims
-must stay accurate — don't list adapters as shipped until they have code and tests.
-The static registry in [`lib/providers/index.ts`](../lib/providers/index.ts)
-is the single source of truth; it drives `/api/providers`,
-`/judge-demo`, and the agent-pipeline `model_router` snapshot.
+Browsers never call the API directly.
+They call the same-origin proxy at `/api/careeroc/*`, which checks the session and the request origin, signs the user context, and forwards the call; server components use `careeroc-api-server.ts` the same way.
+To add an API call: add or reuse the DTO in `src/Careeroc.Contracts`, regenerate `src/lib/api-schema.ts` with `pnpm --dir apps/web gen:api`, and fetch through a server helper or the proxy.
 
-| Status                          | Provider                                                  |
-| ------------------------------- | --------------------------------------------------------- |
-| Implemented                     | Deterministic processing; status-gated Ollama Cloud/Gemma |
-| Planned (BYOK adapter surface)  | OpenAI, Anthropic, OpenRouter                             |
-| Planned (local adapter surface) | MLX (Apple Silicon), llama.cpp, LiteRT, vLLM, SGLang      |
-| Planned (performance)           | Gemma 4 MTP drafters for lower-latency local inference    |
+Polling is narrow.
+The header sync pill polls slowly and only triggers an inbox check while the first sync or analysis is incomplete; the inbox page polls faster only while analysis is active; resume work runs from explicit actions.
+Pages skip polling while the tab is hidden.
 
-Roadmap adapters are tracked in [roadmap.md](roadmap.md). Keep that list short:
-an adapter moves from roadmap to implemented only after real code, credential
-or runtime boundaries, tests, smoke evidence, and review-gated mutation
-behavior exist.
+Hydration must be stable: render the same navigation and text on server and client, pass ISO timestamps and format them after hydration with `LocalTime`, never branch on `window` during render, and use `useHydrated` for other client-only values such as relative times.
 
-Required invariants:
+## Observability
 
-- No provider key, Gmail account, or model download is required for first-run
-  value.
-- Model output is schema-validated and review-gated before mutation.
-- Roadmap adapters do not run model code from CareerOS.
+Every API response carries `X-Careeroc-Correlation-Id`, and processing jobs and model calls store bounded run and correlation IDs.
+Setting `OTEL_EXPORTER_OTLP_ENDPOINT` turns on OTLP/HTTP tracing in all three services; spans cover dashboard queries, sync, email processing, attachment import, model calls, and each agent node.
+Maintenance rules for sync, reminders, and company names are in [backend/evidence-pipeline-maintenance.md](backend/evidence-pipeline-maintenance.md).
 
-## Data boundaries
+## Change checklist
 
-| Type                              | Stores                                                                                                            |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Application`                     | Durable workflow state + JD link, resume version, cover-letter version, source, recruiter, salary/location, notes |
-| `MailboxThread`, `MailboxMessage` | Gmail/local bounded mailbox evidence                                                                              |
-| `CandidateContext`                | Local target roles, skills, preferences, resume keywords, and compact review-correction facts                     |
-| `AgentRun`                        | Compact agent-layer trace metadata                                                                                |
-| `ApplicationEvent`                | Append-only decisions and pipeline activity                                                                       |
-| `ImportJob`                       | Local import processing state, attempts, errors                                                                   |
-| `EvidenceSnippet`                 | Bounded snippets, hashes, source labels, confidence, source-message ids, source relationships                     |
-| `ReviewItem`                      | Risky/low-confidence proposed mutations until accepted, dismissed, or corrected                                   |
-| `ResumeEvaluation`                | Deterministic or Gemma-backed resume feedback, with blocked status for invalid / low-confidence model output      |
-| `ModelTrace`                      | Provider/model metadata + bounded diagnostics — **never** raw prompts or full source bodies                       |
-
-Workspace export/import uses `schemaVersion: 2`. Import validates the full
-normalized state before writing through the repository, rejects unknown future
-versions, private paths, OAuth/token/provider-key fields, raw model output,
-raw inbox bodies, and secret-looking values, and does not echo rejected
-non-public content back to the UI.
-
-Notifications are **derived** from applications, reminders, review items,
-model status, and connector health — they're rebuilt every write. Stale
-follow-up reminders are suppressed when an application receives a later-stage
-reply / OA / interview / rejection / offer signal.
-
-Completed and dismissed reminders remain in local state with `decidedAt`
-metadata and decision events. Query helpers expose reminder history and
-application timelines without turning reminders into a second source of truth.
-
-Evidence remains bounded and relationship-oriented: helper queries group
-snippets by mailbox thread, application, company, role, recruiter, source
-label, and resume version for frontend thread-level evidence views.
-
-Readonly Gmail OAuth is part of the local demo path.
-Tokens live outside the workspace export under `.careeros-data/gmail-oauth.json` as versioned AES-256-GCM envelopes with key identifiers.
-Writes use a same-directory temporary file and atomic rename.
-The current key can recover a normal envelope, while an explicitly configured previous key can recover and rotate an older envelope.
-Corrupt envelopes and unavailable keys produce redacted reconnect states instead of silent token loss.
-
-`GmailSyncState` persists `disconnected`, `authorizing`, `catching_up`, `idle`, `degraded`, `reconnect_required`, and `paused` states.
-Each sync action processes one bounded page and atomically stores its next-page checkpoint with idempotently merged messages, threads, evidence, and review proposals.
-Retries suppress known source labels, pause preserves the checkpoint, and restart resumes from the same cursor.
-The state stores progress counters and diagnostic codes, not raw Gmail bodies or provider payloads.
-This local recovery boundary does not turn the connector into hosted credential infrastructure or authorize broader Gmail scopes.
-
-## Future Load-Control Decisions
-
-The current public base is single-workspace and private-workspace first, so it does not
-ship the hosted queue runtime. These are the constraints to preserve when real
-Gmail sync, provider adapters, or hosted deployments are added:
-
-- Sync should be active-user-aware, not a global poll.
-- Per-user sync and processing need bounded concurrency.
-- Any queue runtime should use leases, max attempts, stale-lock recovery, and
-  dead-letter metadata.
-- Pipeline-console queries should use projections and SQL aggregates where
-  possible.
-- Frontend polling should use self-scheduling timers and in-flight request
-  dedupe.
-
-## Implemented local services
-
-Top-level source layout:
-
-| Area          | Purpose                                                                                   |
-| ------------- | ----------------------------------------------------------------------------------------- |
-| `app/`        | Next.js App Router pages and route handlers                                               |
-| `components/` | Reusable UI components and icons                                                          |
-| `styles/`     | Layered global CSS split by layout, home, components, pages, polish, and responsive rules |
-| `lib/`        | Pipeline, persistence, provider, Gmail, review, and view-model helpers                    |
-| `public/`     | App-served SVG agents and mascot assets                                                   |
-| `docs/`       | Architecture, release, writeup, submission, and proof docs                                |
-| `eval/`       | Pipeline eval fixtures and generated machine-readable results                             |
-| `tools/`      | Local validation and smoke-test entrypoints                                               |
-
-| File                           | Purpose                                                                                                                      |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `lib/store.ts`                 | Local state read/update/reset with clean first-run state; the only mutation entry point                                      |
-| `lib/persistence.ts`           | Repository interface + JSON-file and in-memory adapters                                                                      |
-| `lib/pipeline.ts`              | Deterministic local import and resume processing                                                                             |
-| `lib/review.ts`                | Idempotent accept / dismiss / correct review decisions                                                                       |
-| `lib/review-queries.ts`        | Review queue filters by status, confidence, source, provider, company/application, and sort order                            |
-| `lib/reminder-queries.ts`      | Open reminder queries, completed/dismissed history, and application timelines                                                |
-| `lib/evidence-queries.ts`      | Evidence relationship read models grouped by thread, application, company, role, recruiter, source label, and resume version |
-| `lib/workspace-import.ts`      | Strict normalized workspace JSON import validation and success import-job metadata                                           |
-| `lib/audit.ts`                 | Bounded local audit events for import/review/reminder/Gmail/local-data observability                                         |
-| `lib/notifications.ts`         | Deterministic notification derivation with stable dedupe keys                                                                |
-| `lib/agent-pipeline.ts`        | Judge-facing multi-agent mailbox pipeline snapshot                                                                           |
-| `lib/agent-constraints.ts`     | Machine-readable handoff, guardrail, prompt, trace, and review-gate constraints                                              |
-| `lib/agent-contracts.ts`       | Product-facing agent prompting, memory, cost, can/cannot-do contracts                                                        |
-| `lib/connectors.ts`            | Optional Gmail connector state and local action orchestration                                                                |
-| `lib/gmail-sync.ts`            | Persisted Gmail sync transitions, progress checkpoints, and redacted audit events                                             |
-| `lib/gmail-adapter.ts`         | Validated readonly Gmail response contract and fetch adapter                                                                 |
-| `lib/gmail-local.ts`           | Local readonly Gmail OAuth, token rotation/recovery, and bounded sync-to-import conversion                                    |
-| `lib/fake-gmail.ts`            | No-credential Gmail fixtures for pagination, duplicate, failure, and reconnect tests                                         |
-| `lib/model-analysis.ts`        | Bounded Ollama import analysis with schema validation and review-only output                                                 |
-| `lib/resume-model-analysis.ts` | Bounded Ollama resume analysis with strict JSON validation and blocked fallback                                              |
-| `lib/model-status.ts`          | Explicit Ollama disabled / unavailable / model-missing / ready status checks                                                 |
+- DTOs go in Contracts, workflow logic in Application, providers and models in Infrastructure, and endpoints stay thin.
+- Every automated decision the user sees has evidence, a confidence, or a trace, and a deterministic fallback or a review path.
+- Background work is safe to retry, and new reminders are deduplicated.
+- Admin endpoints stay under `/api/admin/*` with an API-side role check and sanitized DTOs.
+- Migrations match entity changes, and memory writes keep their source.
+- In the web app, route files stay thin, authenticated calls go through the proxy, the first render is hydration-stable, and empty, loading, fallback, stale, and blocked states are explicit.

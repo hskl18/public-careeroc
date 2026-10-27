@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Resume Feature Mascot</title>
+  <desc id="desc">Inbox buddy holding a resume for resume intelligence.</desc>
+  <rect x="28" y="42" width="72" height="52" fill="#2563eb"/>
+  <rect x="36" y="50" width="56" height="12" fill="#dbeafe"/>
+  <rect x="36" y="62" width="28" height="20" fill="#bfdbfe"/>
+  <rect x="64" y="62" width="28" height="20" fill="#93c5fd"/>
+  <rect x="44" y="34" width="12" height="12" fill="#0f172a"/>
+  <rect x="72" y="34" width="12" height="12" fill="#0f172a"/>
+  <rect x="46" y="36" width="6" height="6" fill="#ffffff"/>
+  <rect x="74" y="36" width="6" height="6" fill="#ffffff"/>
+  <rect x="52" y="76" width="24" height="8" fill="#0f172a"/>
+  <rect x="20" y="58" width="8" height="24" fill="#2563eb"/>
+  <rect x="42" y="94" width="14" height="8" fill="#1e40af"/>
+  <rect x="72" y="94" width="14" height="8" fill="#1e40af"/>
+  <rect x="82" y="72" width="30" height="38" fill="#ffffff"/>
+  <rect x="104" y="72" width="8" height="8" fill="#dcfce7"/>
+  <rect x="88" y="84" width="16" height="3" fill="#16a34a"/>
+  <rect x="88" y="92" width="18" height="3" fill="#16a34a"/>
+  <rect x="88" y="100" width="12" height="3" fill="#16a34a"/>
+  <rect x="40" y="28" width="16" height="6" fill="#16a34a"/>
+  <rect x="72" y="28" width="16" height="6" fill="#16a34a"/>
+</svg>

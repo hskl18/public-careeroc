@@ -1,0 +1,205 @@
+{
+  "description": "Hand-written ground truth for src/Careeroc.Infrastructure/Demo/demo-inbox.json. Labels describe what the email means, not what the pipeline currently outputs.",
+  "emails": {
+    "kestrel-001": {
+      "category": "ApplicationReceived",
+      "company": "Kestrel AI"
+    },
+    "kestrel-002": {
+      "category": "OaInvitation",
+      "company": "Kestrel AI"
+    },
+    "kestrel-003": {
+      "category": "InterviewInvitation",
+      "company": "Kestrel AI"
+    },
+    "kestrel-005": {
+      "category": "InterviewConfirmation",
+      "company": "Kestrel AI"
+    },
+    "kestrel-006": {
+      "category": "InterviewInvitation",
+      "company": "Kestrel AI"
+    },
+    "kestrel-007": {
+      "category": "Offer",
+      "company": "Kestrel AI"
+    },
+    "harborline-001": {
+      "category": "ApplicationReceived",
+      "company": "Harborline"
+    },
+    "harborline-002": {
+      "category": "InterviewInvitation",
+      "company": "Harborline"
+    },
+    "harborline-003": {
+      "category": "Rejection",
+      "company": "Harborline"
+    },
+    "lumen-001": {
+      "category": "RecruiterOutreach",
+      "company": "Lumen Robotics"
+    },
+    "lumen-003": {
+      "category": "InterviewInvitation",
+      "company": "Lumen Robotics"
+    },
+    "lumen-004": {
+      "category": "InterviewConfirmation",
+      "company": "Lumen Robotics"
+    },
+    "lumen-005": {
+      "category": "GenericUpdate",
+      "company": "Lumen Robotics"
+    },
+    "cobalt-001": {
+      "category": "ApplicationReceived",
+      "company": "Cobalt Pay"
+    },
+    "cobalt-002": {
+      "category": "OaInvitation",
+      "company": "Cobalt Pay"
+    },
+    "quanta-001": {
+      "category": "ApplicationReceived",
+      "company": "Quanta Health"
+    },
+    "quanta-002": {
+      "category": "Rejection",
+      "company": "Quanta Health"
+    },
+    "brightwave-001": {
+      "category": "ApplicationReceived",
+      "company": "Brightwave"
+    },
+    "northwind-001": {
+      "category": "ApplicationReceived",
+      "company": "Northwind Labs"
+    },
+    "northwind-002": {
+      "category": "InterviewInvitation",
+      "company": "Northwind Labs"
+    },
+    "fernhill-001": {
+      "category": "ApplicationReceived",
+      "company": "Fernhill Games"
+    },
+    "fernhill-002": {
+      "category": "Rejection",
+      "company": "Fernhill Games"
+    },
+    "atlas-001": {
+      "category": "ApplicationReceived",
+      "company": "Atlas Freight"
+    },
+    "atlas-002": {
+      "category": "OaInvitation",
+      "company": "Atlas Freight"
+    },
+    "pinecrest-001": {
+      "category": "ApplicationReceived",
+      "company": "Pinecrest Bank"
+    },
+    "pinecrest-002": {
+      "category": "OaInvitation",
+      "company": "Pinecrest Bank"
+    },
+    "solstice-001": {
+      "category": "ApplicationReceived",
+      "company": "Solstice Energy"
+    },
+    "meridian-001": {
+      "category": "RecruiterOutreach",
+      "company": "Meridian Cloud"
+    },
+    "meridian-003": {
+      "category": "InterviewConfirmation",
+      "company": "Meridian Cloud"
+    },
+    "aurora-001": {
+      "category": "ApplicationReceived",
+      "company": "Aurora Learning"
+    },
+    "aurora-002": {
+      "category": "OaInvitation",
+      "company": "Aurora Learning"
+    },
+    "tidepool-001": {
+      "category": "ApplicationReceived",
+      "company": "Tidepool Analytics"
+    },
+    "tidepool-002": {
+      "category": "Rejection",
+      "company": "Tidepool Analytics"
+    },
+    "granite-001": {
+      "category": "ApplicationReceived",
+      "company": "Granite Systems"
+    },
+    "vela-001": {
+      "category": "ApplicationReceived",
+      "company": "Vela Mobility"
+    },
+    "vela-002": {
+      "category": "InterviewInvitation",
+      "company": "Vela Mobility"
+    },
+    "orchard-001": {
+      "category": "ApplicationReceived",
+      "company": "Orchard Health"
+    },
+    "summit-001": {
+      "category": "ApplicationReceived",
+      "company": "Summit Logistics"
+    },
+    "redwood-001": {
+      "category": "ApplicationReceived",
+      "company": "Redwood Security"
+    },
+    "redwood-002": {
+      "category": "OaInvitation",
+      "company": "Redwood Security"
+    },
+    "beacon-001": {
+      "category": "ApplicationReceived",
+      "company": "Beacon Media"
+    },
+    "beacon-002": {
+      "category": "GenericUpdate",
+      "company": "Beacon Media"
+    }
+  },
+  "ignored": [
+    "noise-001",
+    "noise-002",
+    "noise-003",
+    "noise-004"
+  ],
+  "needsReview": [
+    "agency-001",
+    "scam-001"
+  ],
+  "applications": {
+    "Kestrel AI": "Offer",
+    "Harborline": "Rejected",
+    "Lumen Robotics": "Interviewing",
+    "Cobalt Pay": "OaPending",
+    "Quanta Health": "Rejected",
+    "Brightwave": "Applied",
+    "Northwind Labs": "Interviewing",
+    "Fernhill Games": "Rejected",
+    "Atlas Freight": "OaPending",
+    "Pinecrest Bank": "OaPending",
+    "Solstice Energy": "Applied",
+    "Meridian Cloud": "Interviewing",
+    "Aurora Learning": "OaPending",
+    "Tidepool Analytics": "Rejected",
+    "Granite Systems": "Applied",
+    "Vela Mobility": "Interviewing",
+    "Orchard Health": "Applied",
+    "Summit Logistics": "Applied",
+    "Redwood Security": "OaPending",
+    "Beacon Media": "Applied"
+  }
+}

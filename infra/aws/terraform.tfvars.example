@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars (ignored by git) and fill in.
+region          = "us-west-2"
+domain_name     = "careeroc.example.com"
+certificate_arn = "arn:aws:acm:us-west-2:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+image_tag       = "2026-10-27"
+demo_mode       = true
+
+# For a real deployment instead of the demo:
+# demo_mode             = false
+# allowed_email_domains = ["example.com"]
+# google_client_id      = "...apps.googleusercontent.com"
+# google_client_secret  = "..."
+# agent_provider        = "openai"
+
+# Optional: a separate checkpoint database for the agent runtime (see deploy/postgres/agent-checkpoints.sql).
+# agent_checkpoint_database_url = "postgresql://careeroc_agent:...@<rds endpoint>:5432/careeroc_agent?sslmode=require"

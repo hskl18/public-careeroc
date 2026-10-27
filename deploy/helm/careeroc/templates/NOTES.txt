@@ -1,0 +1,6 @@
+careeroc is starting at {{ include "careeroc.publicUrl" . }}
+
+  MCP endpoint:    {{ include "careeroc.publicUrl" . }}/mcp
+  A2A agent card:  {{ include "careeroc.publicUrl" . }}/.well-known/agent-card.json
+
+The API applies database migrations on startup; the first rollout can take a minute.

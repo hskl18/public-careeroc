@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Button Loading Buddy</title>
+  <desc id="desc">Compact pixel inbox buddy loading state for buttons.</desc>
+  <style>
+    .buddy { animation: bob 1s steps(2, end) infinite; }
+    .dot-a { animation: dot 1s steps(1, end) infinite; }
+    .dot-b { animation: dot 1s steps(1, end) .18s infinite; }
+    .dot-c { animation: dot 1s steps(1, end) .36s infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes dot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .buddy, .dot-a, .dot-b, .dot-c { animation: none; }
+    }
+  </style>
+  <g class="buddy">
+    <rect x="4" y="10" width="22" height="16" fill="#2563eb"/>
+    <rect x="8" y="13" width="14" height="4" fill="#dbeafe"/>
+    <rect x="8" y="17" width="7" height="6" fill="#bfdbfe"/>
+    <rect x="15" y="17" width="7" height="6" fill="#93c5fd"/>
+    <rect x="9" y="6" width="5" height="5" fill="#0f172a"/>
+    <rect x="17" y="6" width="5" height="5" fill="#0f172a"/>
+    <rect x="14" y="22" width="4" height="2" fill="#0f172a"/>
+  </g>
+  <rect class="dot-a" x="36" y="14" width="5" height="5" fill="#2563eb"/>
+  <rect class="dot-b" x="46" y="14" width="5" height="5" fill="#16a34a"/>
+  <rect class="dot-c" x="56" y="14" width="5" height="5" fill="#16a34a"/>
+</svg>
