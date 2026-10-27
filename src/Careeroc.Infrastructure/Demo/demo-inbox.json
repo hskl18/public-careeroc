@@ -1,0 +1,416 @@
+{
+  "description": "Fictional recruiting inbox for the public demo. Every company, person, and address is invented and uses the reserved .example TLD. daysAgo is relative to the moment a demo workspace is created; {{date:+N}} renders today plus N days.",
+  "emails": [
+    {
+      "id": "agency-001",
+      "thread": "agency",
+      "daysAgo": 4.6,
+      "from": "Riley Chen <riley@brightpathtalent.example>",
+      "subject": "Backend Engineer opportunity with a confidential client",
+      "body": "Hi Alex, I'm partnering with a confidential client, a Series B fintech in San Francisco, on a Backend Engineer search. The team works in Go and Postgres. Would you be open to a quick call to hear more before I share the company name?"
+    },
+    {
+      "id": "atlas-001",
+      "thread": "atlas",
+      "daysAgo": 15.5,
+      "from": "Atlas Freight Careers <careers@atlasfreight.example>",
+      "subject": "Application received for Software Engineer, Infrastructure at Atlas Freight",
+      "body": "Thank you for your application to Atlas Freight. Your application for the Software Engineer, Infrastructure role has been received."
+    },
+    {
+      "id": "atlas-002",
+      "thread": "atlas",
+      "daysAgo": 13.2,
+      "from": "Atlas Freight Recruiting <recruiting@atlasfreight.example>",
+      "subject": "Atlas Freight Software Engineer Assessment",
+      "body": "Hi Alex, please complete the online assessment for the Software Engineer, Infrastructure role at Atlas Freight by {{date:-6}}. The link expires after the deadline."
+    },
+    {
+      "id": "aurora-001",
+      "thread": "aurora",
+      "daysAgo": 10.5,
+      "from": "Aurora Learning Careers <careers@auroralearning.example>",
+      "subject": "Thanks for applying to Aurora Learning",
+      "body": "Thank you for your application to Aurora Learning. We have received your application for the Software Engineer role."
+    },
+    {
+      "id": "aurora-002",
+      "thread": "aurora",
+      "daysAgo": 9.1,
+      "from": "Aurora Learning Recruiting <recruiting@auroralearning.example>",
+      "subject": "Candidate questionnaire: Aurora Learning Software Engineer",
+      "body": "Hi Alex, please complete the short candidate questionnaire for the Software Engineer role at Aurora Learning by {{date:+3}}. It asks about work authorization and start date."
+    },
+    {
+      "id": "beacon-001",
+      "thread": "beacon",
+      "daysAgo": 23.5,
+      "from": "Beacon Media Careers <careers@beaconmedia.example>",
+      "subject": "Application received for Software Engineer at Beacon Media",
+      "body": "Thank you for applying to Beacon Media. Your application for the Software Engineer role has been received."
+    },
+    {
+      "id": "beacon-002",
+      "thread": "beacon",
+      "daysAgo": 11.8,
+      "from": "Beacon Media Careers <careers@beaconmedia.example>",
+      "subject": "Your Beacon Media application status",
+      "body": "Hi Alex, we noticed your application status changed in our system. If you have questions about the process, reply to this email and someone from the team will follow up."
+    },
+    {
+      "id": "brightwave-001",
+      "thread": "brightwave",
+      "daysAgo": 20.2,
+      "from": "Brightwave Careers <careers@brightwave.example>",
+      "subject": "Application received for Frontend Engineer at Brightwave",
+      "body": "Thank you for applying to Brightwave. Your application for the Frontend Engineer role has been received and is under review."
+    },
+    {
+      "id": "cobalt-001",
+      "thread": "cobalt",
+      "daysAgo": 25.4,
+      "from": "Cobalt Pay Jobs <jobs@cobaltpay.example>",
+      "subject": "Thanks for applying to Cobalt Pay",
+      "body": "Hi Alex, thank you for your application to Cobalt Pay. We have received your application for the Full Stack Engineer role."
+    },
+    {
+      "id": "cobalt-002",
+      "thread": "cobalt",
+      "daysAgo": 5.8,
+      "from": "Cobalt Pay Recruiting <recruiting@cobaltpay.example>",
+      "subject": "Cobalt Pay Full Stack Engineer Assessment",
+      "body": "Hi Alex, thanks again for your interest in Cobalt Pay. Please complete the online assessment for the Full Stack Engineer role by {{date:+4}}. It takes about 90 minutes."
+    },
+    {
+      "id": "fernhill-001",
+      "thread": "fernhill",
+      "daysAgo": 17.3,
+      "from": "Fernhill Games Jobs <jobs@fernhill.example>",
+      "subject": "Thanks for applying to Fernhill Games",
+      "body": "Thank you for your application to Fernhill Games. We have received your application for the Gameplay Engineer role."
+    },
+    {
+      "id": "fernhill-002",
+      "thread": "fernhill",
+      "daysAgo": 16.1,
+      "from": "Fernhill Games Jobs <jobs@fernhill.example>",
+      "subject": "Your Fernhill Games application",
+      "body": "Hi Alex, thank you for your interest in Fernhill Games. We will not be moving forward with your application for the Gameplay Engineer role."
+    },
+    {
+      "id": "granite-001",
+      "thread": "granite",
+      "daysAgo": 6.4,
+      "from": "Granite Systems Careers <careers@granite.example>",
+      "subject": "Application received for Backend Engineer at Granite Systems",
+      "body": "Thank you for applying to Granite Systems. Your application for the Backend Engineer role has been received."
+    },
+    {
+      "id": "harborline-001",
+      "thread": "harborline",
+      "daysAgo": 28.3,
+      "from": "Harborline Talent <talent@harborline.example>",
+      "subject": "Application received for Software Engineer I at Harborline",
+      "body": "Thank you for your application to Harborline. Your application for the Software Engineer I role has been received."
+    },
+    {
+      "id": "harborline-002",
+      "thread": "harborline",
+      "daysAgo": 21.7,
+      "from": "Diego Alvarez <diego.alvarez@harborline.example>",
+      "subject": "Recruiter screen for Software Engineer I at Harborline",
+      "body": "Hi Alex, I'd like to schedule a 30 minute recruiter screen for the Software Engineer I position at Harborline. Please share a few times that work for you."
+    },
+    {
+      "id": "harborline-003",
+      "thread": "harborline",
+      "daysAgo": 12.2,
+      "from": "Harborline Talent <talent@harborline.example>",
+      "subject": "Update on your application to Harborline",
+      "body": "Hi Alex, thank you for taking the time to speak with us. After careful consideration, we will not be moving forward with your candidacy for the Software Engineer I role at this time."
+    },
+    {
+      "id": "kestrel-001",
+      "thread": "kestrel",
+      "daysAgo": 34.2,
+      "from": "Kestrel AI Careers <careers@kestrel.example>",
+      "subject": "We received your application for Backend Engineer, New Grad at Kestrel AI",
+      "body": "Hi Alex, thank you for your application to Kestrel AI. We have received your application for the Backend Engineer, New Grad role and our team will review it over the next two weeks."
+    },
+    {
+      "id": "kestrel-002",
+      "thread": "kestrel",
+      "daysAgo": 30.6,
+      "from": "Kestrel AI Recruiting <recruiting@kestrel.example>",
+      "subject": "Kestrel AI Backend Engineer Assessment",
+      "body": "Hi Alex, the next step for the Backend Engineer, New Grad role at Kestrel AI is a 75 minute online assessment. You have 5 days to complete it. The assessment covers data structures and one systems design question."
+    },
+    {
+      "id": "kestrel-003",
+      "thread": "kestrel",
+      "daysAgo": 21.1,
+      "from": "Priya Natarajan <priya.natarajan@kestrel.example>",
+      "subject": "Interview for Backend Engineer, New Grad at Kestrel AI",
+      "body": "Hi Alex, great work on the assessment. We'd love to schedule your first interview for the Backend Engineer, New Grad role at Kestrel AI. Please reply with your availability for next week."
+    },
+    {
+      "id": "kestrel-004",
+      "thread": "kestrel",
+      "daysAgo": 20.4,
+      "outbound": true,
+      "from": "Alex Rivera <alex@demo.careeroc.example>",
+      "subject": "Re: Interview for Backend Engineer, New Grad at Kestrel AI",
+      "body": "Hi Priya, thank you! I'm available Tuesday or Wednesday afternoon Pacific time. Looking forward to it."
+    },
+    {
+      "id": "kestrel-005",
+      "thread": "kestrel",
+      "daysAgo": 19.8,
+      "from": "Kestrel AI Scheduling <scheduling@kestrel.example>",
+      "subject": "Confirmed: Technical interview with Kestrel AI",
+      "body": "Your technical interview for the Backend Engineer, New Grad role at Kestrel AI is confirmed for Wednesday at 2:00 PM PT. The video link is in the calendar invite."
+    },
+    {
+      "id": "kestrel-006",
+      "thread": "kestrel",
+      "daysAgo": 11.3,
+      "from": "Priya Natarajan <priya.natarajan@kestrel.example>",
+      "subject": "Final round interview for Backend Engineer, New Grad at Kestrel AI",
+      "body": "Hi Alex, the team enjoyed meeting you. We would like to invite you to the final round interview for the Backend Engineer, New Grad role at Kestrel AI: three 45 minute conversations covering systems design, coding, and team fit. Please reply with your availability."
+    },
+    {
+      "id": "kestrel-007",
+      "thread": "kestrel",
+      "daysAgo": 1.6,
+      "from": "Priya Natarajan <priya.natarajan@kestrel.example>",
+      "subject": "Offer for Backend Engineer, New Grad at Kestrel AI",
+      "body": "Hi Alex, congratulations! We are excited to extend an offer for the Backend Engineer, New Grad role at Kestrel AI. The offer letter and compensation details are attached. Please let us know your decision by {{date:+6}}."
+    },
+    {
+      "id": "lumen-001",
+      "thread": "lumen",
+      "daysAgo": 18.5,
+      "from": "Mara Okafor <mara.okafor@lumenrobotics.example>",
+      "subject": "Robotics Software Engineer role at Lumen Robotics",
+      "body": "Hi Alex, I'm Mara, a technical recruiter at Lumen Robotics. Your work on real-time systems caught my eye and I think you could be a strong fit for our Robotics Software Engineer role. Would you be open to a quick intro chat this week?"
+    },
+    {
+      "id": "lumen-002",
+      "thread": "lumen",
+      "daysAgo": 17.9,
+      "outbound": true,
+      "from": "Alex Rivera <alex@demo.careeroc.example>",
+      "subject": "Re: Robotics Software Engineer role at Lumen Robotics",
+      "body": "Hi Mara, thanks for reaching out. I'd be happy to chat. Thursday morning works well for me."
+    },
+    {
+      "id": "lumen-003",
+      "thread": "lumen",
+      "daysAgo": 14.2,
+      "from": "Mara Okafor <mara.okafor@lumenrobotics.example>",
+      "subject": "Interview with Lumen Robotics for Robotics Software Engineer",
+      "body": "Hi Alex, thanks for the great conversation. We'd like to schedule a technical interview for the Robotics Software Engineer role at Lumen Robotics. Please book a slot using the scheduling link."
+    },
+    {
+      "id": "lumen-004",
+      "thread": "lumen",
+      "daysAgo": 11.0,
+      "from": "Lumen Robotics Scheduling <scheduling@lumenrobotics.example>",
+      "subject": "Interview confirmed: Lumen Robotics",
+      "body": "Your interview for the Robotics Software Engineer role at Lumen Robotics is confirmed for Friday at 10:30 AM PT."
+    },
+    {
+      "id": "lumen-005",
+      "thread": "lumen",
+      "daysAgo": 3.1,
+      "from": "Mara Okafor <mara.okafor@lumenrobotics.example>",
+      "subject": "Quick update on your candidacy",
+      "body": "Hi Alex, thanks again for chatting with our team. We are still collecting feedback and will be in touch soon with next steps."
+    },
+    {
+      "id": "meridian-001",
+      "thread": "meridian",
+      "daysAgo": 9.4,
+      "from": "Jonah Whitfield <jonah.whitfield@meridiancloud.example>",
+      "subject": "Site Reliability Engineer opportunity at Meridian Cloud",
+      "body": "Hi Alex, I'm Jonah, a recruiter at Meridian Cloud. I came across your background and thought you could be a great fit for our Site Reliability Engineer role. Would you be open to a 20 minute intro call?"
+    },
+    {
+      "id": "meridian-002",
+      "thread": "meridian",
+      "daysAgo": 8.9,
+      "outbound": true,
+      "from": "Alex Rivera <alex@demo.careeroc.example>",
+      "subject": "Re: Site Reliability Engineer opportunity at Meridian Cloud",
+      "body": "Hi Jonah, thanks for reaching out. I'd be glad to learn more. Monday or Tuesday afternoon works for me."
+    },
+    {
+      "id": "meridian-003",
+      "thread": "meridian",
+      "daysAgo": 7.2,
+      "from": "Meridian Cloud Scheduling <scheduling@meridiancloud.example>",
+      "subject": "Confirmed: Intro call with Meridian Cloud",
+      "body": "Your intro call for the Site Reliability Engineer role at Meridian Cloud is confirmed for Tuesday at 1:00 PM PT."
+    },
+    {
+      "id": "noise-004",
+      "thread": "noise-conference",
+      "daysAgo": 13.6,
+      "from": "DevSummit <tickets@devsummit.example>",
+      "subject": "Your DevSummit ticket",
+      "body": "Thanks for registering for DevSummit. Your ticket and venue details are attached. See you there!"
+    },
+    {
+      "id": "noise-001",
+      "thread": "noise-digest",
+      "daysAgo": 2.4,
+      "from": "Jobs Digest <alerts@jobsdigest.example>",
+      "subject": "12 new Software Engineer jobs near San Francisco",
+      "body": "Here are this week's new postings that match your saved search. Unsubscribe or change your alert settings at any time."
+    },
+    {
+      "id": "noise-002",
+      "thread": "noise-newsletter",
+      "daysAgo": 5.6,
+      "from": "Systems Weekly <newsletter@systemsweekly.example>",
+      "subject": "Systems Weekly: consensus protocols, column stores, and more",
+      "body": "This week: a deep dive into Raft log compaction, how column stores pick encodings, and five talks worth watching."
+    },
+    {
+      "id": "noise-003",
+      "thread": "noise-order",
+      "daysAgo": 7.1,
+      "from": "Parcel Post <orders@parcelpost.example>",
+      "subject": "Your order has shipped",
+      "body": "Good news, your order is on the way and should arrive in 3 to 5 business days."
+    },
+    {
+      "id": "northwind-001",
+      "thread": "northwind",
+      "daysAgo": 19.4,
+      "from": "Northwind Labs Careers <careers@northwindlabs.example>",
+      "subject": "We received your application for Platform Engineer at Northwind Labs",
+      "body": "Hi Alex, thank you for your application to Northwind Labs. We have received your application for the Platform Engineer role."
+    },
+    {
+      "id": "northwind-002",
+      "thread": "northwind",
+      "daysAgo": 3.9,
+      "from": "Sofia Lindqvist <sofia.lindqvist@northwindlabs.example>",
+      "subject": "Interview invitation: Platform Engineer at Northwind Labs",
+      "body": "Hi Alex, we'd love to schedule your first interview for the Platform Engineer role at Northwind Labs. Please reply with your availability by {{date:+2}}."
+    },
+    {
+      "id": "orchard-001",
+      "thread": "orchard",
+      "daysAgo": 4.3,
+      "from": "Orchard Health Careers <careers@orchardhealth.example>",
+      "subject": "Application received for Full Stack Developer at Orchard Health",
+      "body": "Thank you for applying to Orchard Health. Your application for the Full Stack Developer role has been received."
+    },
+    {
+      "id": "pinecrest-001",
+      "thread": "pinecrest",
+      "daysAgo": 14.4,
+      "from": "Pinecrest Bank Talent <talent@pinecrest.example>",
+      "subject": "Thank you for applying to Pinecrest Bank",
+      "body": "Thank you for your application to Pinecrest Bank. We have received your application for the Software Development Engineer position."
+    },
+    {
+      "id": "pinecrest-002",
+      "thread": "pinecrest",
+      "daysAgo": 7.7,
+      "from": "Pinecrest Bank Talent <talent@pinecrest.example>",
+      "subject": "Pinecrest Bank Software Development Engineer Assessment",
+      "body": "Hi Alex, the next step for the Software Development Engineer position at Pinecrest Bank is a coding assessment. Please complete it by {{date:+2}}."
+    },
+    {
+      "id": "quanta-001",
+      "thread": "quanta",
+      "daysAgo": 22.6,
+      "from": "Quanta Health Careers <careers@quantahealth.example>",
+      "subject": "Your application to Quanta Health",
+      "body": "Thank you for your application to Quanta Health. We received your application for the Data Engineer role and will be in touch if there is a match."
+    },
+    {
+      "id": "quanta-002",
+      "thread": "quanta",
+      "daysAgo": 10.1,
+      "from": "Quanta Health Careers <careers@quantahealth.example>",
+      "subject": "Update on your Quanta Health application",
+      "body": "Hi Alex, thank you for your interest in Quanta Health. Unfortunately we have decided to move forward with other candidates for the Data Engineer role."
+    },
+    {
+      "id": "redwood-001",
+      "thread": "redwood",
+      "daysAgo": 6.9,
+      "from": "Redwood Security Careers <careers@redwoodsec.example>",
+      "subject": "Application received for Security Engineer at Redwood Security",
+      "body": "Thank you for applying to Redwood Security. Your application for the Security Engineer role has been received."
+    },
+    {
+      "id": "redwood-002",
+      "thread": "redwood",
+      "daysAgo": 2.1,
+      "from": "CodeTrial <no-reply@codetrial.example>",
+      "subject": "Redwood Security Software Engineer Assessment",
+      "body": "Hello Alex, Redwood Security has invited you to complete a coding assessment for the Security Engineer role. The assessment expires in 5 days."
+    },
+    {
+      "id": "scam-001",
+      "thread": "scam",
+      "daysAgo": 2.8,
+      "from": "Hiring Desk <hiring.desk.offers@freemail.example>",
+      "subject": "Job offer: Remote Data Entry Specialist, $55/hr, start today",
+      "body": "Congratulations! You have been selected for a remote Data Entry Specialist position paying $55 per hour with no interview required. To start today, reply with your Social Security number and bank account details so we can send your equipment check. Equipment must be purchased through our approved vendor with gift cards."
+    },
+    {
+      "id": "solstice-001",
+      "thread": "solstice",
+      "daysAgo": 12.3,
+      "from": "Solstice Energy Careers <careers@solstice.example>",
+      "subject": "Application received for Software Engineer at Solstice Energy",
+      "body": "Thank you for applying to Solstice Energy. Your application for the Software Engineer role on the grid optimization team has been received."
+    },
+    {
+      "id": "summit-001",
+      "thread": "summit",
+      "daysAgo": 3.3,
+      "from": "Summit Logistics Careers <careers@summitlogistics.example>",
+      "subject": "Thanks for applying to Summit Logistics",
+      "body": "Thank you for your application to Summit Logistics. We have received your application for the Junior Software Developer role."
+    },
+    {
+      "id": "tidepool-001",
+      "thread": "tidepool",
+      "daysAgo": 8.3,
+      "from": "Tidepool Analytics Careers <careers@tidepool.example>",
+      "subject": "Application received for Machine Learning Engineer at Tidepool Analytics",
+      "body": "Thank you for your application to Tidepool Analytics. Your application for the Machine Learning Engineer role has been received."
+    },
+    {
+      "id": "tidepool-002",
+      "thread": "tidepool",
+      "daysAgo": 0.9,
+      "from": "Tidepool Analytics Careers <careers@tidepool.example>",
+      "subject": "Your application to Tidepool Analytics",
+      "body": "Hi Alex, thank you for your interest in Tidepool Analytics. After reviewing your application, we have decided not to move forward for the Machine Learning Engineer role."
+    },
+    {
+      "id": "vela-001",
+      "thread": "vela",
+      "daysAgo": 5.2,
+      "from": "Vela Mobility Careers <careers@velamobility.example>",
+      "subject": "Thanks for applying to Vela Mobility",
+      "body": "Thank you for your application to Vela Mobility. We have received your application for the Mobile Engineer role."
+    },
+    {
+      "id": "vela-002",
+      "thread": "vela",
+      "daysAgo": 1.2,
+      "from": "Hana Sato <hana.sato@velamobility.example>",
+      "subject": "Interview for Mobile Engineer at Vela Mobility",
+      "body": "Hi Alex, we'd love to schedule a first interview for the Mobile Engineer role at Vela Mobility. Please reply with your availability for next week."
+    }
+  ]
+}

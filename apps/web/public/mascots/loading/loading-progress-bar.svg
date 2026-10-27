@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Inbox Buddy Progress Loading</title>
+  <desc id="desc">Pixel inbox buddy above an animated progress bar.</desc>
+  <style>
+    .buddy { animation: bob 1.4s steps(2, end) infinite; }
+    .fill { animation: load 2s steps(5, end) infinite; transform-origin: 42px 82px; }
+    .eye-shine { animation: blink 4s steps(1, end) infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes load { 0% { transform: scaleX(.12); } 100% { transform: scaleX(1); } }
+    @keyframes blink { 0%, 88%, 100% { opacity: 1; } 90%, 94% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .buddy, .fill, .eye-shine { animation: none; }
+    }
+  </style>
+  <g class="buddy">
+    <rect x="52" y="22" width="56" height="40" fill="#2563eb"/>
+    <rect x="58" y="28" width="44" height="8" fill="#dbeafe"/>
+    <rect x="58" y="36" width="22" height="16" fill="#bfdbfe"/>
+    <rect x="80" y="36" width="22" height="16" fill="#93c5fd"/>
+    <rect x="64" y="14" width="10" height="10" fill="#0f172a"/>
+    <rect x="86" y="14" width="10" height="10" fill="#0f172a"/>
+    <g class="eye-shine">
+      <rect x="66" y="16" width="5" height="5" fill="#ffffff"/>
+      <rect x="88" y="16" width="5" height="5" fill="#ffffff"/>
+    </g>
+    <rect x="72" y="48" width="16" height="6" fill="#0f172a"/>
+    <rect x="44" y="36" width="8" height="18" fill="#2563eb"/>
+    <rect x="108" y="36" width="8" height="18" fill="#2563eb"/>
+    <rect x="64" y="62" width="12" height="6" fill="#1e40af"/>
+    <rect x="84" y="62" width="12" height="6" fill="#1e40af"/>
+  </g>
+  <rect x="40" y="78" width="80" height="10" fill="#dbeafe"/>
+  <rect class="fill" x="42" y="80" width="76" height="6" fill="#2563eb"/>
+</svg>

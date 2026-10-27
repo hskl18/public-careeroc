@@ -1,0 +1,412 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    # A version tag runs every check first, then publishes the container images.
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  PNPM_VERSION: 10.34.9
+  NODE_VERSION: 26
+  AUTH_URL: https://careeroc.example.com
+  NEXTAUTH_URL: https://careeroc.example.com
+
+jobs:
+  agent-runtime:
+    name: LangGraph runtime lint and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: careeroc_agent_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d careeroc_agent_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CAREEROC_AGENT_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/careeroc_agent_test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install uv
+        run: python -m pip install uv==0.13.6
+
+      - name: Install locked agent runtime dependencies
+        working-directory: services/agent-runtime
+        run: uv sync --frozen --all-groups
+
+      - name: Lint agent runtime
+        working-directory: services/agent-runtime
+        run: uv run ruff check . && uv run ruff format --check .
+
+      - name: Test agent runtime
+        working-directory: services/agent-runtime
+        run: uv run pytest
+
+      - name: Build agent runtime image
+        run: docker build --tag careeroc-agent-runtime:test services/agent-runtime
+
+  deployment-config:
+    name: Deployment config validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v2
+
+      - name: Validate AWS configuration
+        run: |
+          tofu fmt -check -recursive infra
+          tofu -chdir=infra/aws init -backend=false -input=false
+          tofu -chdir=infra/aws validate
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      - name: Lint and validate the Helm chart
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | tar -xz kubeconform
+          helm lint deploy/helm/careeroc
+          helm template careeroc deploy/helm/careeroc | ./kubeconform -strict -summary
+          helm template careeroc deploy/helm/careeroc --set demoMode=false --set allowedEmailDomains=example.com | ./kubeconform -strict -summary
+
+  compose-smoke:
+    name: Docker Compose demo smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Start the demo stack
+        run: docker compose --profile full up -d --build --wait --wait-timeout 600
+
+      - name: Run the demo smoke test
+        run: scripts/smoke-demo.sh
+
+      - name: Show service logs
+        if: failure()
+        run: docker compose --profile full logs --tail 200
+
+  kubernetes-smoke:
+    name: Helm chart smoke test on kind
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: careeroc-smoke
+
+      - name: Build images and load them into kind
+        run: |
+          docker build -t careeroc/api:smoke -f apps/api/Dockerfile .
+          docker build -t careeroc/web:smoke -f apps/web/Dockerfile .
+          docker build -t careeroc/agent-runtime:smoke services/agent-runtime
+          for service in api web agent-runtime; do
+            kind load docker-image "careeroc/${service}:smoke" --name careeroc-smoke
+          done
+
+      - name: Install the chart and run the demo smoke test
+        run: scripts/smoke-kubernetes.sh
+
+  backend:
+    name: Backend test and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: careeroc
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d careeroc"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__Careeroc: Host=localhost;Port=5432;Database=careeroc;Username=postgres;Password=postgres
+      CAREEROC_TEST_POSTGRES: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=postgres
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore backend dependencies
+        run: dotnet restore Careeroc.sln
+
+      - name: Run backend tests
+        run: dotnet test Careeroc.sln --configuration Release --no-restore
+
+      - name: Publish API artifact
+        run: dotnet publish apps/api/Careeroc.Api.csproj --configuration Release --no-restore --output "$RUNNER_TEMP/careeroc-api-publish"
+
+      - name: Upload API publish output
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: careeroc-api-publish
+          path: ${{ runner.temp }}/careeroc-api-publish
+          retention-days: 3
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
+        run: pnpm --dir apps/web lint
+
+      - name: Run frontend unit tests
+        run: pnpm --dir apps/web test:unit
+
+      - name: Build frontend
+        env:
+          AUTH_SECRET: ci-build-only-auth-secret-do-not-use-in-production
+          NEXTAUTH_SECRET: ci-build-only-auth-secret-do-not-use-in-production
+          AUTH_GOOGLE_ID: ci-build-only-google-client-id
+          AUTH_GOOGLE_SECRET: ci-build-only-google-client-secret
+          ACCESS_ALLOWED_DOMAINS: example.com
+        run: pnpm --dir apps/web build
+
+      - name: Check frontend bundle budget
+        run: pnpm --dir apps/web bundle:budget
+
+  contract:
+    name: API contract drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - backend
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: careeroc
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d careeroc"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__Careeroc: Host=localhost;Port=5432;Database=careeroc;Username=postgres;Password=postgres
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download API publish output
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: careeroc-api-publish
+          path: ${{ runner.temp }}/careeroc-api-publish
+
+      - name: Check OpenAPI TypeScript schema drift
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Development
+          SyncWorker__Enabled: "false"
+          Database__ApplyMigrationsOnStartup: "true"
+        run: |
+          dotnet "$RUNNER_TEMP/careeroc-api-publish/Careeroc.Api.dll" --urls http://localhost:5114 > "$RUNNER_TEMP/careeroc-api.log" 2>&1 &
+          api_pid="$!"
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+
+          for _ in {1..30}; do
+            if curl -fsS http://localhost:5114/health > /dev/null; then
+              pnpm --dir apps/web check:api
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/careeroc-api.log"
+          exit 1
+
+  multi-agent-e2e:
+    name: Multi-agent full-stack E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: careeroc_e2e
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d careeroc_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CAREEROC_E2E_CONNECTION_STRING: Host=localhost;Port=5432;Database=careeroc_e2e;Username=postgres;Password=postgres
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm --dir apps/web exec playwright install --with-deps chromium
+
+      - name: Run dedicated multi-agent E2E
+        run: pnpm e2e:multi-agent
+
+      - name: Upload E2E failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: multi-agent-e2e-failure
+          path: |
+            .artifacts/e2e/multi-agent/
+            apps/web/test-results/
+            apps/web/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  images:
+    name: Container images
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - agent-runtime
+      - deployment-config
+      - compose-smoke
+      - kubernetes-smoke
+      - backend
+      - frontend
+      - contract
+      - multi-agent-e2e
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/images.yml

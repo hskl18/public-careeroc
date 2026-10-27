@@ -1,57 +1,98 @@
 # Security Policy
 
-CareerOS is an open-source, local-workspace product. The public repo is
-sanitized by default and should not contain real user data, Gmail content,
-OAuth tokens, deployment secrets, database exports, or local workspace artifacts.
+This policy covers careeroc.
 
-## Boundaries
+## Scope
 
-- The default workspace must work without hosted provider credentials.
-- Gmail is optional and disabled by default. The local demo supports readonly
-  Gmail OAuth only after the user configures local Google credentials.
-- Gmail OAuth tokens must stay in the local `.careeros-data/gmail-oauth.json` file as a versioned AES-GCM envelope.
-- Token envelopes include a key identifier, use atomic replacement, and may be recovered with one explicitly configured previous key during rotation.
-- Corruption, missing keys, expired refresh credentials, and provider authorization failures must produce redacted reconnect diagnostics.
-- OAuth tokens must never be included in workspace export/import, fixtures, screenshots, docs, commits, or generated release artifacts.
-- Gmail OAuth callback handling validates local state and redirects with
-  sanitized statuses only. Provider raw errors and token responses must not be
-  echoed into the UI or logs intended for public sharing.
-- Model traces should store provider, model tag, purpose, confidence, latency,
-  bounded errors, and redacted evidence snippets. They should not store full
-  source bodies, full prompts, raw model responses, or OAuth tokens.
-- Local audit events are for observability only. They should store bounded
-  action/status/source metadata and must not contain raw Gmail bodies, prompts,
-  model responses, OAuth tokens, API keys, or provider secrets.
-- Low-confidence career state changes must go through a review gate instead of
-  silently mutating applications or reminders.
-- State-changing local API routes reject cross-origin browser requests. Direct
-  local CLI calls without an `Origin` header are still allowed for development.
-- Workspace JSON import accepts only the normalized CareerOS export shape and
-  rejects private paths, OAuth/token/provider-key fields, raw inbox bodies, full
-  prompts, raw model responses, secret-looking values, and oversized dumps
-  before writing local state.
-- Ollama/Gemma status checks only connect to Ollama Cloud at
-  `https://ollama.com/api`. User-entered model endpoints are blocked to avoid
-  turning model setup into a generic outbound fetch surface.
-- Local workspace files under `.careeros-data/` are user data and must stay out
-  of git.
+This repository is the open-source reference implementation of careeroc.
+Auth, data isolation, OAuth, personal access tokens, the agent runtime boundary, and admin operations are treated as security-sensitive.
 
-## Supported Versions
-
-The public repository is pre-1.0. Security fixes should target `main`.
+Only the latest `main` is supported for security fixes.
+The trust boundaries and failure modes are described in [DESIGN.md](DESIGN.md#trust-boundaries).
 
 ## Reporting
 
-Open a GitHub security advisory or private issue with enough reproduction detail
-to verify the problem. Do not include real Gmail content, OAuth tokens, API keys,
-or private database files in reports.
+Do not open a public GitHub issue for vulnerabilities involving auth bypass, cross-user access, OAuth flows, tokens, or secrets.
 
-## Public Release Checklist
+Report them through GitHub's private vulnerability reporting: the **Security** tab of this repository, then **Report a vulnerability**.
 
-- Run a secret scan before publishing.
-- Confirm `.env*` files are excluded except `.env.example`.
-- Confirm screenshots and fixtures use fake or explicitly sanitized data.
-- Confirm no database dumps, SQLite files, Gmail exports, OAuth tokens, or local
-  logs are present.
-- Confirm public docs do not expose private admin accounts, API keys, or
-  provider dashboard URLs.
+When reporting a bug, include:
+
+- affected environment and commit/branch
+- exact endpoint, page, or workflow involved
+- reproduction steps
+- expected impact
+- whether secrets, user data, or cross-user access were involved
+
+## Current Controls
+
+Identity and access:
+
+- Google sign-in or the demo provider in `apps/web`, with protected workspace routes and an email or domain allowlist enforced in both the web app and the API
+- a same-origin Next.js proxy for all browser-to-API traffic, with HMAC-signed user context using `CAREEROC_API_AUTH_SECRET` and an origin check on writes
+- user-scoped ownership checks on every query and mutation, and `users.role` admin checks on `/api/admin/*`
+- the Gmail OAuth callback reaches the API through the web app, signed as the signed-in user, and the API completes only a connection that same user started; return paths are limited to this site
+- secure Auth.js cookie settings in production (`secure`, `httpOnly` where appropriate, `sameSite=lax`)
+
+Assistants and agents:
+
+- read-only personal access tokens for `/mcp` and `/agent/*`: SHA-256 hashed at rest, shown once, expiring after 1 to 365 days, at most 10 active per user, revocable, rechecked against the allowlist on each use, and refused from browser origins
+- an agent runtime that receives bounded snapshots over a required shared secret and refuses every call when none is configured; it never holds careeroc's database credentials, raw email, or OAuth tokens, and keeps its checkpoints in a database of its own
+- agents only propose writes: reminders from a review are created by the API after the user approves them and after it checks each application belongs to that user
+- A2A callers are authorized by the API through the forwarded token, each caller sees only their own tasks, and A2A reviews never pause for or apply a decision
+- the evidence gate keeps only citations it can find in the snapshot and reminder proposals for applications in it, scales confidence by the grounded share, and sends anything else to a person
+
+Abuse and operations:
+
+- per-user rate limits for signed traffic and per-IP limits for anonymous traffic; anonymous and rate-limited rejections are logged, not stored, so they cannot fill the database
+- demo identities on a reserved `.example` domain that cannot connect Gmail or change backfill settings, an hourly cap on new demo workspaces, and deletion after 24 hours
+- durable audit rows with bounded detail for signed mutations and admin actions, and model-call rows with tokens, cost, latency, and outcome but no prompts or email bodies
+- one narrow admin repair action: retrying one failed processing job per confirmed, audited request
+- production fail-fast checks for missing or weak secrets, development fallbacks, non-HTTPS public URLs, and a missing access policy
+- the `local-compose-only-*` fallback secrets in `docker-compose.yml` are refused by the API and the web app once real accounts can sign in, and Compose publishes ports on 127.0.0.1 only
+- corrections are written to the shared parser guidance file only when `Ollama__UserFeedbackFilePath` is set, which is meant for single-user installs
+
+## Deployment Requirements
+
+These controls are necessary but not sufficient on their own.
+Production deployments should also enforce:
+
+- HTTPS end to end, or trusted TLS termination directly in front of the app
+- WAF/CDN or equivalent edge filtering
+- secret storage in a real secret manager
+- intentional secret rotation for `AUTH_SECRET`, `CAREEROC_API_AUTH_SECRET`, and the agent shared secret
+- centralized log retention and redaction
+- locked-down CORS origins
+- a configured access allowlist, or demo mode, before the deployment is public
+- the agent runtime on a private network, with its checkpoint database reachable only by its own role
+
+## Known Limitations
+
+- no full RBAC permission matrix; admin is a first-party `admin`/`user` role boundary
+- the access allowlist is config-backed, not managed from an admin UI
+- the MCP server uses static bearer tokens rather than OAuth 2.1 authorization
+- the A2A task store is in memory, so task history is lost on restart
+- no MFA or device/session management beyond Google account security
+- edge abuse protection still depends on deployment infrastructure, not only application code
+- one workspace-style auth model, not a multi-tenant admin product
+
+## Secrets
+
+Minimum expectations:
+
+- use random secrets with at least 32 characters
+- never expose `CAREEROC_API_AUTH_SECRET` to the browser
+- do not commit real `.env` files
+- do not reuse the `local-compose-only-*` values from `docker-compose.yml` anywhere other people can reach
+
+## Verification
+
+After changing auth, proxying, OAuth, tokens, or workflow mutation code, rerun at least:
+
+```bash
+pnpm --dir apps/web lint
+pnpm --dir apps/web build
+dotnet test Careeroc.sln
+```
+
+Then walk sign-in, the review queue, and application detail end to end, and run `scripts/smoke-demo.sh` against the Compose stack.

@@ -1,0 +1,117 @@
+{{- /*
+Services keep the short names the apps already use (http://api:8080, http://agent-runtime:8123),
+so install one release per namespace.
+*/ -}}
+{{- $root := . -}}
+{{- $publicUrl := include "careeroc.publicUrl" . -}}
+{{- $components := dict
+  "web" (dict "port" 3000 "ready" "/" "live" "/" "values" .Values.web)
+  "api" (dict "port" 8080 "ready" "/health/ready" "live" "/health" "values" .Values.api)
+  "agent-runtime" (dict "port" 8123 "ready" "/health/ready" "live" "/health" "values" .Values.agentRuntime)
+-}}
+{{- range $name, $component := $components }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "careeroc.labels" $root | nindent 4 }}
+    app.kubernetes.io/name: {{ $name }}
+spec:
+  replicas: {{ $component.values.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "careeroc.labels" $root | nindent 8 }}
+        app.kubernetes.io/name: {{ $name }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $name }}
+          image: "{{ $root.Values.images.registry }}/{{ $name }}:{{ $root.Values.images.tag | default $root.Chart.AppVersion }}"
+          imagePullPolicy: {{ $root.Values.images.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $component.port }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: PORT
+              value: {{ $component.port | quote }}
+            {{- if eq $name "api" }}
+            - { name: ASPNETCORE_ENVIRONMENT, value: Production }
+            - { name: ASPNETCORE_FORWARDEDHEADERS_ENABLED, value: "true" }
+            - { name: Database__ApplyMigrationsOnStartup, value: "true" }
+            - { name: API_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
+            - { name: NEXT_PUBLIC_SITE_URL, value: {{ $publicUrl | quote }} }
+            - { name: ACCESS_ALLOWED_DOMAINS, value: {{ ternary "demo.careeroc.example" $root.Values.allowedEmailDomains $root.Values.demoMode | quote }} }
+            - { name: Demo__Enabled, value: {{ $root.Values.demoMode | quote }} }
+            - { name: AgentRuntime__Enabled, value: "true" }
+            - { name: AgentRuntime__BaseUrl, value: "http://agent-runtime:8123" }
+            - { name: SyncWorker__Enabled, value: {{ not $root.Values.demoMode | quote }} }
+            {{- include "careeroc.secretEnv" (list "DATABASE_URL" $root.Values.existingSecret "DATABASE_URL") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "CAREEROC_API_AUTH_SECRET" $root.Values.existingSecret "CAREEROC_API_AUTH_SECRET") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "CAREEROC_TOKEN_PROTECTION_KEY" $root.Values.existingSecret "CAREEROC_TOKEN_PROTECTION_KEY") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "AgentRuntime__SharedSecret" $root.Values.existingSecret "AGENT_SHARED_SECRET") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "Google__ClientId" $root.Values.existingSecret "GOOGLE_CLIENT_ID") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "Google__ClientSecret" $root.Values.existingSecret "GOOGLE_CLIENT_SECRET") | nindent 12 }}
+            {{- else if eq $name "agent-runtime" }}
+            - { name: CAREEROC_AGENT_PROVIDER, value: {{ $root.Values.agentProvider | quote }} }
+            - { name: CAREEROC_AGENT_API_BASE_URL, value: "http://api:8080" }
+            - { name: CAREEROC_AGENT_PUBLIC_URL, value: {{ $publicUrl | quote }} }
+            # Optional and separate from DATABASE_URL; without it, paused reviews are kept in memory.
+            - name: CAREEROC_AGENT_CHECKPOINT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $root.Values.existingSecret }}
+                  key: AGENT_CHECKPOINT_DATABASE_URL
+                  optional: true
+            {{- include "careeroc.secretEnv" (list "CAREEROC_AGENT_SHARED_SECRET" $root.Values.existingSecret "AGENT_SHARED_SECRET") | nindent 12 }}
+            {{- else }}
+            - { name: DEMO_MODE, value: {{ $root.Values.demoMode | quote }} }
+            - { name: AUTH_URL, value: {{ $publicUrl | quote }} }
+            - { name: NEXT_PUBLIC_SITE_URL, value: {{ $publicUrl | quote }} }
+            - { name: API_BASE_URL, value: "http://api:8080" }
+            - { name: API_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
+            - { name: AGENT_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
+            - { name: ACCESS_ALLOWED_DOMAINS, value: {{ $root.Values.allowedEmailDomains | quote }} }
+            {{- include "careeroc.secretEnv" (list "AUTH_SECRET" $root.Values.existingSecret "AUTH_SECRET") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "CAREEROC_API_AUTH_SECRET" $root.Values.existingSecret "CAREEROC_API_AUTH_SECRET") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "AUTH_GOOGLE_ID" $root.Values.existingSecret "GOOGLE_CLIENT_ID") | nindent 12 }}
+            {{- include "careeroc.secretEnv" (list "AUTH_GOOGLE_SECRET" $root.Values.existingSecret "GOOGLE_CLIENT_SECRET") | nindent 12 }}
+            {{- end }}
+          # Readiness includes the database; liveness does not, so an outage never restarts pods.
+          readinessProbe:
+            httpGet: { path: {{ $component.ready }}, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: {{ $component.live }}, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            {{- toYaml $component.values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "careeroc.labels" $root | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+  ports:
+    - name: http
+      port: {{ $component.port }}
+      targetPort: http
+{{- end }}

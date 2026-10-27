@@ -1,49 +1,40 @@
 .DS_Store
-
-# Secrets and local env
 .env
-.env.*
-!.env.example
+.env.local
+.env.deploy
+.env.*.local
 
-# Local runtime and generated artifacts
+# Local runtime / diagnostics
 .artifacts/
-.careeros/
-.careeros-data/
+.careeroc/
 .dev/
 .tmp/
-tmp/
-coverage/
-playwright-report/
-test-results/
-screenshots/
 
-# Local agent/workspace notes
-CLAUDE.md
+.idea/
+.vscode/
 .claude/
-.codex/
 
-# JS/Next
+bin/
+obj/
+
 node_modules/
 .next/
 out/
-tsconfig.tsbuildinfo
 
-# .NET
-bin/
-obj/
-TestResults/
+coverage/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
 
-# IDE
-.idea/
-.vscode/
+apps/web/node_modules/
+apps/web/.next/
 
-# Data exports
-*.sqlite
-*.db
-*.dump
-*.bak
-*.backup
-*.csv
-*.tsv
-.vercel
-.env*.local
+infra/.aws-sam/
+
+# OpenTofu / Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
