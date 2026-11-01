@@ -42,7 +42,7 @@
     "release:check": "pnpm ci:public && pnpm smoke:ollama"
   },
   "dependencies": {
-    "next": "15.5.25",
+    "next": "15.5.28",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
