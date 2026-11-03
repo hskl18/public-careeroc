@@ -219,7 +219,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <AppNav mode="bottom" />
           </div>
         </div>
-        <SpeedInsights />
+        {process.env.VERCEL ? <SpeedInsights /> : null}
       </body>
     </html>
   );
