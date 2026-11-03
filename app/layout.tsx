@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -218,6 +219,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <AppNav mode="bottom" />
           </div>
         </div>
+        <SpeedInsights />
       </body>
     </html>
   );

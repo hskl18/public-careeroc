@@ -42,6 +42,7 @@
     "release:check": "pnpm ci:public && pnpm smoke:ollama"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "next": "15.5.25",
     "react": "19.2.8",
     "react-dom": "19.2.8"
