@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import uuid
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -103,6 +104,49 @@ async def test_review_endpoint_uses_postgres_checkpoints_when_configured() -> No
     assert health.json()["checkpointMode"] == "postgres"
     assert ready.status_code == 200
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_a_paused_review_resumes_after_the_runtime_restarts() -> None:
+    database_url = os.getenv("CAREEROC_AGENT_TEST_DATABASE_URL")
+    if not database_url:
+        pytest.skip("CAREEROC_AGENT_TEST_DATABASE_URL is not configured")
+
+    from careeroc_agent_runtime.deterministic import DeterministicAgentSuite
+
+    settings = AgentRuntimeSettings(
+        checkpoint_database_url=database_url, provider="deterministic", shared_secret="test-secret"
+    )
+    thread_id = f"review:restart-{uuid.uuid4()}"
+    paused_request = build_request(thread_id).model_copy(update={"latest_resume": None})
+
+    first = create_app(settings=settings, suite=DeterministicAgentSuite())
+    async with first.router.lifespan_context(first):
+        async with AsyncClient(
+            transport=ASGITransport(app=first), base_url="http://test"
+        ) as client:
+            paused = await client.post(
+                "/v1/resume-mailbox-review",
+                headers=SECRET,
+                json=paused_request.model_dump(mode="json", by_alias=True),
+            )
+
+    # A second app shares nothing with the first except the checkpoint database.
+    second = create_app(settings=settings, suite=DeterministicAgentSuite())
+    async with second.router.lifespan_context(second):
+        async with AsyncClient(
+            transport=ASGITransport(app=second), base_url="http://test"
+        ) as client:
+            decided = await client.post(
+                f"/v1/resume-mailbox-review/{thread_id}/decision",
+                headers=SECRET,
+                json={"approved": True, "note": "Still here."},
+            )
+
+    assert paused.json()["status"] == "review_required"
+    assert decided.status_code == 200
+    assert decided.json()["status"] == "completed"
+    assert decided.json()["trace"][-1]["reason"] == "Still here."
 
 
 async def test_decision_endpoint_resumes_only_a_paused_review() -> None:

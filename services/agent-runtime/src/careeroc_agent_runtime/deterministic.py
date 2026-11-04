@@ -129,7 +129,10 @@ class DeterministicAgentSuite:
             summary=f"Reviewed resume '{resume.title}' against {len(resume.skills)} listed skills.",
             findings=findings,
             recommended_actions=actions,
-            evidence_references=[f"resume:{resume.title}", f"resume_score:{resume.score}"],
+            evidence_references=[
+                f"latestResume:{resume.title}",
+                f"latestResumeScore:{resume.score}",
+            ],
             confidence=0.8,
         )
 
@@ -180,6 +183,6 @@ class DeterministicAgentSuite:
             summary="Prioritized reversible actions from positive outcomes and pending signals.",
             findings=findings,
             recommended_actions=actions,
-            evidence_references=[f"role:{role}" for role in roles],
+            evidence_references=[f"topTargetRoles:{role}" for role in roles],
             confidence=0.75 if roles else 0.4,
         )

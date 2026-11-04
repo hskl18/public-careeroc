@@ -46,10 +46,13 @@ case "$runtime" in langgraph.*) ;; *) fail "review did not run on the LangGraph 
 pass "multi-agent review waits for approval"
 
 proposal=$(web "$WEB_URL/api/careeroc/api/profile/memory/proposals" | json 'next(e["id"] for e in d if e["kind"] == "orchestrator")')
-created=$(web -X PATCH -H "Origin: $SITE_ORIGIN" -H 'content-type: application/json' -d '{"action":"confirm"}' \
-  "$WEB_URL/api/careeroc/api/profile/memory/proposals/$proposal" | json 'json.loads(d["value"])["remindersCreated"]')
+approved=$(web -X PATCH -H "Origin: $SITE_ORIGIN" -H 'content-type: application/json' -d '{"action":"confirm"}' \
+  "$WEB_URL/api/careeroc/api/profile/memory/proposals/$proposal")
+created=$(printf '%s' "$approved" | json 'json.loads(d["value"])["remindersCreated"]')
 [ "$created" -ge 1 ] || fail "approving the review created no reminders"
-pass "approved the review: $created reminders created"
+last_step=$(printf '%s' "$approved" | json 'json.loads(d["value"])["trace"]["steps"][-1]["stage"]')
+[ "$last_step" = human_review ] || fail "the paused graph did not resume after approval, its trace ends at $last_step"
+pass "approved the review: $created reminders created, graph resumed"
 
 created_token=$(web -X POST -H "Origin: $SITE_ORIGIN" -H 'content-type: application/json' \
   -d '{"name":"smoke test","expiresInDays":1}' "$WEB_URL/api/careeroc/api/profile/access-tokens")

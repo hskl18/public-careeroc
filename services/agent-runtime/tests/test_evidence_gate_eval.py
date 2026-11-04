@@ -47,7 +47,7 @@ class ScriptedSuite:
 
 CASES = {
     "grounded citations pass": (
-        ["Roblox · interviewing", "resume_score:84"],
+        ["Roblox · interviewing", "latestResumeScore:84"],
         0.9,
         [],
         {},
@@ -61,6 +61,21 @@ CASES = {
         ("review_required", 1, 0.45, []),
     ),
     "only invented citations": (["Stripe · offer"], 0.95, [], {}, ("review_required", 0, 0, [])),
+    "a field name is not evidence": (
+        ["status", "company"],
+        0.9,
+        [],
+        {},
+        ("review_required", 0, 0, []),
+    ),
+    "part of a real word is not evidence": (["Rob"], 0.9, [], {}, ("review_required", 0, 0, [])),
+    "an unknown label cannot launder a value": (
+        ["Google: interviewing"],
+        0.9,
+        [],
+        {},
+        ("review_required", 0, 0, []),
+    ),
     "a reminder for an unknown application is dropped": (
         ["Roblox · interviewing"],
         0.9,
@@ -120,3 +135,19 @@ async def test_evidence_gate(references, confidence, reminders, application, exp
     assert [proposal["applicationId"] for proposal in review["proposedReminders"]] == kept_reminders
     # Anything that is not plainly grounded pauses on a checkpoint for a person to decide.
     assert bool((await graph.aget_state(config)).interrupts) == (status == "review_required")
+
+
+@pytest.mark.asyncio
+async def test_the_gate_trace_names_every_citation_it_dropped() -> None:
+    request = build_request("review:eval-002")
+    suite = ScriptedSuite(["Roblox · interviewing", "Stripe · offer"], 0.9, [])
+    graph = build_graph(suite, InMemorySaver())
+
+    state = await graph.ainvoke(
+        {"request": request.model_dump(mode="json", by_alias=True), "analyses": [], "trace": []},
+        config={"configurable": {"thread_id": request.thread_id}},
+    )
+
+    assert state["review"]["trace"][-1]["facts"] == [
+        {"label": "Dropped citation", "value": "Stripe · offer"}
+    ]

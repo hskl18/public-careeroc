@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import operator
 import re
 from typing import Annotated, Any, TypedDict
@@ -20,6 +19,8 @@ from careeroc_agent_runtime.contracts import (
     TraceStep,
 )
 from careeroc_agent_runtime.telemetry import agent_span
+
+_WORD = re.compile(r"[^\W_]+")
 
 
 class CareerGraphState(TypedDict, total=False):
@@ -44,19 +45,33 @@ def _deduplicate(values: list[str], limit: int) -> list[str]:
     return result
 
 
+def _collect_terms(node: Any, labels: set[str], words: set[str]) -> None:
+    if isinstance(node, dict):
+        labels.update(key.casefold() for key in node)
+        for child in node.values():
+            _collect_terms(child, labels, words)
+    elif isinstance(node, list):
+        for child in node:
+            _collect_terms(child, labels, words)
+    elif node is not None and not isinstance(node, bool):
+        words.update(_WORD.findall(str(node).casefold()))
+
+
 def _grounded_references(references: list[str], request: ResumeMailboxReviewRequest) -> list[str]:
-    # shortcut: a reference counts when every word in it appears somewhere in the snapshot, which
-    # catches invented companies and numbers but not a wrong pairing of real ones. Upgrade to
-    # structured references (application id plus field) if pairings start to matter.
-    snapshot = json.dumps(
-        request.model_dump(mode="json", by_alias=True), ensure_ascii=False
-    ).casefold()
-    return [
-        reference
-        for reference in references
-        if (words := re.findall(r"[^\W_]+", reference.casefold()))
-        and all(word in snapshot for word in words)
-    ]
+    # shortcut: a reference counts when every word in it is a whole word among the snapshot's
+    # values, which catches invented companies and numbers but not a wrong pairing of real ones.
+    # Upgrade to structured references (application id plus field) if pairings start to matter.
+    labels: set[str] = set()
+    words: set[str] = set()
+    _collect_terms(request.model_dump(mode="json", by_alias=True), labels, words)
+
+    def grounded(reference: str) -> bool:
+        label, separator, value = reference.partition(":")
+        claimed = value if separator and label.strip().casefold() in labels else reference
+        found = _WORD.findall(claimed.casefold())
+        return bool(found) and all(word in words for word in found)
+
+    return [reference for reference in references if grounded(reference)]
 
 
 def _grounded_reminders(
@@ -169,7 +184,15 @@ def build_graph(
                 f"remindersProposed={len(review.proposed_reminders)}; "
                 f"remindersKept={len(reminders)}"
             ),
-            facts=[TraceFact(label="Reminder", value=reminder.title) for reminder in reminders],
+            facts=[
+                *(TraceFact(label="Reminder", value=reminder.title) for reminder in reminders),
+                # The synthesis step shows what the model claimed; this shows what the gate refused.
+                *(
+                    TraceFact(label="Dropped citation", value=reference[:1000])
+                    for reference in claimed_references
+                    if reference not in evidence_references
+                ),
+            ][:12],
         )
         response = ResumeMailboxReviewResponse(
             thread_id=request.thread_id,

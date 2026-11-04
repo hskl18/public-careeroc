@@ -7,7 +7,7 @@ For the interface, read [UI.md](UI.md); for code layout and data flow, read [doc
 
 - Turn a noisy recruiting inbox into a correct application pipeline.
   A wrong write costs more than a missed one, so uncertain evidence waits for a person.
-- Make every agent decision inspectable: inputs, confidence, evidence, and the trace are visible in the app.
+- Make agent decisions inspectable: the summary, reason, and confidence of each step are visible in the app, and evidence travels in the stored trace.
 - Let agents propose work, never perform it: a person approves, and the API writes.
 - Let people use their own assistant with the data, without giving any assistant write access.
 - Run anywhere from one compose file, and run without a model or API key.
@@ -64,7 +64,10 @@ A correction in the review queue runs the same workflow rules again, so automati
 
 ### Multi-agent review
 
-The graph has three specialists that run in parallel, a supervisor, a deterministic evidence gate, and a human-review interrupt:
+The graph has three specialists that run in parallel, a supervisor, a deterministic evidence gate, and a human-review interrupt.
+It is a fixed workflow with model nodes: the fan-out is hard-coded, the specialists have no tools, and no model decides what runs next.
+"Agent" here means a node with a role and a typed output, which is what lets code check its work.
+
 
 ```mermaid
 flowchart LR
@@ -173,7 +176,9 @@ It works for read-only reviews, but a graph that proposes writes needs the pause
 
 ### Grounding is checked by code, not by the model
 
-The evidence gate keeps a citation only when every word in it appears in the snapshot, multiplies the model's confidence by the share of citations kept, and keeps a reminder proposal only for an application in the snapshot that has no open reminder.
+The evidence gate keeps a citation only when every word in it is a whole word among the snapshot's values, multiplies the model's confidence by the share of citations kept, and keeps a reminder proposal only for an application in the snapshot that has no open reminder.
+A citation may start with a snapshot field name as its label, as in `latestResumeScore:84`, and the gate's trace step names every citation it dropped.
+The gate does not read the free-text summary, findings, or next actions, so a model can still state something false there; only the citations and proposals are checked.
 **Rejected:** asking a model to grade its own grounding.
 The check is crude (it catches invented companies and numbers, not a wrong pairing of real ones), but it cannot be talked out of its answer.
 
@@ -189,6 +194,7 @@ The A2A server lives in the Python runtime because that is where the graph runs 
 
 The graph can run with a suite that computes every finding and proposal from the snapshot.
 The demo and CI need no model, cost nothing, and give the same answer every time, and the trace says `deterministic/evidence-v1` so nobody mistakes it for model output.
+The hosted demo, the README screenshots and trace, the smoke tests, and the evals all run this suite.
 Setting `CAREEROC_AGENT_PROVIDER` to `ollama` or `openai` swaps in model-backed specialists with the same graph and gate.
 
 ### OpenTelemetry everywhere
@@ -260,7 +266,8 @@ flowchart TB
 | Agent output to writes | Typed proposals, the evidence gate, human approval, and an ownership check in the API | A declined suggestion, not a write |
 | Email content to models | Treated as untrusted; typed outputs, confidence gates, review queue | A wrong suggestion or a review item, not a write |
 
-Demo identities cannot connect Gmail or change backfill settings, demo workspaces are capped per hour, and each is deleted after 24 hours.
+Demo identities cannot connect Gmail or change backfill settings, demo workspaces are capped per hour, and each is removed from the product database after 24 hours.
+Its review checkpoints, which hold only the fictional snapshot, stay in the checkpoint database.
 Compose publishes its ports on 127.0.0.1, and its public fallback secrets are refused as soon as real accounts can sign in.
 More detail is in [SECURITY.md](SECURITY.md).
 
@@ -272,7 +279,7 @@ More detail is in [SECURITY.md](SECURITY.md).
 | An agent node hangs or errors | Each attempt has a timeout and one retry; if the graph still fails, the API returns its deterministic review with status `completed_with_fallback` |
 | A review takes longer than its budget | The runtime stops it at 100 seconds, before the API's 120-second timeout, so it never checkpoints a review the API did not store |
 | Agent runtime down, or its checkpoint database down | The same fallback; the runtime's readiness check fails, so it leaves rotation without being restarted |
-| The runtime restarts while a review waits | With a checkpoint database the run resumes; without one the user's decision still applies and only the trace's last step is missing |
+| The runtime restarts while a review waits | With a checkpoint database the run resumes, which [a test](services/agent-runtime/tests/test_app.py) proves by deciding on a second app instance; without one the user's decision still applies and only the trace's last step is missing |
 | The user never decides on a gated review | The review stays pending, the last confirmed review stays in place, and nothing is written |
 | One email has an oversized header or fails to save | Headers are clipped to their columns, the failed changes are discarded, and the job is retried, then marked failed for the admin retry list |
 | A worker dies on a job's last attempt | The job is marked failed instead of staying in processing forever |
@@ -283,7 +290,8 @@ More detail is in [SECURITY.md](SECURITY.md).
 
 ## Evals
 
-**Pipeline.** `eval/pipeline-labels.json` labels the 51-email demo inbox: the expected category and company of 42 recruiting emails, 4 that triage should drop, the 2 that must go to review, and the 20 applications they should produce.
+**Pipeline.** `eval/pipeline-labels.json` labels the 48 inbound emails of the 51-email demo inbox: the expected category and company of 42 recruiting emails, 4 that triage should drop, and the 2 that must go to review, plus the 20 applications they should produce.
+The other 3 emails are the user's own replies, which are processed but not scored.
 `PipelineEvaluationTests` runs the real pipeline on them in CI and fails below the thresholds; `CAREEROC_WRITE_EVAL_RESULTS=1` refreshes [eval/pipeline-results.json](eval/pipeline-results.json).
 The first run found three defects: a scam email dropped by triage, a coding assessment classified as an interview, and an agency named as the employer.
 All metrics are now 1.0, but the labels were written alongside those fixes, so this is a regression guard, not a benchmark.
@@ -295,6 +303,7 @@ All metrics are now 1.0, but the labels were written alongside those fixes, so t
 | Citations that all appear in the snapshot, confidence 0.9 | Completed, confidence 0.9 |
 | One real and one invented company, confidence 0.9 | Invented citation dropped, confidence 0.45, sent to a person |
 | Only invented citations, confidence 0.95 | Nothing kept, confidence 0, sent to a person |
+| A bare field name, part of a real word, or a value behind a made-up label | Nothing kept, confidence 0, sent to a person |
 | A reminder for an application ID the snapshot does not contain | Proposal dropped |
 | A reminder for an application that already has an open reminder | Proposal dropped |
 | A valid reminder, proposed twice | Kept once, and the run pauses for approval |
@@ -315,4 +324,5 @@ The model-backed specialists have no labeled eval of usefulness yet; see future 
 - OAuth 2.1 authorization for the MCP server.
 - A labeled eval set for model-backed reviews, scored for usefulness as well as grounding.
 - More proposal types behind the same approval path, such as a drafted follow-up email.
+- Delete a workspace's checkpoints when its product data is deleted.
 - A database-backed A2A task store and streaming progress for long reviews.

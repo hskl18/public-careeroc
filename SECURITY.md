@@ -45,7 +45,7 @@ Assistants and agents:
 Abuse and operations:
 
 - per-user rate limits for signed traffic and per-IP limits for anonymous traffic; anonymous and rate-limited rejections are logged, not stored, so they cannot fill the database
-- demo identities on a reserved `.example` domain that cannot connect Gmail or change backfill settings, an hourly cap on new demo workspaces, and deletion after 24 hours
+- demo identities on a reserved `.example` domain that cannot connect Gmail or change backfill settings, an hourly cap on new demo workspaces, and removal from the product database after 24 hours
 - the hosted demo's snapshot mode, which holds only recorded fictional data, refuses every write, has no API credentials, and will not start alongside Google sign-in
 - durable audit rows with bounded detail for signed mutations and admin actions, and model-call rows with tokens, cost, latency, and outcome but no prompts or email bodies
 - one narrow admin repair action: retrying one failed processing job per confirmed, audited request
