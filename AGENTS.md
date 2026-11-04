@@ -207,6 +207,7 @@ The main ones:
 - `CAREEROC_TOKEN_PROTECTION_KEY`: encrypts stored Gmail tokens
 - `ACCESS_ALLOWED_EMAILS` / `ACCESS_ALLOWED_DOMAINS`: required outside Development; `ACCESS_ALLOW_ALL_USERS=true` only for an intentionally open deployment
 - `DEMO_MODE` (web) and `Demo__Enabled` (API): per-visitor demo workspaces; set both together
+- `DEMO_SNAPSHOT` (web): with `DEMO_MODE`, serves the recorded read-only demo without an API; see `docs/deploy/README.md`
 - `AgentRuntime__Enabled`, `AgentRuntime__BaseUrl`, `AgentRuntime__SharedSecret`: the API's connection to the agent runtime; the secret is required outside Development
 - `CAREEROC_AGENT_PROVIDER`: `deterministic`, `ollama`, or `openai` for the runtime's specialists
 - `CAREEROC_AGENT_CHECKPOINT_DATABASE_URL`: the runtime's own checkpoint database; without it, checkpoints live in memory

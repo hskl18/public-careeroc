@@ -23,6 +23,7 @@ Admin routes are separated by an API-side role check, because hidden navigation 
 | `/app/settings/data` | Imported-data deletion and inbox purge |
 | `/app/admin` | Configuration checks, queue counts, failed-job retry, and recent model calls; non-admins are redirected |
 | `/analytics`, `/review`, `/app/profile` | Redirect to `/app/analytics`, `/app/review`, and `/app/settings` |
+| `/judge-demo`, `/applications`, `/resume`, `/settings`, `/notifications`, `/agents` | Redirect to `/`, `/app/applications`, `/app/resume`, `/app/settings`, `/app`, and `/tech`, so links to the retired sample demo keep working |
 
 ## API
 

@@ -27,10 +27,10 @@ public sealed class CompanyNameNormalizerTests
     }
 
     [Theory]
-    [InlineData("GEHA", "GEHA")]
-    [InlineData("Carrier Global Corporation", "Carrier Global Corporation")]
-    [InlineData("Bosch", "Bosch")]
-    [InlineData("C3.ai", "C3.ai")]
+    [InlineData("GQMA", "GQMA")]
+    [InlineData("Thornfield Global Corporation", "Thornfield Global Corporation")]
+    [InlineData("Merrow", "Merrow")]
+    [InlineData("Q7.ai", "Q7.ai")]
     [InlineData("Kestrel AI Scheduling", "Kestrel AI")]
     [InlineData("Harborline Talent", "Harborline")]
     [InlineData("harborline", "Harborline")]

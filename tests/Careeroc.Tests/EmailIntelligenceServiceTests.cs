@@ -375,8 +375,8 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "aes-review-001",
-            ThreadId = "thread-aes-review-001",
+            ExternalMessageId = "qrs-review-001",
+            ThreadId = "thread-qrs-review-001",
             Sender = "assessment@example.com",
             Subject = "Complete your assessment",
             ParsedBody = "Please complete the assessment for the internship.",
@@ -400,7 +400,7 @@ public sealed class EmailIntelligenceServiceTests
                 new ParsedRecruitingEmail(
                     EmailCategory.OaInvitation,
                     ApplicationStatus.OaPending,
-                    "The AES Corporation",
+                    "The QRS Corporation",
                     ApplicationDefaults.UnknownRole,
                     true,
                     null,
@@ -608,12 +608,12 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "veeva-relative-due-001",
-            ThreadId = "thread-veeva-relative-due-001",
-            Sender = "recruiting@veeva.com",
+            ExternalMessageId = "alderbrook-relative-due-001",
+            ThreadId = "thread-alderbrook-relative-due-001",
+            Sender = "recruiting@alderbrook.example",
             Subject = "We thought you could be a strong fit for our internship",
-            ParsedBody = "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Veeva Systems. Please reply with your availability by tomorrow morning.",
-            RawBody = "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Veeva Systems. Please reply with your availability by tomorrow morning.",
+            ParsedBody = "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Alderbrook Systems. Please reply with your availability by tomorrow morning.",
+            RawBody = "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Alderbrook Systems. Please reply with your availability by tomorrow morning.",
             ReceivedAtUtc = clock.UtcNow.AddHours(-1)
         };
 
@@ -670,9 +670,9 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "veeva-follow-up-001",
-            ThreadId = "thread-veeva-follow-up-001",
-            Sender = "recruiting@veeva.com",
+            ExternalMessageId = "alderbrook-follow-up-001",
+            ThreadId = "thread-alderbrook-follow-up-001",
+            Sender = "recruiting@alderbrook.example",
             Subject = "Please reply with your availability",
             ParsedBody = "Please reply with your availability by tomorrow morning.",
             RawBody = "Please reply with your availability by tomorrow morning.",
@@ -696,7 +696,7 @@ public sealed class EmailIntelligenceServiceTests
                 new ParsedRecruitingEmail(
                     EmailCategory.RecruiterOutreach,
                     ApplicationStatus.RecruiterContact,
-                    "Veeva Systems",
+                    "Alderbrook Systems",
                     "Software Engineering Internship",
                     true,
                     localDueDate,
@@ -716,7 +716,7 @@ public sealed class EmailIntelligenceServiceTests
         var reminder = Assert.Single(dbContext.Reminders);
         Assert.Equal(expectedDueDateUtc, email.DueDateUtc);
         Assert.Equal(expectedDueDateUtc, reminder.DueAtUtc);
-        Assert.Equal("recruiting@veeva.com", email.ContactEmail);
+        Assert.Equal("recruiting@alderbrook.example", email.ContactEmail);
         Assert.Equal(RecruitingContactType.Recruiter, email.ContactType);
         Assert.Equal("Recruiter", email.ContactRoleHint);
     }
@@ -747,9 +747,9 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "veeva-reply-needed-001",
-            ThreadId = "thread-veeva-reply-needed-001",
-            Sender = "Recruiter <recruiting@veeva.com>",
+            ExternalMessageId = "alderbrook-reply-needed-001",
+            ThreadId = "thread-alderbrook-reply-needed-001",
+            Sender = "Recruiter <recruiting@alderbrook.example>",
             Subject = "Please reply with your availability",
             ParsedBody = "Please reply with your availability for the Software Engineering Internship by tomorrow.",
             RawBody = "Please reply with your availability for the Software Engineering Internship by tomorrow.",
@@ -759,7 +759,7 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "veeva-sent-reply-001",
+            ExternalMessageId = "alderbrook-sent-reply-001",
             ThreadId = inboundEmail.ThreadId,
             Sender = "Jordan Lee <jlee@example.edu>",
             Subject = "Re: Please reply with your availability",
@@ -788,7 +788,7 @@ public sealed class EmailIntelligenceServiceTests
                 new ParsedRecruitingEmail(
                     EmailCategory.RecruiterOutreach,
                     ApplicationStatus.RecruiterContact,
-                    "Veeva Systems",
+                    "Alderbrook Systems",
                     "Software Engineering Internship",
                     true,
                     localDueDate,
@@ -911,7 +911,7 @@ public sealed class EmailIntelligenceServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Trane Technologies",
+            Company = "Everline Technologies",
             Role = "Developer Intern - 2601996",
             Source = "Email",
             Status = ApplicationStatus.Rejected,
@@ -924,12 +924,12 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "trane-survey-001",
-            ThreadId = "thread-trane-survey-001",
-            Sender = "Recruiting@tranetechnologies.com",
+            ExternalMessageId = "everline-survey-001",
+            ThreadId = "thread-everline-survey-001",
+            Sender = "Recruiting@everlinetechnologies.example",
             Subject = "Next steps regarding your candidacy",
-            ParsedBody = "Thank you for your recent interest in joining Trane Technologies. As part of the next steps regarding your candidacy, please complete our recruitment survey.",
-            RawBody = "Thank you for your recent interest in joining Trane Technologies. As part of the next steps regarding your candidacy, please complete our recruitment survey.",
+            ParsedBody = "Thank you for your recent interest in joining Everline Technologies. As part of the next steps regarding your candidacy, please complete our recruitment survey.",
+            RawBody = "Thank you for your recent interest in joining Everline Technologies. As part of the next steps regarding your candidacy, please complete our recruitment survey.",
             ReceivedAtUtc = clock.UtcNow.AddHours(-1)
         };
 
@@ -950,7 +950,7 @@ public sealed class EmailIntelligenceServiceTests
                 new ParsedRecruitingEmail(
                     EmailCategory.GenericUpdate,
                     ApplicationStatus.Applied,
-                    "Trane Technologies",
+                    "Everline Technologies",
                     ApplicationDefaults.UnknownRole,
                     false,
                     null,
@@ -1496,9 +1496,9 @@ public sealed class EmailIntelligenceServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "projectbasta-program-001",
-            ThreadId = "thread-projectbasta-program-001",
-            Sender = "Code2Career <code2career@projectbasta.com>",
+            ExternalMessageId = "projectlantern-program-001",
+            ThreadId = "thread-projectlantern-program-001",
+            Sender = "Lantern Mentors <lantern@projectlantern.example>",
             Subject = "Final Extension Apply for 1on1 Mentorship with Google Engineer + Jobs Board Access!",
             ParsedBody = "We are opening a final application extension for the Spring cohort. This is a career readiness mentorship experience for first-generation computer science students with jobs board access.",
             RawBody = "We are opening a final application extension for the Spring cohort. This is a career readiness mentorship experience for first-generation computer science students with jobs board access.",

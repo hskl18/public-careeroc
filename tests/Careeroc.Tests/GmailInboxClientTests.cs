@@ -358,14 +358,14 @@ public sealed class GmailInboxClientTests
                                     "messages": [
                                       {{BuildCustomMessageJson(
                                           "inbound-1",
-                                          "thread-veeva",
-                                          "Recruiter <recruiting@veeva.com>",
+                                          "thread-alderbrook",
+                                          "Recruiter <recruiting@alderbrook.example>",
                                           "Interview availability",
                                           "Please reply with your availability.",
                                           isSent: false)}},
                                       {{BuildCustomMessageJson(
                                           "sent-1",
-                                          "thread-veeva",
+                                          "thread-alderbrook",
                                           "Jordan Lee <jlee@example.edu>",
                                           "Re: Interview availability",
                                           "Thanks, I am available Tuesday afternoon.",
@@ -385,8 +385,8 @@ public sealed class GmailInboxClientTests
                             Content = new StringContent(
                                 BuildCustomMessageJson(
                                     "inbound-1",
-                                    "thread-veeva",
-                                    "Recruiter <recruiting@veeva.com>",
+                                    "thread-alderbrook",
+                                    "Recruiter <recruiting@alderbrook.example>",
                                     "Interview availability",
                                     "Please reply with your availability.",
                                     isSent: false),
@@ -413,12 +413,12 @@ public sealed class GmailInboxClientTests
             mailboxEmailAddress: "jlee@example.edu",
             cancellationToken: CancellationToken.None);
 
-        Assert.Contains("thread-veeva", requestedThreadIds);
+        Assert.Contains("thread-alderbrook", requestedThreadIds);
         Assert.Contains(results, email => email.ExternalMessageId == "inbound-1" && !email.IsOutbound);
 
         var sentReply = Assert.Single(results, email => email.ExternalMessageId == "sent-1");
         Assert.True(sentReply.IsOutbound);
-        Assert.Equal("thread-veeva", sentReply.ThreadId);
+        Assert.Equal("thread-alderbrook", sentReply.ThreadId);
         Assert.Contains("Tuesday afternoon", sentReply.Body, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -462,7 +462,7 @@ public sealed class GmailInboxClientTests
                             Content = new StringContent(
                                 BuildCustomMessageJson(
                                     "sent-1",
-                                    "thread-veeva",
+                                    "thread-alderbrook",
                                     "Jordan Lee <jlee@example.edu>",
                                     "Re: Interview availability",
                                     "Thanks, I already replied with availability.",
@@ -492,7 +492,7 @@ public sealed class GmailInboxClientTests
             },
             existingThreadIds: new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "thread-veeva"
+                "thread-alderbrook"
             },
             receivedAfterUtc: new DateTimeOffset(2026, 4, 1, 0, 0, 0, TimeSpan.Zero),
             sentAfterUtc: new DateTimeOffset(2026, 4, 1, 0, 0, 0, TimeSpan.Zero),
@@ -503,7 +503,7 @@ public sealed class GmailInboxClientTests
         Assert.Contains("in:sent after:2026/04/01", sentSearches);
         Assert.True(sentReply.IsOutbound);
         Assert.Equal("sent-1", sentReply.ExternalMessageId);
-        Assert.Equal("thread-veeva", sentReply.ThreadId);
+        Assert.Equal("thread-alderbrook", sentReply.ThreadId);
     }
 
     [Fact]
@@ -526,8 +526,8 @@ public sealed class GmailInboxClientTests
                                     {
                                       "id": "history-101",
                                       "messagesAdded": [
-                                        { "message": { "id": "inbound-2", "threadId": "thread-veeva" } },
-                                        { "message": { "id": "sent-2", "threadId": "thread-veeva" } }
+                                        { "message": { "id": "inbound-2", "threadId": "thread-alderbrook" } },
+                                        { "message": { "id": "sent-2", "threadId": "thread-alderbrook" } }
                                       ]
                                     }
                                   ],
@@ -546,14 +546,14 @@ public sealed class GmailInboxClientTests
                         {
                             "inbound-2" => BuildCustomMessageJson(
                                 "inbound-2",
-                                "thread-veeva",
-                                "Recruiter <recruiting@veeva.com>",
+                                "thread-alderbrook",
+                                "Recruiter <recruiting@alderbrook.example>",
                                 "Interview availability",
                                 "Please choose a slot.",
                                 isSent: false),
                             "sent-2" => BuildCustomMessageJson(
                                 "sent-2",
-                                "thread-veeva",
+                                "thread-alderbrook",
                                 "Jordan Lee <jlee@example.edu>",
                                 "Re: Interview availability",
                                 "Tuesday afternoon works.",
@@ -584,7 +584,7 @@ public sealed class GmailInboxClientTests
             "history-100",
             existingThreadIds: new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "thread-veeva"
+                "thread-alderbrook"
             },
             mailboxEmailAddress: "jlee@example.edu",
             cancellationToken: CancellationToken.None);
@@ -616,8 +616,8 @@ public sealed class GmailInboxClientTests
                                     {
                                       "id": "history-101",
                                       "messagesAdded": [
-                                        { "message": { "id": "vanished-1", "threadId": "thread-veeva" } },
-                                        { "message": { "id": "inbound-2", "threadId": "thread-veeva" } }
+                                        { "message": { "id": "vanished-1", "threadId": "thread-alderbrook" } },
+                                        { "message": { "id": "inbound-2", "threadId": "thread-alderbrook" } }
                                       ]
                                     }
                                   ],
@@ -641,8 +641,8 @@ public sealed class GmailInboxClientTests
                             Content = new StringContent(
                                 BuildCustomMessageJson(
                                     "inbound-2",
-                                    "thread-veeva",
-                                    "Recruiter <recruiting@veeva.com>",
+                                    "thread-alderbrook",
+                                    "Recruiter <recruiting@alderbrook.example>",
                                     "Interview availability",
                                     "Please choose a slot.",
                                     isSent: false),
@@ -668,7 +668,7 @@ public sealed class GmailInboxClientTests
             "history-100",
             existingThreadIds: new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "thread-veeva"
+                "thread-alderbrook"
             },
             cancellationToken: CancellationToken.None);
 

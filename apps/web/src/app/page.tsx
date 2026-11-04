@@ -9,6 +9,7 @@ import {
   signInLabel,
   startSignIn,
 } from "@/auth";
+import { isDemoSnapshot } from "@/lib/demo";
 import { GoogleSignInSubmit } from "@/components/google-sign-in-submit";
 import {
   PublicSiteFooter,
@@ -549,9 +550,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <span className="grid h-4 w-4 place-items-center rounded-full border border-[var(--green)] text-[0.55rem] text-[var(--green)]">
                 ✓
               </span>
-              {isDemoMode
-                ? "No sign-up. You get a private workspace built from a fictional inbox, deleted after 24 hours."
-                : "Google sign-in and Gmail access are separate. Gmail sync is controlled inside the app."}
+              {isDemoSnapshot
+                ? "No sign-up. You get a read-only workspace built from a fictional inbox."
+                : isDemoMode
+                  ? "No sign-up. You get a private workspace built from a fictional inbox, deleted after 24 hours."
+                  : "Google sign-in and Gmail access are separate. Gmail sync is controlled inside the app."}
             </p>
 
             {authErrorMessage && (

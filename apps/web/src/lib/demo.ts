@@ -1,10 +1,19 @@
 export const defaultDemoEmailDomain = "demo.careeroc.example";
 export const demoPersonaName = "Alex Rivera";
+export const isDemoSnapshot = /^(1|true|yes)$/i.test(process.env.DEMO_SNAPSHOT?.trim() ?? "");
+export const demoReadOnlyMessage = "This hosted demo is read-only. Clone the repo to try changes.";
 
 export type DemoIdentity = {
   id: string;
   email: string;
   name: string;
+};
+
+// The hosted demo has one shared account: the one its snapshot was recorded for.
+export const snapshotDemoIdentity: DemoIdentity = {
+  id: "demo-alex-rivera",
+  email: "alex.rivera@demo.careeroc.example",
+  name: demoPersonaName,
 };
 
 export function isDemoEmail(email: string | null | undefined, domain: string) {

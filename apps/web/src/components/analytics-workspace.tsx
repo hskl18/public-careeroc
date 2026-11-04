@@ -30,6 +30,7 @@ type AnalyticsWorkspaceProps = {
   source: "api" | "fallback";
   selectedRange: AnalyticsRange;
   selectedProvider: AnalyticsProvider;
+  readOnlyDemo: boolean;
 };
 
 export function AnalyticsWorkspace({
@@ -37,6 +38,7 @@ export function AnalyticsWorkspace({
   source,
   selectedRange,
   selectedProvider,
+  readOnlyDemo,
 }: AnalyticsWorkspaceProps) {
   const router = useRouter();
   const [companySort, setCompanySort] = useState<BreakdownSort>("volume");
@@ -104,7 +106,7 @@ export function AnalyticsWorkspace({
                     : "border-[var(--brand-blue)]/20 bg-[var(--blue-soft)] text-[var(--brand-blue-ink)]"
                 }`}
               >
-                {source === "api" ? "Live" : "Offline"}
+                {readOnlyDemo ? "Demo" : source === "api" ? "Live" : "Offline"}
               </span>
               {summaryCards.map((card) => (
                 <div
@@ -140,25 +142,27 @@ export function AnalyticsWorkspace({
                   </option>
                 ))}
               </select>
-              <select
-                aria-label="Mail source"
-                className="analytics-filter-select h-7 w-[6.8rem] rounded-md border border-[var(--border)] bg-white/88 px-2 pr-6 font-mono font-semibold uppercase tracking-[0.06em] text-[var(--text-primary)] outline-none transition hover:border-[var(--brand-blue)]/35 focus:border-[var(--accent)]"
-                value={selectedProvider}
-                onChange={(event) =>
-                  router.push(
-                    buildAnalyticsHref(
-                      selectedRange,
-                      event.target.value as AnalyticsProvider,
-                    ),
-                  )
-                }
-              >
-                {analyticsProviderOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.value === "all" ? "All mail" : option.label}
-                  </option>
-                ))}
-              </select>
+              {readOnlyDemo ? null : (
+                <select
+                  aria-label="Mail source"
+                  className="analytics-filter-select h-7 w-[6.8rem] rounded-md border border-[var(--border)] bg-white/88 px-2 pr-6 font-mono font-semibold uppercase tracking-[0.06em] text-[var(--text-primary)] outline-none transition hover:border-[var(--brand-blue)]/35 focus:border-[var(--accent)]"
+                  value={selectedProvider}
+                  onChange={(event) =>
+                    router.push(
+                      buildAnalyticsHref(
+                        selectedRange,
+                        event.target.value as AnalyticsProvider,
+                      ),
+                    )
+                  }
+                >
+                  {analyticsProviderOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.value === "all" ? "All mail" : option.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               {metrics.applicationsCount > 0 ? (
                 <label
                   className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[var(--brand-blue)]/14 bg-white/60 px-2.5 text-[11px] font-medium text-[var(--text-secondary)]"

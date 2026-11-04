@@ -94,7 +94,7 @@ public sealed class ApplicationWorkflowServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Bio-Rad Laboratories, Inc.",
+            Company = "Bio-Vale Laboratories, Inc.",
             Role = "Test Engineering Intern (Software)",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -112,7 +112,7 @@ public sealed class ApplicationWorkflowServiceTests
         var match = await service.MatchOrCreateApplicationAsync(
             user.Id,
             null,
-            "Bio-Rad Laboratories",
+            "Bio-Vale Laboratories",
             "Test Engineering Intern (Software)",
             ApplicationStatus.Rejected,
             EmailCategory.Rejection,
@@ -172,7 +172,7 @@ public sealed class ApplicationWorkflowServiceTests
         var service = new ApplicationWorkflowService(dbContext, clock);
         var application = new JobApplication
         {
-            Company = "HDSI Lab 3.0",
+            Company = "Ridgeway Lab 3.0",
             Role = "Fellow",
             Source = "Email",
             Status = ApplicationStatus.RecruiterContact,
@@ -185,7 +185,7 @@ public sealed class ApplicationWorkflowServiceTests
             JobApplicationId = application.Id,
             JobApplication = application,
             Type = ReminderType.FollowUp,
-            Title = "Reply to recruiter at HDSI Lab 3.0",
+            Title = "Reply to recruiter at Ridgeway Lab 3.0",
             DueAtUtc = new DateTimeOffset(2026, 10, 12, 23, 59, 0, TimeSpan.Zero),
             Status = ReminderStatus.Open
         };
@@ -199,7 +199,7 @@ public sealed class ApplicationWorkflowServiceTests
             new FollowUpTaskPlan(
                 true,
                 ReminderType.FollowUp,
-                "Reply to recruiter at HDSI Lab 3.0",
+                "Reply to recruiter at Ridgeway Lab 3.0",
                 new DateTimeOffset(2026, 4, 24, 16, 0, 0, TimeSpan.Zero),
                 "Newer recruiter email supplied a closer due date.",
                 "Test"),
@@ -208,7 +208,7 @@ public sealed class ApplicationWorkflowServiceTests
         Assert.False(created);
         Assert.Single(dbContext.Reminders);
         Assert.Equal(new DateTimeOffset(2026, 4, 24, 16, 0, 0, TimeSpan.Zero), reminder.DueAtUtc);
-        Assert.Equal("Reply to recruiter at HDSI Lab 3.0", reminder.Title);
+        Assert.Equal("Reply to recruiter at Ridgeway Lab 3.0", reminder.Title);
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class ApplicationWorkflowServiceTests
         var service = new ApplicationWorkflowService(dbContext, clock);
         var application = new JobApplication
         {
-            Company = "AES",
+            Company = "QRS",
             Role = "Summer Intern",
             Source = "Email",
             Status = ApplicationStatus.OaPending,
@@ -232,7 +232,7 @@ public sealed class ApplicationWorkflowServiceTests
             JobApplicationId = application.Id,
             JobApplication = application,
             Type = ReminderType.AssessmentDeadline,
-            Title = "Complete assessment for AES",
+            Title = "Complete assessment for QRS",
             DueAtUtc = new DateTimeOffset(2026, 4, 4, 15, 1, 0, TimeSpan.Zero),
             Status = ReminderStatus.Open
         };
@@ -246,7 +246,7 @@ public sealed class ApplicationWorkflowServiceTests
             new FollowUpTaskPlan(
                 true,
                 ReminderType.AssessmentDeadline,
-                "Complete assessment for AES",
+                "Complete assessment for QRS",
                 new DateTimeOffset(2026, 4, 25, 3, 0, 0, TimeSpan.Zero),
                 "Reminder refreshed from a newer assessment email.",
                 "Test"),

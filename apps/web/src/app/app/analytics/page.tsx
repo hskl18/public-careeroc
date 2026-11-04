@@ -5,6 +5,7 @@ import {
   normalizeAnalyticsProvider,
   normalizeAnalyticsRange,
 } from "@/lib/analytics";
+import { isDemoSnapshot } from "@/lib/demo";
 
 const AnalyticsWorkspace = dynamic(() =>
   import("@/components/analytics-workspace").then(
@@ -43,6 +44,7 @@ export default async function AnalyticsPage({
       source={source}
       selectedRange={selectedRange}
       selectedProvider={selectedProvider}
+      readOnlyDemo={isDemoSnapshot}
     />
   );
 }

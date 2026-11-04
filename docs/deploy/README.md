@@ -11,6 +11,7 @@ Expose `api` too if assistants should reach `/mcp`, and `agent-runtime` if other
 | Railway | [.railway/railway.ts](../../.railway/railway.ts), steps below | Deployed once by hand; not in CI |
 | AWS ECS Fargate | [infra/aws](../../infra/aws/README.md) | `tofu validate` in CI; never applied by the maintainers |
 | Vercel (web only) | steps below | Not tested |
+| Vercel (read-only demo) | steps below | Runs [careeroc.vercel.app](https://careeroc.vercel.app); not in CI |
 
 ## Secrets
 
@@ -80,6 +81,24 @@ Vercel can host `apps/web` while the API and runtime run on one of the other tar
 Set `AUTH_URL` and `NEXT_PUBLIC_SITE_URL` to the Vercel URL, `API_BASE_URL` and `API_PUBLIC_BASE_URL` to the public HTTPS URL of the API, and `CAREEROC_API_AUTH_SECRET` to the API's value.
 Add `AGENT_PUBLIC_BASE_URL` so the settings page can show the A2A agent card.
 On the API, set `NEXT_PUBLIC_SITE_URL` to the Vercel URL as well, so Gmail sign-in returns through the web app.
+
+## Vercel (read-only demo)
+
+With `DEMO_SNAPSHOT=true`, `apps/web` needs no API, database, or agent runtime.
+Every visitor signs in as one fictional account, API reads are answered from `apps/web/src/lib/demo-snapshot.json`, and writes are refused.
+Use the settings above, and set only `DEMO_MODE=true`, `DEMO_SNAPSHOT=true`, `AUTH_SECRET`, and `AUTH_URL` and `NEXT_PUBLIC_SITE_URL` as the Vercel URL.
+The app refuses to start if Google credentials are also set.
+Deploy from the repository root, because the root `.vercelignore` decides what is uploaded.
+
+Re-record the snapshot on an empty database when an API response changes shape:
+
+```bash
+CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
+node apps/web/scripts/record-demo-snapshot.mjs
+docker compose -p careeroc-snapshot down -v
+```
+
+Dates in the snapshot move forward by whole days when served, so ages and deadlines stay current.
 
 ## Observability
 

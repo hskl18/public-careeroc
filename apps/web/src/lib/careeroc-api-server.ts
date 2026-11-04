@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash, createHmac } from "node:crypto";
 import type { CareerocApiUser } from "./api-user";
+import { isDemoSnapshot } from "./demo";
 import { isAllowedProductionUrl } from "./url-policy";
 
 const clientApiBaseUrl = "/api/careeroc";
@@ -11,6 +12,11 @@ const devAuthSecret = "careeroc-dev-auth-secret-change-me";
 const minimumSecretLength = 32;
 
 export function getCareerocBackendBaseUrl() {
+  // Loaders skip the API when this is empty; a snapshot is never fetched from this value.
+  if (isDemoSnapshot) {
+    return "demo-snapshot";
+  }
+
   return normalizeBaseUrl(process.env.API_BASE_URL, "API_BASE_URL");
 }
 
@@ -64,6 +70,12 @@ export async function fetchCareerocApi(
   user: CareerocApiUser,
   init?: RequestInit,
 ) {
+  if (isDemoSnapshot) {
+    // Imported on demand so other deployments never load the recording.
+    const { demoSnapshotResponse } = await import("./demo-snapshot");
+    return demoSnapshotResponse(init?.method?.toUpperCase() ?? "GET", pathAndQuery);
+  }
+
   const backendBaseUrl = getCareerocBackendBaseUrl();
   if (!backendBaseUrl) {
     throw new Error("careeroc API base URL is not configured.");

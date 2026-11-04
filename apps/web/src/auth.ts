@@ -5,7 +5,13 @@ import type { Provider } from "next-auth/providers";
 
 import { fetchCareerocApi } from "@/lib/careeroc-api-server";
 import { isAccessAllowed } from "@/lib/access-policy";
-import { createDemoIdentity, defaultDemoEmailDomain, isDemoEmail } from "@/lib/demo";
+import {
+  createDemoIdentity,
+  defaultDemoEmailDomain,
+  isDemoEmail,
+  isDemoSnapshot,
+  snapshotDemoIdentity,
+} from "@/lib/demo";
 import { isAllowedProductionUrl } from "@/lib/url-policy";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -167,6 +173,10 @@ export async function startSignIn(redirectTo: string) {
 }
 
 async function authorizeDemoVisitor() {
+  if (isDemoSnapshot) {
+    return snapshotDemoIdentity;
+  }
+
   const identity = createDemoIdentity(demoEmailDomain);
   const response = await fetchCareerocApi(
     "/api/demo/workspace",
@@ -201,6 +211,11 @@ export function isUserAccessAllowed(email?: string | null) {
 }
 
 function assertProductionAuthConfiguration() {
+  // A snapshot answers every caller with the same fictional data, so it must never sit behind real accounts.
+  if (isDemoSnapshot && (!isDemoMode || isGoogleAuthConfigured)) {
+    throw new Error("DEMO_SNAPSHOT requires DEMO_MODE=true and no Google credentials.");
+  }
+
   // Images are built once and configured at runtime, so the checks run when the server starts.
   if (!isProduction || process.env.NEXT_PHASE === "phase-production-build") {
     return;

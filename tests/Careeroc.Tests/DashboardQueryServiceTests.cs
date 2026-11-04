@@ -302,7 +302,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "The AES Corporation",
+            Company = "The QRS Corporation",
             Role = "Summer Intern",
             Source = "Email",
             Status = ApplicationStatus.OaPending,
@@ -340,7 +340,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.AssessmentDeadline,
                 Status = ReminderStatus.Open,
-                Title = "Complete assessment for The AES Corporation",
+                Title = "Complete assessment for The QRS Corporation",
                 DueAtUtc = DashboardClock.UtcNow.AddDays(1)
             });
         await dbContext.SaveChangesAsync();
@@ -427,7 +427,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "HDSI Lab",
+            Company = "Ridgeway Lab",
             Role = "Fellow",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -439,7 +439,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Carrier Global Corporation",
+            Company = "Thornfield Global Corporation",
             Role = "Software Engineering Intern",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -469,7 +469,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = staleApplication,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Reply to recruiter at HDSI Lab 3.0",
+                Title = "Reply to recruiter at Ridgeway Lab 3.0",
                 DueAtUtc = DashboardClock.UtcNow.AddMonths(-6)
             },
             new Reminder
@@ -478,7 +478,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = recentOverdueApplication,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Complete assessment for Carrier Global Corporation",
+                Title = "Complete assessment for Thornfield Global Corporation",
                 DueAtUtc = DashboardClock.UtcNow.AddDays(-1)
             },
             new Reminder
@@ -496,10 +496,10 @@ public sealed class DashboardQueryServiceTests
         var response = await service.GetDashboardAsync(ApplicationDefaults.DefaultUserEmail);
 
         Assert.Equal(2, response.Metrics.NeedsAction);
-        Assert.DoesNotContain(response.PendingActions, action => action.Company == "HDSI Lab");
+        Assert.DoesNotContain(response.PendingActions, action => action.Company == "Ridgeway Lab");
         Assert.Collection(
             response.PendingActions,
-            action => Assert.Equal("Carrier Global Corporation", action.Company),
+            action => Assert.Equal("Thornfield Global Corporation", action.Company),
             action => Assert.Equal("Roblox", action.Company));
     }
 
@@ -531,7 +531,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "HDSI Lab 3.0",
+            Company = "Ridgeway Lab 3.0",
             Role = "Fellow",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -558,7 +558,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = futureApplication,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Reply to recruiter at HDSI Lab 3.0",
+                Title = "Reply to recruiter at Ridgeway Lab 3.0",
                 DueAtUtc = DashboardClock.UtcNow.AddMonths(6)
             });
         await dbContext.SaveChangesAsync();
@@ -655,7 +655,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Legrand North America",
+            Company = "Larkspur North America",
             Role = "Applied Data Analytics Intern",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -673,7 +673,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Review next step for Legrand North America",
+                Title = "Review next step for Larkspur North America",
                 DueAtUtc = new DateTimeOffset(2026, 4, 16, 16, 11, 0, TimeSpan.Zero)
             },
             new Reminder
@@ -682,7 +682,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Reply to recruiter at Legrand North America",
+                Title = "Reply to recruiter at Larkspur North America",
                 DueAtUtc = new DateTimeOffset(2026, 4, 16, 17, 0, 0, TimeSpan.Zero)
             });
         await dbContext.SaveChangesAsync();
@@ -692,7 +692,7 @@ public sealed class DashboardQueryServiceTests
 
         Assert.Equal(1, response.Metrics.NeedsAction);
         var pendingAction = Assert.Single(response.PendingActions);
-        Assert.Equal("Reply to recruiter at Legrand North America", pendingAction.Title);
+        Assert.Equal("Reply to recruiter at Larkspur North America", pendingAction.Title);
         Assert.True(response.Applications[0].ActionRequired);
     }
 
@@ -719,7 +719,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Carrier Global Corporation",
+            Company = "Thornfield Global Corporation",
             Role = "Software Engineering Intern",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -740,7 +740,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = application,
                 ExternalMessageId = "gmail-message-1",
                 ThreadId = "gmail-thread-1",
-                Sender = "recruiting@carrier.com",
+                Sender = "recruiting@thornfield.example",
                 Subject = "Complete your assessment",
                 RawBody = "Please complete the assessment by tomorrow.",
                 ParsedBody = "Please complete the assessment by tomorrow.",
@@ -757,7 +757,7 @@ public sealed class DashboardQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.AssessmentDeadline,
                 Status = ReminderStatus.Open,
-                Title = "Complete assessment for Carrier Global Corporation",
+                Title = "Complete assessment for Thornfield Global Corporation",
                 DueAtUtc = DashboardClock.UtcNow.AddDays(1)
             });
         await dbContext.SaveChangesAsync();
@@ -886,7 +886,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Veeva Systems",
+            Company = "Alderbrook Systems",
             Role = "Software Engineering Internship",
             Source = "Email",
             Status = ApplicationStatus.RecruiterContact,
@@ -900,9 +900,9 @@ public sealed class DashboardQueryServiceTests
             InboxAccount = gmailInbox,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "veeva-inbound-001",
-            ThreadId = "thread-veeva-001",
-            Sender = "recruiting@veeva.com",
+            ExternalMessageId = "alderbrook-inbound-001",
+            ThreadId = "thread-alderbrook-001",
+            Sender = "recruiting@alderbrook.example",
             Subject = "Please reply with your availability",
             RawBody = "Please reply with your availability.",
             ParsedBody = "Please reply with your availability.",
@@ -917,8 +917,8 @@ public sealed class DashboardQueryServiceTests
             InboxAccount = gmailInbox,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "veeva-outbound-001",
-            ThreadId = "thread-veeva-001",
+            ExternalMessageId = "alderbrook-outbound-001",
+            ThreadId = "thread-alderbrook-001",
             Sender = "alex.personal@example.com",
             Subject = "Re: Please reply with your availability",
             RawBody = "Tuesday afternoon works well for me.",
@@ -953,7 +953,7 @@ public sealed class DashboardQueryServiceTests
         Assert.True(applicationCard.HasOutboundReply);
         Assert.Equal(outboundEmail.ReceivedAtUtc, applicationCard.LastOutboundReplyAtUtc);
         Assert.Equal(
-            "Sent Gmail reply detected for Veeva Systems",
+            "Sent Gmail reply detected for Alderbrook Systems",
             Assert.Single(response.RecentActivity).Description);
     }
 
@@ -1062,7 +1062,7 @@ public sealed class DashboardQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Hntb",
+            Company = "Qrtb",
             Role = "Analyst",
             Source = "Greenhouse",
             Status = ApplicationStatus.Rejected,

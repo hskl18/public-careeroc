@@ -136,6 +136,10 @@ Choosing "Open the demo" signs the visitor in with a random `.example` address.
 The API creates a user and a demo inbox, then runs the same sync, triage, extraction, workflow, and review code on 51 fictional emails, and runs one multi-agent review that waits for the visitor's approval.
 So the demo exercises the real pipeline rather than seeded rows.
 
+The hosted demo at [careeroc.vercel.app](https://careeroc.vercel.app) keeps that product UI without paying for a backend.
+With `DEMO_SNAPSHOT=true`, everyone signs in as one fictional account and the web app answers API calls from responses recorded from that same pipeline, refusing writes.
+Hosting the API, Postgres, and the agent runtime for a showcase was rejected because of its recurring cost and upkeep, and a marketing-style sample page because it would not be the real product.
+
 ## Decisions
 
 ### The email pipeline stays deterministic-first in .NET

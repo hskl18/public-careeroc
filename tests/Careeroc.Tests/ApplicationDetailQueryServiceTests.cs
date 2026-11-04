@@ -261,7 +261,7 @@ public sealed class ApplicationDetailQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Enlyte",
+            Company = "Brindle",
             Role = "Software Development Intern",
             Source = "Email",
             Status = ApplicationStatus.Rejected,
@@ -275,9 +275,9 @@ public sealed class ApplicationDetailQueryServiceTests
             InboxAccount = inboxAccount,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "enlyte-interview-001",
-            ThreadId = "thread-enlyte-001",
-            Sender = "recruiting@enlyte.com",
+            ExternalMessageId = "brindle-interview-001",
+            ThreadId = "thread-brindle-001",
+            Sender = "recruiting@brindle.example",
             Subject = "Interview availability",
             ParsedBody = "Please share your interview availability.",
             RawBody = "Please share your interview availability.",
@@ -291,9 +291,9 @@ public sealed class ApplicationDetailQueryServiceTests
             InboxAccount = inboxAccount,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "enlyte-rejection-001",
-            ThreadId = "thread-enlyte-001",
-            Sender = "recruiting@enlyte.com",
+            ExternalMessageId = "brindle-rejection-001",
+            ThreadId = "thread-brindle-001",
+            Sender = "recruiting@brindle.example",
             Subject = "Internship opportunity",
             ParsedBody = "We will not be moving forward.",
             RawBody = "We will not be moving forward.",
@@ -527,7 +527,7 @@ public sealed class ApplicationDetailQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Legrand North America",
+            Company = "Larkspur North America",
             Role = "Applied Data Analytics Intern",
             Source = "Email",
             Status = ApplicationStatus.Applied,
@@ -545,7 +545,7 @@ public sealed class ApplicationDetailQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Review next step for Legrand North America",
+                Title = "Review next step for Larkspur North America",
                 DueAtUtc = new DateTimeOffset(2026, 4, 16, 16, 11, 0, TimeSpan.Zero)
             },
             new Reminder
@@ -554,7 +554,7 @@ public sealed class ApplicationDetailQueryServiceTests
                 JobApplication = application,
                 Type = ReminderType.FollowUp,
                 Status = ReminderStatus.Open,
-                Title = "Reply to recruiter at Legrand North America",
+                Title = "Reply to recruiter at Larkspur North America",
                 DueAtUtc = new DateTimeOffset(2026, 4, 16, 17, 0, 0, TimeSpan.Zero)
             });
         await dbContext.SaveChangesAsync();
@@ -565,7 +565,7 @@ public sealed class ApplicationDetailQueryServiceTests
         Assert.NotNull(response);
         Assert.True(response.ActionRequired);
         var pendingAction = Assert.Single(response.PendingActions);
-        Assert.Equal("Reply to recruiter at Legrand North America", pendingAction.Title);
+        Assert.Equal("Reply to recruiter at Larkspur North America", pendingAction.Title);
         Assert.Null(pendingAction.SourceEmailId);
         Assert.False(pendingAction.HasExplicitDueDate);
         Assert.Null(pendingAction.GmailUrl);
@@ -594,7 +594,7 @@ public sealed class ApplicationDetailQueryServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "Veeva Systems",
+            Company = "Alderbrook Systems",
             Role = "Software Engineering Internship",
             Source = "Email",
             Status = ApplicationStatus.RecruiterContact,
@@ -608,8 +608,8 @@ public sealed class ApplicationDetailQueryServiceTests
             InboxAccount = inboxAccount,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "veeva-outbound-001",
-            ThreadId = "thread-veeva-001",
+            ExternalMessageId = "alderbrook-outbound-001",
+            ThreadId = "thread-alderbrook-001",
             Sender = "demo@example.com",
             Subject = "Re: Please reply with your availability",
             ParsedBody = "Tuesday afternoon works for me.",
@@ -641,7 +641,7 @@ public sealed class ApplicationDetailQueryServiceTests
         Assert.NotNull(response);
         Assert.Single(response.RecentActivity);
         Assert.Equal(
-            "Sent Gmail reply found for Veeva Systems",
+            "Sent Gmail reply found for Alderbrook Systems",
             response.RecentActivity[0].Description);
     }
 

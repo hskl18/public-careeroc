@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, isAuthEnabled, isDemoMode } from "@/auth";
+import { DemoReadOnlyGuard } from "@/components/demo-read-only-guard";
 import { HeaderSyncStatus } from "@/components/header-sync-status";
 import { Logo } from "@/components/logo";
 import { ProfileIcon } from "@/components/profile-icon";
@@ -11,6 +12,7 @@ import { UserMenu } from "@/components/user-menu";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { getAdminAccessForUser } from "@/lib/admin-server";
 import { getDashboardForUser } from "@/lib/dashboard-server";
+import { isDemoSnapshot } from "@/lib/demo";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
 import { getProfileForUser } from "@/lib/profile-server";
 
@@ -82,7 +84,9 @@ export default async function AppLayout({
           <div className="flex min-w-0 flex-1 justify-center">
             {isDemoMode ? (
               <p className="hidden truncate rounded-full bg-[var(--yellow-soft)] px-3 py-1 text-xs font-medium text-[var(--text-primary)] lg:block">
-                Demo workspace with fictional data, deleted after 24 hours
+                {isDemoSnapshot
+                  ? "Read-only demo with fictional data"
+                  : "Demo workspace with fictional data, deleted after 24 hours"}
               </p>
             ) : null}
           </div>
@@ -180,6 +184,8 @@ export default async function AppLayout({
       <div className="fixed inset-x-0 bottom-0 z-50 min-w-0 max-w-full overflow-hidden border-t border-[var(--border)] bg-[var(--bg)]/90 px-3 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-1.5 backdrop-blur-xl sm:hidden">
         <WorkspaceNav mode="bottom" />
       </div>
+
+      {isDemoSnapshot ? <DemoReadOnlyGuard /> : null}
     </div>
   );
 }

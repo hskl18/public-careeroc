@@ -422,15 +422,15 @@ public sealed class ManualReviewServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "veeva-review-001",
-            ThreadId = "thread-veeva-review-001",
-            Sender = "recruiting@veeva.com",
+            ExternalMessageId = "alderbrook-review-001",
+            ThreadId = "thread-alderbrook-review-001",
+            Sender = "recruiting@alderbrook.example",
             Subject = "Reply with availability",
             ParsedBody = "Please reply with your availability.",
             RawBody = "Please reply with your availability.",
             ReceivedAtUtc = clock.UtcNow.AddHours(-2),
             Category = EmailCategory.GenericUpdate,
-            ExtractedCompany = "Veeva Systems",
+            ExtractedCompany = "Alderbrook Systems",
             ExtractedRole = "Unknown Role",
             RequiresManualReview = true,
             ReviewReason = "Role could not be extracted confidently."
@@ -453,7 +453,7 @@ public sealed class ManualReviewServiceTests
             new CorrectEmailRequest
             {
                 Category = "recruiter_outreach",
-                Company = "Veeva Systems",
+                Company = "Alderbrook Systems",
                 Role = "Software Engineering Internship",
                 ActionRequired = true,
                 DueDateUtc = localDueDate,
@@ -493,7 +493,7 @@ public sealed class ManualReviewServiceTests
         {
             UserId = user.Id,
             User = user,
-            Company = "CIBC",
+            Company = "QTBC",
             Role = "2026 Summer Intern - Software Engineer",
             Status = ApplicationStatus.OaPending,
             Priority = 5,
@@ -506,9 +506,9 @@ public sealed class ManualReviewServiceTests
             InboxAccount = inboxAccount,
             JobApplicationId = application.Id,
             JobApplication = application,
-            ExternalMessageId = "cibc-digest-001",
-            ThreadId = "thread-cibc-digest-001",
-            Sender = "mailbox.cibc-workdayactionrequired@cibc.com",
+            ExternalMessageId = "qtbc-digest-001",
+            ThreadId = "thread-qtbc-digest-001",
+            Sender = "mailbox.qtbc-workdayactionrequired@qtbc.example",
             Subject = "Workday Inbox - Your Daily Digest",
             ParsedBody = "Daily digest",
             RawBody = "Daily digest",
@@ -516,7 +516,7 @@ public sealed class ManualReviewServiceTests
             Category = EmailCategory.OaInvitation,
             ActionRequired = true,
             DueDateUtc = clock.UtcNow.AddDays(7),
-            ExtractedCompany = "CIBC",
+            ExtractedCompany = "QTBC",
             ExtractedRole = application.Role
         };
 
@@ -575,9 +575,9 @@ public sealed class ManualReviewServiceTests
         {
             InboxAccountId = inboxAccount.Id,
             InboxAccount = inboxAccount,
-            ExternalMessageId = "cibc-digest-002",
-            ThreadId = "thread-cibc-digest-002",
-            Sender = "mailbox.cibc-workdayactionrequired@cibc.com",
+            ExternalMessageId = "qtbc-digest-002",
+            ThreadId = "thread-qtbc-digest-002",
+            Sender = "mailbox.qtbc-workdayactionrequired@qtbc.example",
             Subject = "Workday Inbox - Your Daily Digest",
             ParsedBody = "You have inbox items due soon.",
             RawBody = "You have inbox items due soon.",
@@ -585,7 +585,7 @@ public sealed class ManualReviewServiceTests
             Category = EmailCategory.OaInvitation,
             ActionRequired = true,
             DueDateUtc = clock.UtcNow.AddDays(7),
-            ExtractedCompany = "CIBC",
+            ExtractedCompany = "QTBC",
             ExtractedRole = "2026 Summer Intern - Software Engineer"
         };
 

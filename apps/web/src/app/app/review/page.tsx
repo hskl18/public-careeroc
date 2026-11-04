@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import dynamic from "next/dynamic";
+import { isDemoSnapshot } from "@/lib/demo";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
 import { getManualReviewForUser } from "@/lib/manual-review-server";
 import { getProfileForUser } from "@/lib/profile-server";
@@ -51,6 +52,7 @@ export default async function ReviewPage() {
           timeZoneId={profile.timeZoneId}
           hasConnectedAccount={hasConnectedAccount}
           hasSyncedOnce={hasSyncedOnce}
+          readOnlyDemo={isDemoSnapshot}
         />
       </div>
     </main>

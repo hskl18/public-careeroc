@@ -30,6 +30,7 @@ type ManualReviewWorkspaceProps = {
   timeZoneId: string;
   hasConnectedAccount?: boolean;
   hasSyncedOnce?: boolean;
+  readOnlyDemo: boolean;
 };
 
 function formatTimestamp(value: string, timeZoneId: string) {
@@ -284,6 +285,7 @@ export function ManualReviewWorkspace({
   timeZoneId,
   hasConnectedAccount = true,
   hasSyncedOnce = true,
+  readOnlyDemo,
 }: ManualReviewWorkspaceProps) {
   const [review, setReview] = useState(initialReview);
   const [searchQuery, setSearchQuery] = useState("");
@@ -522,7 +524,7 @@ export function ManualReviewWorkspace({
                 : "bg-[var(--yellow-soft)] text-[var(--yellow)]"
             }`}
           >
-            {source === "api" ? "Live" : "Offline"}
+            {readOnlyDemo ? "Demo" : source === "api" ? "Live" : "Offline"}
           </span>
         </div>
 

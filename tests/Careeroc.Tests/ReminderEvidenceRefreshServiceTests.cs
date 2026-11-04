@@ -25,9 +25,9 @@ public sealed class ReminderEvidenceRefreshServiceTests
             emails:
             [
                 new EmailSeed(
-                    Key: "veeva-rehydrate",
+                    Key: "alderbrook-rehydrate",
                     Subject: "We thought you could be a strong fit for our internship",
-                    Body: "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Veeva Systems. Please reply with your availability by tomorrow morning.",
+                    Body: "Hi Alex, we thought you could be a strong fit for the Software Engineering Internship at Alderbrook Systems. Please reply with your availability by tomorrow morning.",
                     Category: EmailCategory.RecruiterOutreach)
             ]);
 
@@ -58,7 +58,7 @@ public sealed class ReminderEvidenceRefreshServiceTests
             emails:
             [
                 new EmailSeed(
-                    Key: "veeva-manual-refresh",
+                    Key: "alderbrook-manual-refresh",
                     Subject: "Complete your assessment",
                     Body: "Please complete the assessment by April 29, 2026.",
                     Category: EmailCategory.OaInvitation,
@@ -91,12 +91,12 @@ public sealed class ReminderEvidenceRefreshServiceTests
         var scenario = await SeedScenarioAsync(
             dbContext,
             clock,
-            company: "Carrier Global Corporation",
+            company: "Thornfield Global Corporation",
             role: "Software Engineering Intern",
             emails:
             [
                 new EmailSeed(
-                    Key: "carrier-window-deadline",
+                    Key: "thornfield-window-deadline",
                     Subject: "Complete your assessment",
                     Body: "Please complete your assessment within 48 hours of receiving this invitation.",
                     Category: EmailCategory.OaInvitation,
@@ -139,12 +139,12 @@ public sealed class ReminderEvidenceRefreshServiceTests
         var scenario = await SeedScenarioAsync(
             dbContext,
             clock,
-            company: "Carrier Global Corporation",
+            company: "Thornfield Global Corporation",
             role: "Software Engineering Intern",
             emails:
             [
                 new EmailSeed(
-                    Key: "carrier-assessment",
+                    Key: "thornfield-assessment",
                     Subject: "Complete your assessment",
                     Body: "Please complete the assessment by April 29, 2026.",
                     Category: EmailCategory.OaInvitation,
@@ -169,17 +169,17 @@ public sealed class ReminderEvidenceRefreshServiceTests
         var scenario = await SeedScenarioAsync(
             dbContext,
             clock,
-            company: "Carrier Global Corporation",
+            company: "Thornfield Global Corporation",
             role: "Software Engineering Intern",
             emails:
             [
                 new EmailSeed(
-                    Key: "carrier-status",
+                    Key: "thornfield-status",
                     Subject: "Assessment status",
                     Body: "Thanks for starting your assessment. We will follow up soon.",
                     Category: EmailCategory.OaInvitation),
                 new EmailSeed(
-                    Key: "carrier-deadline",
+                    Key: "thornfield-deadline",
                     Subject: "Complete your assessment",
                     Body: "Please complete the assessment by April 29, 2026.",
                     Category: EmailCategory.OaInvitation,
@@ -192,8 +192,8 @@ public sealed class ReminderEvidenceRefreshServiceTests
         var expectedDueDateUtc = new DateTimeOffset(2026, 4, 29, 0, 0, 0, TimeSpan.Zero);
         Assert.Equal(1, result.RemindersRefreshed);
         Assert.Equal(1, result.EmailsUpdated);
-        Assert.Null(scenario.Emails.Single(email => email.ExternalMessageId == "carrier-status").DueDateUtc);
-        Assert.Equal(expectedDueDateUtc, scenario.Emails.Single(email => email.ExternalMessageId == "carrier-deadline").DueDateUtc);
+        Assert.Null(scenario.Emails.Single(email => email.ExternalMessageId == "thornfield-status").DueDateUtc);
+        Assert.Equal(expectedDueDateUtc, scenario.Emails.Single(email => email.ExternalMessageId == "thornfield-deadline").DueDateUtc);
         Assert.Equal(expectedDueDateUtc, scenario.Reminder.DueAtUtc);
         Assert.Equal(clock.UtcNow, scenario.Reminder.EvidenceRefreshedAtUtc);
     }
@@ -213,7 +213,7 @@ public sealed class ReminderEvidenceRefreshServiceTests
         CareerocDbContext dbContext,
         TestClock clock,
         IReadOnlyList<EmailSeed> emails,
-        string company = "Veeva Systems",
+        string company = "Alderbrook Systems",
         string role = "Software Engineering Internship",
         ApplicationStatus applicationStatus = ApplicationStatus.OaPending,
         ReminderType reminderType = ReminderType.AssessmentDeadline,

@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
       { source: "/analytics", destination: "/app/analytics", permanent: true },
       { source: "/review", destination: "/app/review", permanent: true },
       { source: "/app/profile", destination: "/app/settings", permanent: true },
+      // Routes of the retired sample demo; resumes and portfolios still link to /judge-demo.
+      { source: "/judge-demo", destination: "/", permanent: true },
+      { source: "/applications", destination: "/app/applications", permanent: true },
+      { source: "/applications/:id", destination: "/app/applications", permanent: true },
+      { source: "/resume", destination: "/app/resume", permanent: true },
+      { source: "/settings", destination: "/app/settings", permanent: true },
+      { source: "/notifications", destination: "/app", permanent: true },
+      { source: "/agents", destination: "/tech", permanent: true },
     ];
   },
 };

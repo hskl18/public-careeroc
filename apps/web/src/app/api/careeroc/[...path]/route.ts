@@ -4,6 +4,7 @@ import {
   buildCareerocApiAuthHeaders,
   getCareerocBackendBaseUrl,
 } from "@/lib/careeroc-api-server";
+import { isDemoSnapshot } from "@/lib/demo";
 import { hasTrustedBrowserOrigin } from "@/lib/proxy-origin";
 import { readBodyWithin } from "@/lib/read-body";
 
@@ -79,6 +80,11 @@ async function proxyCareerocRequest(
   }
 
   const pathAndQuery = `/${path.join("/")}${request.nextUrl.search}`;
+  if (isDemoSnapshot) {
+    const { demoSnapshotResponse } = await import("@/lib/demo-snapshot");
+    return demoSnapshotResponse(request.method, pathAndQuery);
+  }
+
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
   if (!Number.isFinite(declaredLength) || declaredLength < 0) {
     return NextResponse.json({ error: "Invalid Content-Length." }, { status: 400 });

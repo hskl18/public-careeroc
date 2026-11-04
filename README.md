@@ -4,8 +4,10 @@ An open-source, multi-agent job search workspace.
 careeroc reads recruiting email and keeps an evidence-backed pipeline of applications, deadlines, and next actions.
 Specialist agents review the search, a person approves what they propose, and your own assistant can read the pipeline over MCP or A2A.
 
-Try it with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
-**Open the demo** gives each visitor a private workspace built from a fictional inbox, run through the real pipeline, and deleted after 24 hours.
+**Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox.
+
+Run the whole system with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
+There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and deleted after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
 
 ![careeroc dashboard](docs/media/dashboard.png)
 
@@ -126,7 +128,7 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
 | Railway | Two Postgres services and the three app services from [.railway/railway.ts](.railway/railway.ts) | [docs/deploy](docs/deploy/README.md#railway) |
 | AWS | ECS Fargate on ARM64, one load balancer, RDS, Secrets Manager, OpenTofu | [infra/aws](infra/aws/README.md) |
 | Kubernetes | Helm chart for GKE, AKS, EKS, or self-managed clusters | [deploy/helm/careeroc](deploy/helm/careeroc/README.md) |
-| Vercel | The web app only, with the API and agents hosted elsewhere | [docs/deploy](docs/deploy/README.md#vercel-web-only) |
+| Vercel | The web app with the API and agents hosted elsewhere, or alone as the [read-only demo](docs/deploy/README.md#vercel-read-only-demo) | [docs/deploy](docs/deploy/README.md#vercel-web-only) |
 
 Images for all three services are published to GHCR for `linux/amd64` and `linux/arm64` on version tags, after every CI check passes.
 

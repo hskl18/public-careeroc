@@ -92,8 +92,8 @@ public sealed class HeuristicRecruitingEmailParserTests
         var parser = new HeuristicRecruitingEmailParser();
         var email = new InboxEmail
         {
-            Sender = "assessment@carrier.com",
-            Subject = "Carrier assessment invitation",
+            Sender = "assessment@thornfield.example",
+            Subject = "Thornfield assessment invitation",
             ParsedBody = "Please complete your assessment within 48 hours of receiving this email.",
             ReceivedAtUtc = new DateTimeOffset(2026, 4, 24, 18, 30, 0, TimeSpan.Zero)
         };
@@ -110,8 +110,8 @@ public sealed class HeuristicRecruitingEmailParserTests
         var parser = new HeuristicRecruitingEmailParser();
         var email = new InboxEmail
         {
-            Sender = "assessment@veeva.com",
-            Subject = "Veeva assessment",
+            Sender = "assessment@alderbrook.example",
+            Subject = "Alderbrook assessment",
             ParsedBody = "Your assessment is due by 04/29/2026.",
             ReceivedAtUtc = new DateTimeOffset(2026, 4, 24, 18, 0, 0, TimeSpan.Zero)
         };
@@ -395,7 +395,7 @@ public sealed class HeuristicRecruitingEmailParserTests
         var parser = new HeuristicRecruitingEmailParser();
         var email = new InboxEmail
         {
-            Sender = "recruiting@veeva.com",
+            Sender = "recruiting@alderbrook.example",
             Subject = "Please reply with your availability",
             ParsedBody = "Please reply with your availability by tomorrow morning.",
             ReceivedAtUtc = new DateTimeOffset(2026, 4, 24, 18, 0, 0, TimeSpan.Zero)

@@ -42,7 +42,7 @@ Routine evidence checks belong to the review agent; review UI appears only when 
 
 | Surface | Owns |
 |---|---|
-| Header | Brand, primary nav, a compact sync pill, the user menu, and in demo mode a short notice that the data is fictional; never full workflow controls |
+| Header | Brand, primary nav, a compact sync pill, the user menu, and in demo mode a short notice that the data is fictional, which also says read-only in the hosted demo; never full workflow controls |
 | Dashboard `/app` | The current operating picture: ranked recent changes, near-term actions, sync health, a capped application summary |
 | Applications `/app/applications` | Browsing every record: search, status filters, aligned rows with status and priority, a selected preview, links to detail and Gmail |
 | Application detail | Why the record has its status: pipeline stage, agent brief and next move, open actions or terminal outcome, contacts, evidence grouped by thread, original Gmail links, correction buttons |

@@ -288,7 +288,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         {
                           "message": {
                             "role": "assistant",
-                            "content": "{\"category\":\"generic_update\",\"recommendedStatus\":\"Applied\",\"company\":\"CIBC\",\"role\":\"2026 Summer Intern - Software Engineer\",\"actionRequired\":false,\"dueDateUtc\":\"\",\"classificationConfidence\":0.81,\"workflowNote\":\"Workday digest does not expose a concrete assessment task.\"}"
+                            "content": "{\"category\":\"generic_update\",\"recommendedStatus\":\"Applied\",\"company\":\"QTBC\",\"role\":\"2026 Summer Intern - Software Engineer\",\"actionRequired\":false,\"dueDateUtc\":\"\",\"classificationConfidence\":0.81,\"workflowNote\":\"Workday digest does not expose a concrete assessment task.\"}"
                           }
                         }
                         """,
@@ -333,9 +333,9 @@ public sealed class OllamaRecruitingEmailParserTests
                 {
                     EmailAddress = "student@example.com"
                 },
-                Sender = "mailbox.cibc-workdayactionrequired@cibc.com",
+                Sender = "mailbox.qtbc-workdayactionrequired@qtbc.example",
                 Subject = "Workday Inbox - Your Daily Digest",
-                ParsedBody = "Your application for the 2026 Summer Intern Software Engineer position at CIBC has an inbox item due April 16, 2026."
+                ParsedBody = "Your application for the 2026 Summer Intern Software Engineer position at QTBC has an inbox item due April 16, 2026."
             });
 
         Assert.NotNull(requestBody);

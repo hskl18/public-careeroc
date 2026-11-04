@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { AssistantAccessPanel } from "@/components/assistant-access-panel";
 import { ProfileSettingsPanel } from "@/components/profile-settings-panel";
 import { getAccessTokensForUser } from "@/lib/access-tokens-server";
+import { isDemoSnapshot } from "@/lib/demo";
 import { getProfileForUser } from "@/lib/profile-server";
 
 export default async function SettingsPage() {
@@ -58,12 +59,14 @@ export default async function SettingsPage() {
               email={profile.email}
               displayName={displayName}
             />
-            <AssistantAccessPanel
-              initialTokens={accessTokens}
-              proxyPrefix={proxyPrefix}
-              mcpUrl={apiPublicBaseUrl ? `${apiPublicBaseUrl}/mcp` : null}
-              agentCardUrl={agentPublicBaseUrl ? `${agentPublicBaseUrl}/.well-known/agent-card.json` : null}
-            />
+            {isDemoSnapshot ? null : (
+              <AssistantAccessPanel
+                initialTokens={accessTokens}
+                proxyPrefix={proxyPrefix}
+                mcpUrl={apiPublicBaseUrl ? `${apiPublicBaseUrl}/mcp` : null}
+                agentCardUrl={agentPublicBaseUrl ? `${agentPublicBaseUrl}/.well-known/agent-card.json` : null}
+              />
+            )}
           </div>
 
           <aside className="space-y-4 xl:sticky xl:top-20">

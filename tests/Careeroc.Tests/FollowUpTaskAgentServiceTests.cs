@@ -14,7 +14,7 @@ public sealed class FollowUpTaskAgentServiceTests
         var service = new FollowUpTaskAgentService(clock);
         var application = new JobApplication
         {
-            Company = "Legrand North America",
+            Company = "Larkspur North America",
             Role = "Applied Data Analytics Intern"
         };
         var parsed = new ParsedRecruitingEmail(
@@ -42,7 +42,7 @@ public sealed class FollowUpTaskAgentServiceTests
         var service = new FollowUpTaskAgentService(clock);
         var application = new JobApplication
         {
-            Company = "Legrand North America",
+            Company = "Larkspur North America",
             Role = "Applied Data Analytics Intern"
         };
         var parsed = new ParsedRecruitingEmail(
@@ -61,7 +61,7 @@ public sealed class FollowUpTaskAgentServiceTests
 
         Assert.True(plan.ShouldCreate);
         Assert.Equal(ReminderType.FollowUp, plan.Type);
-        Assert.Equal("Reply to recruiter at Legrand North America", plan.Title);
+        Assert.Equal("Reply to recruiter at Larkspur North America", plan.Title);
         Assert.Equal("create_reminder", plan.ToolName);
         Assert.Contains("reply to recruiter", plan.ToolArgumentsJson!, StringComparison.OrdinalIgnoreCase);
     }
