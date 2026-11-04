@@ -181,9 +181,9 @@ export function ProfileSettingsPanel({
             />
             <div className="min-w-0">
               <p className="eyebrow">Candidate</p>
-              <h1 className="mt-2 truncate text-xl font-semibold text-[var(--text-primary)]">
+              <h2 className="mt-2 truncate text-xl font-semibold text-[var(--text-primary)]">
                 {displayName}
-              </h1>
+              </h2>
               <p className="mt-1 break-all text-sm text-[var(--text-secondary)]">
                 {email}
               </p>
