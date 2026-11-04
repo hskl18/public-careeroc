@@ -10,11 +10,8 @@ import {
 } from "@/auth";
 import { isDemoSnapshot } from "@/lib/demo";
 import { GoogleSignInSubmit } from "@/components/google-sign-in-submit";
-import {
-  PublicSiteFooter,
-  PublicSiteNav,
-  ProductRibbon,
-} from "@/components/public-site-chrome";
+import { PublicSiteShell } from "@/components/public-site-chrome";
+import { StatusPill } from "@/components/status-pill";
 import { buildPageMetadata, repositoryUrl } from "@/lib/site-metadata";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -66,10 +63,10 @@ function formatSessionRecovery(value: string | undefined) {
 }
 
 const pipelinePreview = [
-  ["N", "Northstar Labs", "Software Engineer Intern", "Interview", "green"],
-  ["A", "Atlas Robotics", "Backend Engineer", "OA due", "amber"],
-  ["L", "Linear Systems", "Product Infrastructure", "Applied", "blue"],
-  ["?", "Unknown Company", "Product Engineering", "Review", "red"],
+  ["Northstar Labs", "Software Engineer Intern", "Interviewing"],
+  ["Atlas Robotics", "Backend Engineer", "Oa Pending"],
+  ["Linear Systems", "Product Infrastructure", "Applied"],
+  ["Unknown Company", "Product Engineering", "Review"],
 ];
 
 const howSteps = [
@@ -79,45 +76,8 @@ const howSteps = [
   ["4", "Work the pipeline", "Applications, reminders, and resume feedback in one place."],
 ];
 
-function PipelinePreview() {
-  return (
-    <section
-      aria-label="Example application pipeline"
-      className="public-product-panel grid gap-2 rounded-xl border p-4 sm:p-5"
-    >
-      <p className="typewriter-text mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-        Active pipeline
-      </p>
-      {pipelinePreview.map(([initial, company, role, status, tone]) => (
-        <div
-          key={company}
-          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2.5"
-        >
-          <span className="grid h-8 w-8 place-items-center rounded bg-[var(--brand-blue)] text-xs font-black text-white">
-            {initial}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[var(--ink-black)]">{company}</p>
-            <p className="truncate text-xs font-medium text-[var(--text-tertiary)]">{role}</p>
-          </div>
-          <span
-            className={`rounded-full px-2 py-1 text-[0.66rem] font-bold ${
-              tone === "green"
-                ? "bg-[var(--green)]/16 text-[var(--green)]"
-                : tone === "amber"
-                  ? "bg-[var(--yellow-soft)] text-[var(--yellow)]"
-                  : tone === "red"
-                    ? "bg-[var(--red-soft)] text-[var(--red)]"
-                    : "bg-[var(--blue-soft)] text-[var(--blue)]"
-            }`}
-          >
-            {status}
-          </span>
-        </div>
-      ))}
-    </section>
-  );
-}
+const rowClass =
+  "rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2.5";
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const session = await getOptionalSession();
@@ -130,102 +90,117 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     readSearchParam(resolvedSearchParams.session),
   );
 
-
   return (
-    <main className="public-landing-page flex-1 px-3 py-4 sm:px-5 sm:py-6">
-      <div className="mx-auto grid max-w-[104rem] gap-12 pb-12">
-        <PublicSiteNav current="product" />
-
-        <section className="grid gap-8 -mt-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(25rem,0.72fr)] lg:items-center lg:gap-10">
-          <div className="flex min-h-0 flex-col">
-            <ProductRibbon className="mb-5 self-start" label="Open-source agent system" />
-            <h1
-              className="max-w-4xl text-4xl font-bold leading-[1.12] text-[var(--ink-black)] sm:text-5xl sm:leading-[1.08] xl:text-6xl"
-              style={{ fontFamily: "var(--font-crimson-pro)" }}
-            >
-              Multi-agent job search for{" "}
-              <span className="italic text-[var(--ink-blue)]">
-                recruiting email.
-              </span>
+    <PublicSiteShell>
+      <section className="card app-workspace-panel p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="eyebrow">Open-source agent system</p>
+            <h1 className="mt-1 text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:text-2xl">
+              Multi-agent job search for recruiting email
             </h1>
-            <p className="mt-5 max-w-3xl text-base leading-7 text-[var(--ink-black)]/78 sm:text-lg sm:leading-8">
+            <p className="mt-2 max-w-3xl text-base leading-6 text-[var(--text-secondary)]">
               careeroc turns recruiting email into an evidence-backed pipeline.
               Specialist agents review the search, and you approve what they propose.
             </p>
-
-            <div id="access" className="mt-6 flex flex-wrap items-center gap-3">
-              {isSignedIn ? (
-                <Link
-                  href={nextPath as Route}
-                  className="btn btn-primary w-full justify-center sm:w-fit sm:px-6"
-                >
-                  Open workspace
-                </Link>
-              ) : isAuthEnabled ? (
-                <form
-                  action={async () => {
-                    "use server";
-                    await startSignIn(nextPath);
-                  }}
-                  className="w-full sm:max-w-sm"
-                >
-                  <GoogleSignInSubmit demo={isDemoMode} />
-                </form>
-              ) : (
-                <div className="typewriter-text w-full max-w-md border-l-8 border-[var(--green)] bg-[var(--yellow-soft)] p-4 text-sm text-[var(--ink-black)]">
-                  Google login is not configured yet. Set `AUTH_GOOGLE_ID`
-                  and `AUTH_GOOGLE_SECRET`
-                  {isGoogleAuthConfigured ? "" : " for the web app"}, then
-                  refresh this page.
-                </div>
-              )}
-              <a href={repositoryUrl} className="btn btn-secondary justify-center px-4 text-xs">
-                Source on GitHub
-              </a>
-            </div>
-
-            <p className="mt-4 flex items-center gap-2 text-xs font-semibold leading-5 text-[var(--ink-black)]/58">
-              <span className="grid h-4 w-4 place-items-center rounded-full border border-[var(--green)] text-[0.55rem] text-[var(--green)]">
-                ✓
-              </span>
+            <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
               {isDemoSnapshot
                 ? "No sign-up. You get a read-only workspace built from a fictional inbox."
                 : isDemoMode
                   ? "No sign-up. You get a private workspace built from a fictional inbox, deleted after 24 hours."
                   : "Google sign-in and Gmail access are separate. Gmail sync is controlled inside the app."}
             </p>
-
-            {authErrorMessage && (
-              <div className="typewriter-text mt-5 border-l-8 border-[var(--accent)] bg-[var(--accent)]/10 p-4 text-sm text-[var(--accent)]">
-                {authErrorMessage}
-              </div>
-            )}
-
-            {sessionRecoveryMessage && (
-              <div className="typewriter-text mt-5 border-l-8 border-[var(--green)] bg-[var(--green-soft)] p-4 text-sm text-[var(--green)]">
-                {sessionRecoveryMessage}
-              </div>
-            )}
           </div>
 
-          <PipelinePreview />
+          <div
+            id="access"
+            className="flex w-full scroll-mt-16 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center lg:shrink-0"
+          >
+            {isSignedIn ? (
+              <Link
+                href={nextPath as Route}
+                className="btn btn-primary btn-sm justify-center"
+              >
+                Open workspace
+              </Link>
+            ) : isAuthEnabled ? (
+              <form
+                action={async () => {
+                  "use server";
+                  await startSignIn(nextPath);
+                }}
+              >
+                <GoogleSignInSubmit demo={isDemoMode} />
+              </form>
+            ) : (
+              <p className="rounded-md bg-[var(--yellow-soft)] px-3 py-2 text-sm text-[var(--text-primary)]">
+                Google login is not configured yet. Set `AUTH_GOOGLE_ID`
+                and `AUTH_GOOGLE_SECRET`
+                {isGoogleAuthConfigured ? "" : " for the web app"}, then
+                refresh this page.
+              </p>
+            )}
+            <a href={repositoryUrl} className="btn btn-secondary btn-sm justify-center">
+              Source on GitHub
+            </a>
+          </div>
+        </div>
+
+        {authErrorMessage && (
+          <p className="mt-3 rounded-md bg-[var(--red-soft)] px-3 py-2 text-sm text-[var(--red)]">
+            {authErrorMessage}
+          </p>
+        )}
+
+        {sessionRecoveryMessage && (
+          <p className="mt-3 rounded-md bg-[var(--green-soft)] px-3 py-2 text-sm text-[var(--green)]">
+            {sessionRecoveryMessage}
+          </p>
+        )}
+      </section>
+
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+        <section className="card app-workspace-panel p-3 sm:p-4">
+          <p className="eyebrow">Example</p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
+            Active pipeline
+          </h2>
+          <div className="mt-3 grid gap-2">
+            {pipelinePreview.map(([company, role, status]) => (
+              <div
+                key={company}
+                className={`flex items-center justify-between gap-3 ${rowClass}`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                    {company}
+                  </p>
+                  <p className="truncate text-xs text-[var(--text-tertiary)]">{role}</p>
+                </div>
+                <StatusPill status={status} />
+              </div>
+            ))}
+          </div>
         </section>
 
-        <section
-          aria-label="How careeroc works"
-          className="grid gap-6 border-t border-[var(--border)] pt-8 md:grid-cols-2 lg:grid-cols-4"
-        >
-          {howSteps.map(([step, title, body]) => (
-            <article key={step}>
-              <p className="eyebrow text-[var(--ink-blue)]">Step {step}</p>
-              <h2 className="mt-2 text-base font-bold text-[var(--ink-black)]">{title}</h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--ink-black)]/68">{body}</p>
-            </article>
-          ))}
+        <section className="card app-workspace-panel p-3 sm:p-4">
+          <p className="eyebrow">How it works</p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
+            From inbox to pipeline
+          </h2>
+          <ol className="mt-3 grid gap-2">
+            {howSteps.map(([step, title, body]) => (
+              <li key={step} className={`flex items-baseline gap-3 ${rowClass}`}>
+                <span className="eyebrow">{step}</span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+                  <p className="text-xs text-[var(--text-tertiary)]">{body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
-
-        <PublicSiteFooter />
       </div>
-    </main>
+    </PublicSiteShell>
   );
 }
