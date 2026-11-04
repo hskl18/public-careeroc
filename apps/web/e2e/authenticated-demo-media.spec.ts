@@ -44,7 +44,7 @@ test.describe("authenticated demo media", () => {
       }
       await page.screenshot({
         fullPage: true,
-        path: `../../.artifacts/kaggle-media/${route.name}-${testInfo.project.name}.png`,
+        path: `../../.artifacts/demo-media/${route.name}-${testInfo.project.name}.png`,
       });
     });
   }

@@ -504,9 +504,9 @@ export function ManualReviewWorkspace({
               </div>
               <div className="flex flex-wrap items-baseline gap-3">
                 <p className="eyebrow">Email review queue</p>
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                <h1 className="text-base font-semibold text-[var(--text-primary)]">
                   Blocked email evidence
-                </h2>
+                </h1>
               </div>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 {coldStart

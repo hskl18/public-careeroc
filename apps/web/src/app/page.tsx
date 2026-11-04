@@ -138,7 +138,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <section className="grid gap-8 -mt-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(25rem,0.72fr)] lg:items-center lg:gap-10">
           <div className="flex min-h-0 flex-col">
-            <ProductRibbon className="mb-5" label="Open-source agent system" />
+            <ProductRibbon className="mb-5 self-start" label="Open-source agent system" />
             <h1
               className="max-w-4xl text-4xl font-bold leading-[1.12] text-[var(--ink-black)] sm:text-5xl sm:leading-[1.08] xl:text-6xl"
               style={{ fontFamily: "var(--font-crimson-pro)" }}

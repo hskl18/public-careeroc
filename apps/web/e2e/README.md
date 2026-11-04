@@ -16,6 +16,8 @@ For a real signed-in demo account:
 4. Keep the generated `apps/web/e2e/.auth/user.json` local.
 5. Run authenticated specs with `PLAYWRIGHT_STORAGE_STATE=e2e/.auth/user.json pnpm --dir apps/web e2e`.
 
+The onboarding test in `cold-start.spec.ts` needs an account with no synced mail, so it fails against the seeded demo.
+
 If Google OAuth expires or the session secret changes, regenerate the storage state with the same command.
 An expired storage state usually redirects workspace routes to `/?next=/app`; treat that as an auth fixture problem, not as a dashboard route regression.
 

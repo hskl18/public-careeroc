@@ -31,8 +31,10 @@ test.describe("cold-start UX", () => {
 
   test("header sync pill deep-links based on connection state", async ({
     page,
+    isMobile,
   }) => {
     test.skip(requiresAuth, skipReason);
+    test.skip(isMobile, "The header hides the sync pill on phones.");
 
     await page.goto("/app");
 
@@ -51,13 +53,15 @@ test.describe("cold-start UX", () => {
 
     await page.goto("/app/review");
     await expect(page).toHaveURL(/\/app\/review$/);
-    await expect(page.getByRole("heading", { name: /review/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /blocked email evidence/i }),
+    ).toBeVisible();
   });
 
   test("home page loads without auth", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: /recruiting email.*application pipeline/i }),
+      page.getByRole("heading", { name: /multi-agent job search for recruiting email/i }),
     ).toBeVisible();
   });
 });
