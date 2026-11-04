@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 32" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Mini Loading Dots</title>
+  <desc id="desc">Compact pixel loading dots with a tiny inbox mark.</desc>
+  <style>
+    .dot-a { animation: dot 1s steps(1, end) infinite; }
+    .dot-b { animation: dot 1s steps(1, end) .18s infinite; }
+    .dot-c { animation: dot 1s steps(1, end) .36s infinite; }
+    .mail { animation: mail 1s steps(2, end) infinite; }
+    @keyframes dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+    @keyframes mail { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .dot-a, .dot-b, .dot-c, .mail { animation: none; }
+    }
+  </style>
+  <g class="mail">
+    <rect x="8" y="9" width="20" height="14" fill="#2563eb"/>
+    <rect x="12" y="12" width="12" height="3" fill="#dbeafe"/>
+    <rect x="12" y="15" width="6" height="5" fill="#bfdbfe"/>
+    <rect x="18" y="15" width="6" height="5" fill="#93c5fd"/>
+  </g>
+  <rect class="dot-a" x="42" y="12" width="8" height="8" fill="#2563eb"/>
+  <rect class="dot-b" x="58" y="12" width="8" height="8" fill="#16a34a"/>
+  <rect class="dot-c" x="74" y="12" width="8" height="8" fill="#16a34a"/>
+</svg>

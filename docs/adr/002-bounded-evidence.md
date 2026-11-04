@@ -1,18 +1,22 @@
-# ADR 002: Bounded Evidence Instead of Full Message Bodies
+# ADR 002: Bounded Snapshots for Agents
 
 Status: accepted
 
 ## Context
 
-Recruiting email can contain private contact data, interview details, and unrelated thread content.
-The workflow needs enough source material to explain a proposal without turning the local store into a mailbox archive.
+careeroc needs the text of recruiting email to classify it, match it to an application, and show the evidence behind a status.
+The multi-agent review and outside assistants need far less: counts, statuses, role patterns, and the latest resume summary.
+Email text is untrusted input, and a model that reads it can be steered by it.
 
 ## Decision
 
-CareerOS stores bounded snippets, hashes, source-message identifiers, and explicit source relationships.
-The Gmail connector requests readonly metadata and snippets for the public workflow.
+The API keeps each message body, cut to `Gmail:BodyCharacterLimit` (12,000 characters by default), so the pipeline and the review queue can show their evidence.
+Attachments become evidence cards; their raw bytes are not stored.
+Everything that leaves the API for an agent is a bounded snapshot built by the API: application company, role, status, and dates, resume summary and skills, counts, and confirmed memory.
+Snapshots never contain email bodies, OAuth tokens, or credentials, and the agent runtime has no access to careeroc's database.
 
 ## Consequences
 
-Reviews remain traceable while the stored surface stays smaller than a full-email mirror.
-Some context can be lost at the snippet boundary, so uncertain proposals must remain reviewable.
+A prompt injection in an email can at worst skew a suggestion; it cannot read other data or write anything.
+Agents cannot quote a specific email, so their findings cite statuses and counts rather than messages.
+The stored bodies are still personal data, which is why per-user scoping, deletion controls, and the demo's 24-hour lifetime apply to them.

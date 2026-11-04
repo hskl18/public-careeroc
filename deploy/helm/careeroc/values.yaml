@@ -1,0 +1,39 @@
+# Public hostname served by the Ingress. TLS is required: the web app refuses plain HTTP in production.
+host: careeroc.example.com
+ingress:
+  className: nginx
+  tlsSecretName: careeroc-tls
+  annotations: {}
+
+# Secret you create before installing (kubectl create secret generic ...). Required keys:
+#   DATABASE_URL, CAREEROC_API_AUTH_SECRET, CAREEROC_TOKEN_PROTECTION_KEY,
+#   AGENT_SHARED_SECRET, AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (may be empty in demo mode)
+# Optional: AGENT_CHECKPOINT_DATABASE_URL, a separate database and role for the agent runtime's checkpoints.
+existingSecret: careeroc
+
+demoMode: true
+# Google accounts allowed to sign in when demoMode is false.
+allowedEmailDomains: ""
+agentProvider: deterministic
+
+images:
+  registry: ghcr.io/hskl18/public-careeroc
+  # Empty uses the chart's appVersion, so a chart release pins the images it was tested with.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+web:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+api:
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 384Mi }
+    limits: { memory: 1Gi }
+agentRuntime:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }

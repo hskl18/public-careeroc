@@ -1,10 +1,19 @@
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
+packages:
+  - apps/web
 
 overrides:
-  "esbuild@>=0.27.3 <0.28.1": 0.28.1
-  "postcss@<8.5.28": 8.5.28
-  "vite@>=7.0.0 <=7.3.4": 7.3.6
-  "sharp@<0.35.4": 0.35.4
-  "nanoid@<3.3.18": 3.3.18
+  vite: 8.3.5
+  postcss: 8.5.32
+  sharp: 0.35.5
+  "js-yaml@>=4.0.0 <4.3.2": 4.3.2
+  "nanoid@>=3.0.0 <3.3.18": 3.3.18
+  "baseline-browser-mapping@<2.11.0": 2.11.0
+  "brace-expansion@<1.1.21": 1.1.21
+  "brace-expansion@>=2.0.0 <2.1.7": 2.1.7
+  "brace-expansion@>=4.0.0 <5.0.12": 5.0.12
+  "source-map-js@<1.2.2": 1.2.2
+  "zod@>=4.0.0 <4.6.6": 4.6.7
+
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver

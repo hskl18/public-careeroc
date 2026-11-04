@@ -1,0 +1,33 @@
+{{- /* Same routing as the AWS load balancer: one host, paths pick the service. */ -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: careeroc
+  labels:
+    {{- include "careeroc.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts: [{{ .Values.host | quote }}]
+      secretName: {{ .Values.ingress.tlsSecretName }}
+  rules:
+    - host: {{ .Values.host | quote }}
+      http:
+        paths:
+          {{- range $path := list "/mcp" "/agent" }}
+          - path: {{ $path }}
+            pathType: Prefix
+            backend: { service: { name: api, port: { name: http } } }
+          {{- end }}
+          {{- range $path := list "/a2a" "/.well-known/agent-card.json" }}
+          - path: {{ $path }}
+            pathType: Prefix
+            backend: { service: { name: agent-runtime, port: { name: http } } }
+          {{- end }}
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: web, port: { name: http } } }

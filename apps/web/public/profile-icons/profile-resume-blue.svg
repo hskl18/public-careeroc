@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Resume profile icon</title>
+  <desc id="desc">A pixel inbox assistant holding a resume page.</desc>
+  <rect x="10" y="24" width="34" height="26" fill="#38bdf8"/>
+  <rect x="14" y="28" width="26" height="6" fill="#e0f2fe"/>
+  <rect x="18" y="18" width="6" height="6" fill="#0f172a"/>
+  <rect x="31" y="18" width="6" height="6" fill="#0f172a"/>
+  <rect x="19" y="19" width="3" height="3" fill="#ffffff"/>
+  <rect x="32" y="19" width="3" height="3" fill="#ffffff"/>
+  <rect x="23" y="40" width="8" height="3" fill="#0c4a6e"/>
+  <rect x="42" y="16" width="14" height="26" fill="#ffffff"/>
+  <rect x="44" y="20" width="10" height="2" fill="#93c5fd"/>
+  <rect x="44" y="25" width="8" height="2" fill="#38bdf8"/>
+  <rect x="44" y="30" width="10" height="2" fill="#93c5fd"/>
+  <rect x="42" y="16" width="14" height="2" fill="#0f172a"/>
+  <rect x="42" y="40" width="14" height="2" fill="#0f172a"/>
+  <rect x="40" y="18" width="2" height="22" fill="#0f172a"/>
+  <rect x="56" y="18" width="2" height="22" fill="#0f172a"/>
+  <rect x="10" y="50" width="34" height="2" fill="#0f172a"/>
+</svg>

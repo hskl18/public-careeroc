@@ -9,7 +9,7 @@ An incorrect automatic update can hide a real next action or create a false one.
 
 ## Decision
 
-CareerOS routes model-backed changes and risky deterministic changes to an explicit review item before canonical state mutation.
+Careeroc routes model-backed changes and risky deterministic changes to an explicit review item before canonical state mutation.
 The review item retains bounded evidence, confidence, matching context, and the proposed typed change.
 
 ## Consequences

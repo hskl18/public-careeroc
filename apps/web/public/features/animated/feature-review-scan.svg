@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Animated Review Scan Feature Mascot</title>
+  <desc id="desc">Inbox buddy with a scanning magnifier for manual review.</desc>
+  <style>
+    .buddy { animation: bob 2.4s steps(2, end) infinite; }
+    .glass { animation: scan 1.8s steps(3, end) infinite; }
+    .eye-shine { animation: blink 5.2s steps(1, end) infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes scan { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(4px, 2px); } }
+    @keyframes blink { 0%, 86%, 100% { opacity: 1; } 88%, 94% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .buddy, .glass, .eye-shine { animation: none; } }
+  </style>
+  <g class="buddy">
+    <rect x="28" y="42" width="72" height="52" fill="#2563eb"/>
+    <rect x="36" y="50" width="56" height="12" fill="#dbeafe"/>
+    <rect x="36" y="62" width="28" height="20" fill="#bfdbfe"/>
+    <rect x="64" y="62" width="28" height="20" fill="#93c5fd"/>
+    <rect x="44" y="34" width="12" height="12" fill="#0f172a"/>
+    <rect x="72" y="34" width="12" height="12" fill="#0f172a"/>
+    <g class="eye-shine">
+      <rect x="46" y="36" width="6" height="6" fill="#ffffff"/>
+      <rect x="74" y="36" width="6" height="6" fill="#ffffff"/>
+    </g>
+    <rect x="52" y="76" width="24" height="8" fill="#0f172a"/>
+    <rect x="20" y="58" width="8" height="24" fill="#2563eb"/>
+    <rect x="100" y="58" width="8" height="24" fill="#2563eb"/>
+    <rect x="42" y="94" width="14" height="8" fill="#1e40af"/>
+    <rect x="72" y="94" width="14" height="8" fill="#1e40af"/>
+  </g>
+  <g class="glass">
+    <rect x="90" y="20" width="20" height="20" fill="#ffffff"/>
+    <rect x="86" y="16" width="28" height="4" fill="#0f172a"/>
+    <rect x="86" y="20" width="4" height="20" fill="#0f172a"/>
+    <rect x="110" y="20" width="4" height="20" fill="#0f172a"/>
+    <rect x="90" y="40" width="16" height="4" fill="#0f172a"/>
+    <rect x="106" y="42" width="10" height="6" fill="#0f172a"/>
+    <rect x="94" y="24" width="12" height="12" fill="#dcfce7"/>
+  </g>
+</svg>

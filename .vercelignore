@@ -1,0 +1,15 @@
+# Upload only what the web build needs, so local env files and the other services stay out.
+/*
+!/apps
+/apps/*
+!/apps/web
+!/package.json
+!/pnpm-lock.yaml
+!/pnpm-workspace.yaml
+/apps/web/.env*
+/apps/web/.next
+/apps/web/e2e
+/apps/web/node_modules
+/apps/web/playwright-report
+/apps/web/test-results
+/apps/web/*.tsbuildinfo

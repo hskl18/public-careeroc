@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc" shape-rendering="crispEdges">
+  <title id="title">Mint inbox profile icon</title>
+  <desc id="desc">A pixel inbox face with mint mail body.</desc>
+  <rect x="14" y="22" width="36" height="28" fill="#5eead4"/>
+  <rect x="18" y="26" width="28" height="6" fill="#ccfbf1"/>
+  <rect x="18" y="32" width="14" height="10" fill="#99f6e4"/>
+  <rect x="32" y="32" width="14" height="10" fill="#2dd4bf"/>
+  <rect x="22" y="18" width="7" height="7" fill="#0f172a"/>
+  <rect x="35" y="18" width="7" height="7" fill="#0f172a"/>
+  <rect x="23" y="19" width="3" height="3" fill="#ffffff"/>
+  <rect x="36" y="19" width="3" height="3" fill="#ffffff"/>
+  <rect x="26" y="39" width="12" height="4" fill="#115e59"/>
+  <rect x="20" y="50" width="8" height="4" fill="#0f766e"/>
+  <rect x="36" y="50" width="8" height="4" fill="#0f766e"/>
+  <rect x="12" y="24" width="2" height="24" fill="#0f172a"/>
+  <rect x="50" y="24" width="2" height="24" fill="#0f172a"/>
+  <rect x="16" y="50" width="32" height="2" fill="#0f172a"/>
+</svg>

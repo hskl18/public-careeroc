@@ -1,0 +1,148 @@
+# Default:            docker compose up -d                 -> Postgres and the agent runtime for local development
+# Whole demo stack:   docker compose --profile full up -d  -> plus the API and web app at http://localhost:3000 (WEB_PORT)
+# Traces:             add --profile observability and set OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+#
+# The app services pull the prebuilt images published on each release (.github/workflows/images.yml)
+# and build from source only when no image is available. Add --build to run your own changes.
+#
+# Ports are published on 127.0.0.1 only. The fallback secrets below are public: the API and web app
+# refuse them once real accounts can sign in, so set your own before enabling Google sign-in.
+
+x-api-signing-secret: &api-signing-secret ${CAREEROC_API_AUTH_SECRET:-local-compose-only-api-signing-secret-0001}
+x-agent-shared-secret: &agent-shared-secret ${AGENT_SHARED_SECRET:-local-compose-only-agent-shared-secret-01}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: careeroc-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: careeroc
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d careeroc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - careeroc-postgres-pg17-data:/var/lib/postgresql/data
+      - ./deploy/postgres/agent-checkpoints.sql:/docker-entrypoint-initdb.d/10-agent-checkpoints.sql:ro
+
+  agent-runtime:
+    image: ghcr.io/hskl18/public-careeroc/agent-runtime:${CAREEROC_VERSION:-latest}
+    build:
+      context: ./services/agent-runtime
+    container_name: careeroc-agent-runtime
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AGENT_RUNTIME_PORT:-8123}:8123"
+    environment:
+      # deterministic needs no model or API key; set ollama or openai to use a real model.
+      CAREEROC_AGENT_PROVIDER: ${AGENT_PROVIDER:-deterministic}
+      CAREEROC_AGENT_MODEL: ${Ollama__Model:-gemma4:31b-cloud}
+      CAREEROC_AGENT_BASE_URL: ${Ollama__BaseUrl:-https://ollama.com}
+      CAREEROC_AGENT_API_KEY: ${Ollama__ApiKey:-}
+      CAREEROC_AGENT_SHARED_SECRET: *agent-shared-secret
+      # Its own database and role: the runtime cannot read careeroc's tables.
+      CAREEROC_AGENT_CHECKPOINT_DATABASE_URL: postgresql://careeroc_agent:careeroc_agent@postgres:5432/careeroc_agent
+      CAREEROC_AGENT_MINIMUM_CONFIDENCE: ${AgentRuntime__MinimumConfidence:-0.65}
+      CAREEROC_AGENT_API_BASE_URL: ${AGENT_API_BASE_URL:-http://api:8080}
+      CAREEROC_AGENT_PUBLIC_URL: http://localhost:${AGENT_RUNTIME_PORT:-8123}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: careeroc-agent-runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8123/health/ready', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    profiles: ["full"]
+    image: ghcr.io/hskl18/public-careeroc/api:${CAREEROC_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: careeroc-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5114:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Careeroc: Host=postgres;Port=5432;Database=careeroc;Username=postgres;Password=postgres
+      Database__ApplyMigrationsOnStartup: "true"
+      CAREEROC_API_AUTH_SECRET: *api-signing-secret
+      CAREEROC_TOKEN_PROTECTION_KEY: ${CAREEROC_TOKEN_PROTECTION_KEY:-local-compose-only-token-protection-key-01}
+      API_PUBLIC_BASE_URL: http://localhost:5114
+      NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3000}
+      ACCESS_ALLOWED_DOMAINS: demo.careeroc.example
+      Demo__Enabled: "true"
+      AgentRuntime__Enabled: "true"
+      AgentRuntime__BaseUrl: http://agent-runtime:8123
+      AgentRuntime__SharedSecret: *agent-shared-secret
+      SyncWorker__Enabled: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: careeroc-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agent-runtime:
+        condition: service_healthy
+    healthcheck:
+      # The ASP.NET image ships without curl or wget; bash's /dev/tcp is enough for a readiness probe.
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/ready HTTP/1.0\r\n\r\n' >&3 && grep -q ' 200 ' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  web:
+    profiles: ["full"]
+    image: ghcr.io/hskl18/public-careeroc/web:${CAREEROC_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: careeroc-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    environment:
+      DEMO_MODE: "true"
+      AUTH_SECRET: ${AUTH_SECRET:-local-compose-only-auth-secret-0123456789ab}
+      AUTH_URL: http://localhost:${WEB_PORT:-3000}
+      CAREEROC_API_AUTH_SECRET: *api-signing-secret
+      API_BASE_URL: http://api:8080
+      API_PUBLIC_BASE_URL: http://localhost:5114
+      AGENT_PUBLIC_BASE_URL: http://localhost:${AGENT_RUNTIME_PORT:-8123}
+      NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3000}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: careeroc-web
+    depends_on:
+      api:
+        condition: service_healthy
+
+  jaeger:
+    profiles: ["observability"]
+    image: jaegertracing/jaeger:2.22.0
+    container_name: careeroc-jaeger
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:16686:16686"
+      - "127.0.0.1:4318:4318"
+
+volumes:
+  careeroc-postgres-pg17-data:

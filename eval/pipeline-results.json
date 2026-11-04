@@ -1,0 +1,16 @@
+{
+  "dataset": "src/Careeroc.Infrastructure/Demo/demo-inbox.json",
+  "pipeline": "heuristic extraction, no model",
+  "triageAccuracy": 1,
+  "categoryAccuracy": 1,
+  "companyAccuracy": 1,
+  "applicationStatusAccuracy": 1,
+  "reviewRecall": 1,
+  "reviewPrecision": 1,
+  "unexpectedApplications": [],
+  "categoryMisses": [],
+  "flaggedForReview": [
+    "agency-001",
+    "scam-001"
+  ]
+}
