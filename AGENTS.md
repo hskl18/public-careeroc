@@ -238,5 +238,5 @@ If Auth.js reports `JWTSessionError: no matching decryption secret` after `AUTH_
 - `UI.md`: product surfaces and the UI contract
 - `docs/routing.md`: web routes and API endpoints
 - API reference: the OpenAPI document at `/swagger` when the API runs in Development, and the TypeScript types generated from it in `apps/web/src/lib/api-schema.ts`, which CI checks for drift
-- `docs/agents/`: one spec per agent and the review graph's nodes; `docs/adr/`: decision records
-- `docs/deploy/README.md`: deployment targets, secrets, and the Railway steps
+- `docs/adr/`: decision records
+- `docs/deploy/README.md`: deployment targets and secrets

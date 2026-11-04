@@ -8,8 +8,5 @@
     "agent:lint": "services/agent-runtime/.venv/bin/ruff check services/agent-runtime",
     "agent:test": "services/agent-runtime/.venv/bin/pytest services/agent-runtime",
     "e2e:multi-agent": "./scripts/e2e-multi-agent.sh"
-  },
-  "devDependencies": {
-    "railway": "3.16.0"
   }
 }

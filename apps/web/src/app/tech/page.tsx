@@ -5,7 +5,7 @@ import { buildPageMetadata, repositoryUrl } from "@/lib/site-metadata";
 
 const pageTitle = "How careeroc is built";
 const pageDescription =
-  "How careeroc is built: a deterministic email pipeline in .NET, a LangGraph multi-agent review with human approval, MCP and A2A access, OpenTelemetry traces, offline evals, and deployments for Compose, Kubernetes, AWS, and Railway.";
+  "How careeroc is built: a deterministic email pipeline in .NET, a LangGraph multi-agent review with human approval, MCP and A2A access, OpenTelemetry traces, offline evals, and deployments for Compose and Kubernetes.";
 
 export const metadata: Metadata = buildPageMetadata({
   title: pageTitle,
@@ -100,7 +100,7 @@ const interop = [
   "MCP server · 3 read-only tools",
   "A2A 1.0 agent · 2 skills",
   "Read-only, revocable tokens",
-  "Compose · Kubernetes · AWS · Railway",
+  "Compose · Kubernetes",
 ];
 
 const cellClass =

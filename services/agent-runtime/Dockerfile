@@ -18,6 +18,6 @@ RUN uv sync --frozen --no-dev \
 USER 10001
 EXPOSE 8123
 
-# Platforms such as Railway inject PORT; 8123 stays the local default.
+# Some platforms inject PORT; 8123 stays the local default.
 # exec makes uvicorn PID 1, so it receives SIGTERM and shuts down cleanly.
 CMD ["sh", "-c", "exec uvicorn careeroc_agent_runtime.app:app --host 0.0.0.0 --port ${PORT:-8123}"]
