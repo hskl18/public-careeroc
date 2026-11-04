@@ -10,7 +10,6 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { SiteHeader } from "@/components/site-header";
 import { UserMenu } from "@/components/user-menu";
 import { WorkspaceNav } from "@/components/workspace-nav";
-import { getAdminAccessForUser } from "@/lib/admin-server";
 import { getDashboardForUser } from "@/lib/dashboard-server";
 import { isDemoSnapshot } from "@/lib/demo";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
@@ -57,12 +56,10 @@ export default async function AppLayout({
     { dashboard, source: dashboardSource },
     { setup, source: inboxSetupSource },
     { profile },
-    isAdmin,
   ] = await Promise.all([
     getDashboardForUser(user),
     getInboxSetupForUser(user),
     getProfileForUser(user),
-    getAdminAccessForUser(user),
   ]);
 
   return (
@@ -149,16 +146,6 @@ export default async function AppLayout({
               Memory
               <span className="text-[var(--text-tertiary)]">&rarr;</span>
             </Link>
-
-            {isAdmin ? (
-              <Link
-                href="/app/admin"
-                className="relative mt-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--blue-soft)] hover:text-[var(--brand-blue)]"
-              >
-                Admin
-                <span className="text-[var(--text-tertiary)]">&rarr;</span>
-              </Link>
-            ) : null}
 
             <SignOutButton />
           </div>

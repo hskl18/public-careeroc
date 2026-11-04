@@ -119,7 +119,6 @@ if (ShouldApplyMigrationsOnStartup(app.Configuration, app.Environment))
 }
 
 
-await app.Services.SeedConfiguredAdminUsersAsync();
 
 if (app.Environment.IsDevelopment())
 {
@@ -180,7 +179,6 @@ app.MapReviewEndpoints();
 app.MapApplicationEndpoints();
 app.MapContactEndpoints();
 app.MapReminderEndpoints();
-app.MapAdminEndpoints();
 app.MapAgentAccessEndpoints();
 app.MapMcp("/mcp");
 

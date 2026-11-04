@@ -2,7 +2,6 @@
 
 Public pages, the signed-in workspace, and the API stay in separate namespaces.
 New workspace pages go under `/app/*`; top-level aliases such as `/analytics` and `/review` only redirect.
-Admin routes are separated by an API-side role check, because hidden navigation is not authorization.
 
 ## Web app
 
@@ -21,7 +20,6 @@ Admin routes are separated by an API-side role check, because hidden navigation 
 | `/app/inbox` | Gmail connection, backfill, sync health, contacts, and mailbox controls |
 | `/app/settings` | Candidate context, preferences, and assistant access tokens |
 | `/app/settings/data` | Imported-data deletion and inbox purge |
-| `/app/admin` | Configuration checks, queue counts, failed-job retry, and recent model calls; non-admins are redirected |
 | `/analytics`, `/review`, `/app/profile` | Redirect to `/app/analytics`, `/app/review`, and `/app/settings` |
 | `/judge-demo`, `/applications`, `/resume`, `/settings`, `/notifications`, `/agents` | Redirect to `/`, `/app/applications`, `/app/resume`, `/app/settings`, `/app`, and `/tech`, so links to the retired sample demo keep working |
 
@@ -41,7 +39,6 @@ The API's user-scoped endpoints are grouped by product noun:
 /api/resumes
 /api/orchestrator/resume-mailbox-review
 /api/demo/workspace          (only when Demo:Enabled)
-/api/admin/*                 (signed user context plus an admin role)
 /api/inbox-accounts/gmail/oauth/callback   (reached through the web app's route of the same path)
 ```
 

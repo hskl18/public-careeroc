@@ -5,7 +5,7 @@ This policy covers careeroc.
 ## Scope
 
 This repository is the open-source reference implementation of careeroc.
-Auth, data isolation, OAuth, personal access tokens, the agent runtime boundary, and admin operations are treated as security-sensitive.
+Auth, data isolation, OAuth, personal access tokens, and the agent runtime boundary are treated as security-sensitive.
 
 Only the latest `main` is supported for security fixes.
 The trust boundaries and failure modes are described in [DESIGN.md](DESIGN.md#trust-boundaries).
@@ -30,7 +30,7 @@ Identity and access:
 
 - Google sign-in or the demo provider in `apps/web`, with protected workspace routes and an email or domain allowlist enforced in both the web app and the API
 - a same-origin Next.js proxy for all browser-to-API traffic, with HMAC-signed user context using `CAREEROC_API_AUTH_SECRET` and an origin check on writes
-- user-scoped ownership checks on every query and mutation, and `users.role` admin checks on `/api/admin/*`
+- user-scoped ownership checks on every query and mutation
 - the Gmail OAuth callback reaches the API through the web app, signed as the signed-in user, and the API completes only a connection that same user started; return paths are limited to this site
 - secure Auth.js cookie settings in production (`secure`, `httpOnly` where appropriate, `sameSite=lax`)
 
@@ -47,8 +47,7 @@ Abuse and operations:
 - per-user rate limits for signed traffic and per-IP limits for anonymous traffic; anonymous and rate-limited rejections are logged, not stored, so they cannot fill the database
 - demo identities on a reserved `.example` domain that cannot connect Gmail or change backfill settings, an hourly cap on new demo workspaces, and removal from the product database after 24 hours
 - the hosted demo's snapshot mode, which holds only recorded fictional data, refuses every write, has no API credentials, and will not start alongside Google sign-in
-- durable audit rows with bounded detail for signed mutations and admin actions, and model-call rows with tokens, cost, latency, and outcome but no prompts or email bodies
-- one narrow admin repair action: retrying one failed processing job per confirmed, audited request
+- durable audit rows with bounded detail for signed mutations, and model-call rows with tokens, cost, latency, and outcome but no prompts or email bodies
 - production fail-fast checks for missing or weak secrets, development fallbacks, non-HTTPS public URLs, and a missing access policy
 - the `local-compose-only-*` fallback secrets in `docker-compose.yml` are refused by the API and the web app once real accounts can sign in, and Compose publishes ports on 127.0.0.1 only
 - corrections are written to the shared parser guidance file only when `Ollama__UserFeedbackFilePath` is set, which is meant for single-user installs
@@ -69,13 +68,13 @@ Production deployments should also enforce:
 
 ## Known Limitations
 
-- no full RBAC permission matrix; admin is a first-party `admin`/`user` role boundary
-- the access allowlist is config-backed, not managed from an admin UI
+- no roles: every signed-in user has the same access to their own data
+- the access allowlist is config-backed, not managed from a UI
 - the MCP server uses static bearer tokens rather than OAuth 2.1 authorization
 - the A2A task store is in memory, so task history is lost on restart
 - no MFA or device/session management beyond Google account security
 - edge abuse protection still depends on deployment infrastructure, not only application code
-- one workspace-style auth model, not a multi-tenant admin product
+- one workspace-style auth model, not a multi-tenant product
 
 ## Secrets
 

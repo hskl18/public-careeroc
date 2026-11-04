@@ -108,7 +108,7 @@ public sealed class DatabaseEmailProcessingQueue : IEmailProcessingQueue
     }
 
     // A worker that dies on a job's last attempt leaves it in Processing, and neither claim query
-    // picks it up again, so it would never reach Failed or the admin retry list.
+    // picks it up again, so it would never reach Failed.
     private async Task FailJobsThatTimedOutOnTheirLastAttemptAsync(CancellationToken cancellationToken)
     {
         var now = _clock.UtcNow;

@@ -1,5 +1,4 @@
 using Careeroc.Api.Security;
-using Careeroc.Domain;
 
 namespace Careeroc.Api.Endpoints;
 
@@ -15,16 +14,6 @@ internal static class RequestUserContext
     public static string? GetUserName(HttpRequest request)
     {
         return GetUserContext(request.HttpContext)?.Name;
-    }
-
-    public static string GetUserRole(HttpRequest request)
-    {
-        return GetUserContext(request.HttpContext)?.Role ?? UserRoleNames.User;
-    }
-
-    public static bool IsAdmin(HttpRequest request)
-    {
-        return UserRoleNames.IsAdmin(GetUserRole(request));
     }
 
     public static void SetUserContext(HttpContext httpContext, AuthenticatedUserContext userContext)

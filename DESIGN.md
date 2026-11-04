@@ -15,7 +15,7 @@ For the interface, read [UI.md](UI.md); for code layout and data flow, read [doc
 ## Non-goals
 
 - Autonomous actions such as sending email or submitting applications.
-- Team workspaces, billing, or a multi-tenant admin product.
+- Team workspaces, billing, or a multi-tenant product.
 - Being a general agent framework.
   The graph is small on purpose and solves one review workflow well.
 
@@ -264,7 +264,7 @@ More detail is in [SECURITY.md](SECURITY.md).
 | Agent runtime down, or its checkpoint database down | The same fallback; the runtime's readiness check fails, so it leaves rotation without being restarted |
 | The runtime restarts while a review waits | With a checkpoint database the run resumes, which [a test](services/agent-runtime/tests/test_app.py) proves by deciding on a second app instance; without one the user's decision still applies and only the trace's last step is missing |
 | The user never decides on a gated review | The review stays pending, the last confirmed review stays in place, and nothing is written |
-| One email has an oversized header or fails to save | Headers are clipped to their columns, the failed changes are discarded, and the job is retried, then marked failed for the admin retry list |
+| One email has an oversized header or fails to save | Headers are clipped to their columns, the failed changes are discarded, and the job is retried, then marked failed |
 | A worker dies on a job's last attempt | The job is marked failed instead of staying in processing forever |
 | Two replicas process one user's mail at once | One holds the user's lease; the other puts the job back without spending an attempt |
 | Gmail history cursor expires | Sync falls back to a bounded search |
