@@ -17,7 +17,6 @@ public static class DependencyInjection
         services.AddScoped<ScamCheckerAgentService>();
         services.AddSingleton<IReviewEvidenceModel>(NullReviewEvidenceModel.Instance);
         services.AddSingleton<IResumeEvaluationModel>(NullResumeEvaluationModel.Instance);
-        services.AddSingleton<IResumeFitEnricher>(NullResumeFitEnricher.Instance);
         services.AddSingleton<ICareerAgentGraphClient>(NullCareerAgentGraphClient.Instance);
         services.AddSingleton<IUserAgentContextSnapshotProvider>(NullUserAgentContextSnapshotProvider.Instance);
         services.AddSingleton<IModelCallEventRecorder>(NullModelCallEventRecorder.Instance);

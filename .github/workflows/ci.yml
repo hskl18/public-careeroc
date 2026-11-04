@@ -91,15 +91,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@v2
-
-      - name: Validate AWS configuration
-        run: |
-          tofu fmt -check -recursive infra
-          tofu -chdir=infra/aws init -backend=false -input=false
-          tofu -chdir=infra/aws validate
-
       - name: Set up Helm
         uses: azure/setup-helm@v5
 

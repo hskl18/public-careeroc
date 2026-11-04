@@ -12,16 +12,11 @@ public sealed class ResumeFitService
 
     private readonly ICareerocDbContext _dbContext;
     private readonly IClock _clock;
-    private readonly IResumeFitEnricher _resumeFitEnricher;
 
-    public ResumeFitService(
-        ICareerocDbContext dbContext,
-        IClock clock,
-        IResumeFitEnricher? resumeFitEnricher = null)
+    public ResumeFitService(ICareerocDbContext dbContext, IClock clock)
     {
         _dbContext = dbContext;
         _clock = clock;
-        _resumeFitEnricher = resumeFitEnricher ?? NullResumeFitEnricher.Instance;
     }
 
     public async Task<ResumeFitDto?> GetFitAsync(
@@ -114,9 +109,8 @@ public sealed class ResumeFitService
             strengths,
             gaps,
             $"Deterministic fit based on {matched.Count}/{Math.Max(roleKeywords.Count, 1)} role keywords found in the latest resume.");
-        var enriched = await _resumeFitEnricher.EnrichAsync(response, cancellationToken);
-        await UpsertCacheAsync(application.UserId, enriched, cancellationToken);
-        return enriched;
+        await UpsertCacheAsync(application.UserId, response, cancellationToken);
+        return response;
     }
 
     private async Task UpsertCacheAsync(

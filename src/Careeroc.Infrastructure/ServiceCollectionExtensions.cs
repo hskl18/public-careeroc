@@ -57,10 +57,7 @@ public static class ServiceCollectionExtensions
             .PostConfigure(
                 options =>
                 {
-                    options.BaseUrl = ResolveOllamaString(
-                        options.BaseUrl,
-                        null,
-                        configuration["ollama_api"]);
+                    options.BaseUrl = ResolveOllamaString(options.BaseUrl);
                     options.Model = ResolveOllamaString(
                         options.Model,
                         "gemma4:31b")!;
@@ -136,20 +133,9 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static string? ResolveOllamaString(
-        string? configuredValue,
-        string? defaultValue = null,
-        params string?[] legacyValues)
+    private static string? ResolveOllamaString(string? configuredValue, string? defaultValue = null)
     {
-        foreach (var value in legacyValues.Prepend(configuredValue))
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                return value;
-            }
-        }
-
-        return defaultValue;
+        return string.IsNullOrWhiteSpace(configuredValue) ? defaultValue : configuredValue;
     }
 
     private static bool ResolveExplicitOllamaEnabled(IConfiguration configuration, bool configuredValue)

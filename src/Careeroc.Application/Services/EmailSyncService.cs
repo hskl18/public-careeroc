@@ -107,26 +107,6 @@ public sealed class EmailSyncService
         return new EmailSyncResult(totalEmailsCreated, totalJobsEnqueued, status, message);
     }
 
-    public async Task<EmailSyncResult?> RunInboxOnceAsync(
-        Guid inboxAccountId,
-        CancellationToken cancellationToken = default)
-    {
-        var inboxAccount = await _dbContext.InboxAccounts
-            .FirstOrDefaultAsync(account => account.Id == inboxAccountId, cancellationToken);
-
-        if (inboxAccount is null)
-        {
-            return null;
-        }
-
-        if (!CanPullFromInbox(inboxAccount))
-        {
-            return new EmailSyncResult(0, 0, EmailSyncStatuses.Skipped, "Inbox is not configured for provider sync.");
-        }
-
-        return await SyncInboxAccountAsync(inboxAccount, cancellationToken);
-    }
-
     private async Task<EmailSyncResult> SyncInboxAccountAsync(
         InboxAccount inboxAccount,
         CancellationToken cancellationToken)

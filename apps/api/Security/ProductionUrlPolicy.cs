@@ -3,7 +3,7 @@ using System.Net;
 namespace Careeroc.Api.Security;
 
 // Public URLs need HTTPS (loopback allowed for local containers); service-to-service URLs
-// may use plain HTTP inside a private network such as Docker, Kubernetes, or Railway.
+// may use plain HTTP inside a private network such as Docker or Kubernetes.
 public static class ProductionUrlPolicy
 {
     private static readonly string[] PrivateHostSuffixes = [".internal", ".local", ".cluster.local"];

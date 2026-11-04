@@ -50,25 +50,6 @@ public sealed class InfrastructureOptionsTests
     }
 
     [Fact]
-    public void AddInfrastructureServices_PrefersCanonicalOllamaBaseUrlOverLegacyAlias()
-    {
-        var configuration = BuildConfiguration(
-            new Dictionary<string, string?>
-            {
-                ["Ollama:BaseUrl"] = "https://canonical.example",
-                ["ollama_api"] = "https://legacy.example"
-            });
-        var services = new ServiceCollection();
-
-        services.AddInfrastructureServices(configuration);
-
-        using var provider = services.BuildServiceProvider();
-        var options = provider.GetRequiredService<IOptions<OllamaEmailExtractionOptions>>().Value;
-
-        Assert.Equal("https://canonical.example", options.BaseUrl);
-    }
-
-    [Fact]
     public void AddInfrastructureServices_IgnoresLegacyOllamaModelAliases()
     {
         var configuration = BuildConfiguration(

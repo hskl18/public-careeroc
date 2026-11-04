@@ -104,21 +104,6 @@ builder.Services.AddRateLimiter(
                 return CreateFixedWindowPartition(partitionKey, permitLimit, apiRateLimitOptions);
             });
     });
-builder.Services.AddCors(
-    options =>
-        options.AddDefaultPolicy(
-            policy =>
-            {
-                var allowedOrigins = ResolveAllowedOrigins(builder.Configuration, builder.Environment);
-
-                if (allowedOrigins.Count > 0)
-                {
-                    policy
-                        .WithOrigins(allowedOrigins.ToArray())
-                        .AllowAnyHeader()
-                        .AllowAnyMethod();
-                }
-            }));
 
 var app = builder.Build();
 AssertProductionDatabaseConfiguration(app.Configuration, app.Environment);
@@ -147,7 +132,6 @@ if (useForwardedHeaders)
     app.UseForwardedHeaders();
 }
 app.UseHttpsRedirection();
-app.UseCors();
 app.Use(
     async (context, next) =>
     {
@@ -292,26 +276,6 @@ static void AddCareerocOpenTelemetry(IServiceCollection services, IConfiguration
                         }
                     });
             });
-}
-
-static List<string> ResolveAllowedOrigins(IConfiguration configuration, IHostEnvironment environment)
-{
-    var values = new List<string>();
-
-    AddOrigins(values, configuration.GetSection("Web:AllowedOrigins").Get<string[]>());
-    AddOrigins(values, configuration["AUTH_URL"]);
-    AddOrigins(values, configuration["NEXTAUTH_URL"]);
-
-    if (environment.IsDevelopment())
-    {
-        AddOrigins(values, "http://localhost:3000");
-        AddOrigins(values, "https://localhost:3000");
-    }
-
-    return values
-        .Where(value => Uri.TryCreate(value, UriKind.Absolute, out _))
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToList();
 }
 
 static void AssertProductionApiUrlConfiguration(IConfiguration configuration, IHostEnvironment environment)
@@ -506,27 +470,6 @@ static bool ShouldApplyMigrationsOnStartup(IConfiguration configuration, IHostEn
 {
     return configuration.GetValue<bool?>("Database:ApplyMigrationsOnStartup") ??
            environment.IsDevelopment();
-}
-
-static void AddOrigins(List<string> values, params string?[]? configuredOrigins)
-{
-    if (configuredOrigins is null)
-    {
-        return;
-    }
-
-    foreach (var origin in configuredOrigins)
-    {
-        if (string.IsNullOrWhiteSpace(origin))
-        {
-            continue;
-        }
-
-        values.AddRange(
-            origin
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(value => !string.IsNullOrWhiteSpace(value)));
-    }
 }
 
 static RateLimitPartition<string> CreateFixedWindowPartition(

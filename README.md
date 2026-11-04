@@ -13,7 +13,7 @@ There, **Open the demo** gives each visitor a private workspace, run through the
 
 careeroc ran as a hosted product with a small beta, did not work out commercially, and was shut down.
 This repository is its complete source, published as a reference implementation.
-It is a working system rather than a template: a .NET 10 API, a Next.js 16 web app, and a Python LangGraph runtime, with tests, evals, traces, and deployment code for Compose, Railway, AWS, and Kubernetes.
+It is a working system rather than a template: a .NET 10 API, a Next.js 16 web app, and a Python LangGraph runtime, with tests, evals, traces, and deployment code for Compose and Kubernetes.
 
 ## What it shows
 
@@ -26,7 +26,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 | Bring your own assistant | Read-only personal access tokens, an MCP server at `/mcp`, and an A2A 1.0 agent with a public agent card. |
 | Observability | OpenTelemetry from the browser-facing web app through the API into each agent node, using the GenAI `invoke_agent` span conventions. |
 | Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI for triage, category, company, status, and review precision and recall, and a model-free eval of the evidence gate against invented citations and prompt injection. |
-| Deploy anywhere | Docker Compose, Railway infrastructure as code, AWS ECS Fargate with OpenTofu, a Helm chart for any Kubernetes, and multi-arch images on GHCR. |
+| Deploy | Docker Compose and a Helm chart for any Kubernetes, both started and smoke tested in CI, and multi-arch images on GHCR. |
 
 ## Screenshots
 
@@ -135,8 +135,6 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
 | Target | Shape | Guide |
 |---|---|---|
 | Docker Compose | One host, all services, optional Jaeger | [docker-compose.yml](docker-compose.yml) |
-| Railway | Two Postgres services and the three app services from [.railway/railway.ts](.railway/railway.ts) | [docs/deploy](docs/deploy/README.md#railway) |
-| AWS | ECS Fargate on ARM64, one load balancer, RDS, Secrets Manager, OpenTofu | [infra/aws](infra/aws/README.md) |
 | Kubernetes | Helm chart for GKE, AKS, EKS, or self-managed clusters | [deploy/helm/careeroc](deploy/helm/careeroc/README.md) |
 | Vercel | The web app with the API and agents hosted elsewhere, or alone as the [read-only demo](docs/deploy/README.md#vercel-read-only-demo) | [docs/deploy](docs/deploy/README.md#vercel-web-only) |
 
@@ -154,8 +152,8 @@ src/Careeroc.Contracts            API DTOs shared with the web app
 services/agent-runtime            LangGraph graph, evidence gate and its eval, A2A server, OpenTelemetry
 tests/Careeroc.Tests              .NET unit, API, eval, and Postgres tests
 eval                              labeled demo inbox and the latest eval results
-infra/aws, deploy/helm, .railway  deployment code
-docs                              design notes, ADRs, agent specs, and deploy guides
+deploy/helm                       Kubernetes chart
+docs                              design notes, ADRs, and deploy guides
 ```
 
 ## Testing
@@ -171,7 +169,7 @@ Set `CAREEROC_TEST_POSTGRES` to a Postgres connection string to also run the tes
 Two CI jobs start the whole system and drive it like a visitor and their assistant would, with [scripts/smoke-demo.sh](scripts/smoke-demo.sh): demo sign-in, the processed pipeline, a multi-agent review and its approval, a personal access token, MCP, A2A, and revoking the token.
 One runs it on Docker Compose; the other installs the Helm chart on a kind Kubernetes cluster ([scripts/smoke-kubernetes.sh](scripts/smoke-kubernetes.sh)).
 A third drives the review in Chromium against the real API with a scripted agent runtime ([scripts/e2e-multi-agent.sh](scripts/e2e-multi-agent.sh)).
-CI also validates the OpenTofu and Helm code; the AWS stack is checked statically, not applied.
+CI also validates the Helm chart with `helm lint` and `kubeconform`.
 
 The pipeline eval in [eval/pipeline-results.json](eval/pipeline-results.json) is 1.0 on every metric.
 The labeled set was written while fixing the defects it found, so treat it as a regression guard rather than a benchmark.
@@ -184,7 +182,6 @@ The evidence-gate eval and its cases are in [DESIGN.md](DESIGN.md#evals).
 - API reference - the OpenAPI document at `/swagger` when the API runs in Development; [apps/web/src/lib/api-schema.ts](apps/web/src/lib/api-schema.ts) is generated from it and checked for drift in CI
 - [UI.md](UI.md) - product surfaces and the UI contract
 - [docs/routing.md](docs/routing.md) - web routes and API endpoints
-- [docs/agents](docs/agents/README.md) - one spec per agent
 - [docs/backend/agentic-workflow-engine-decision.md](docs/backend/agentic-workflow-engine-decision.md) - why LangGraph, and how the graph is shaped
 - [docs/adr](docs/adr) - architecture decision records
 - [SECURITY.md](SECURITY.md) - controls and how to report a vulnerability

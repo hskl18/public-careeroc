@@ -93,7 +93,7 @@ The guidance maintenance agent is the only agent allowed to evolve durable markd
 Boundary:
 
 - It may group repeated correction patterns.
-- It may propose edits to `docs/agent-memory/*.md` and `docs/agents/*.soul.md`.
+- It may propose edits to `docs/agent-memory/*.md`.
 - It must not directly change source code, database rows, or historical application records.
 - It must not turn one correction into a broad rule without regression coverage.
 

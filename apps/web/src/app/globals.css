@@ -12,9 +12,7 @@
   --surface-strong: #ffffff;
   --foreground: var(--brand-navy);
   --paper: #ffffff;
-  --paper-muted: #f8fafc;
   --muted: #516173;
-  --line: rgba(15, 23, 42, 0.1);
   --accent: var(--brand-blue);
   --accent-soft: rgba(52, 95, 163, 0.12);
   --accent-hover: var(--brand-blue-hover);
@@ -23,8 +21,6 @@
   --warning-soft: rgba(217, 158, 0, 0.14);
   --warning-ink: #8a5a00;
   --ink: var(--brand-navy);
-
-  --paper-cream: var(--paper);
   --paper-white: rgba(255, 255, 255, 0.9);
   --ink-black: var(--ink);
   --ink-blue: var(--brand-blue);
@@ -33,13 +29,6 @@
   --stamp-red-strong: #7a271a;
   /* Darker than the brand green so small status text keeps 4.5:1 contrast on white. */
   --stamp-green: #127f56;
-  --highlight-yellow: var(--brand-green);
-  --folder-tan: rgba(52, 95, 163, 0.1);
-  --shadow-soft: rgba(15, 23, 42, 0.08);
-  --shadow-hard: rgba(15, 23, 42, 0.16);
-  --grid-line: rgba(15, 23, 42, 0.08);
-  --accent-orange: var(--brand-blue);
-  --muted-gray: var(--muted);
 
   /* Compatibility aliases for the current branch UI components. */
   --bg: var(--background);
@@ -74,8 +63,6 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
   --font-mono: var(--font-mono-stack);
 }
@@ -130,10 +117,6 @@ body {
   padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
 }
 
-.app-fullpage-content {
-  min-height: 100%;
-}
-
 .workspace-shell {
   min-height: 100%;
 }
@@ -143,12 +126,6 @@ body {
     height: 100%;
     overflow-y: auto;
     padding-bottom: 0;
-  }
-
-  .app-fullpage-content {
-    height: 100%;
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .workspace-shell {
@@ -188,10 +165,6 @@ a {
 
 ::selection {
   background: rgba(52, 95, 163, 0.18);
-}
-
-.glass-panel {
-  backdrop-filter: blur(18px);
 }
 
 .paper-card,
@@ -402,12 +375,6 @@ a {
 }
 
 @media (min-width: 1280px) {
-  .application-inbox-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
   .application-detail-pane {
     min-height: 0;
     max-height: 100%;
@@ -422,14 +389,9 @@ a {
   box-shadow: none;
 }
 
-.typewriter-text,
 .eyebrow,
 .badge {
   font-family: var(--font-mono-stack);
-}
-
-.typewriter-text {
-  letter-spacing: 0.18em;
 }
 
 .eyebrow {
@@ -555,54 +517,6 @@ a {
   border-color: var(--red-strong);
 }
 
-.section-header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (min-width: 1024px) {
-  .section-header {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
-}
-
-.section-actions {
-  display: grid;
-  width: 100%;
-  gap: 0.55rem;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-}
-
-.section-actions .btn {
-  width: 100%;
-}
-
-@media (min-width: 1024px) {
-  .section-actions {
-    width: auto;
-    min-width: 13.5rem;
-  }
-}
-
-.section-actions-compact {
-  grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
-}
-
-.filter-button-grid {
-  display: grid;
-  gap: 0.55rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (min-width: 768px) {
-  .filter-button-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 .info-tile {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -689,11 +603,6 @@ select.input option {
   color: var(--yellow);
 }
 
-.alert-info {
-  background: var(--blue-soft);
-  color: var(--blue);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -708,48 +617,6 @@ select.input option {
 
 .animate-in {
   animation: fadeIn 0.5s ease both;
-}
-
-.stagger > * {
-  animation: fadeIn 0.5s ease both;
-}
-
-.stagger > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-
-.stagger > *:nth-child(2) {
-  animation-delay: 50ms;
-}
-
-.stagger > *:nth-child(3) {
-  animation-delay: 100ms;
-}
-
-.stagger > *:nth-child(4) {
-  animation-delay: 150ms;
-}
-
-.stagger > *:nth-child(5) {
-  animation-delay: 200ms;
-}
-
-.stagger > *:nth-child(6) {
-  animation-delay: 250ms;
-}
-
-.stagger > *:nth-child(7) {
-  animation-delay: 300ms;
-}
-
-.stagger > *:nth-child(8) {
-  animation-delay: 350ms;
-}
-
-.glow-line {
-  height: 1px;
-  background: var(--surface-strong);
-  opacity: 0.45;
 }
 
 details summary {

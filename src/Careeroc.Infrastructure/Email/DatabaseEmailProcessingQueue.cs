@@ -338,13 +338,7 @@ public sealed class DatabaseEmailProcessingQueue : IEmailProcessingQueue
 
     private static bool IsUniqueConstraintViolation(DbUpdateException exception)
     {
-        if (exception.InnerException is PostgresException postgresException)
-        {
-            return string.Equals(postgresException.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal);
-        }
-
-        return exception.InnerException?.GetType().Name == "SqliteException" &&
-               exception.InnerException.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
+        return exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
     }
 
     private static TimeSpan ResolveProcessingLockTimeout(IConfiguration? configuration)

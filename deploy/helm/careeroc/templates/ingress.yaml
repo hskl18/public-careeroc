@@ -1,4 +1,4 @@
-{{- /* Same routing as the AWS load balancer: one host, paths pick the service. */ -}}
+{{- /* One host, and paths pick the service. */ -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

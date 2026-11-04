@@ -207,26 +207,9 @@ One user action is one trace across all three services.
 
 ### Containers with the same names on every platform
 
-Every deployment uses the service names `web`, `api`, and `agent-runtime`, so configuration moves between Compose, Railway, AWS, and Kubernetes unchanged.
-
-```mermaid
-flowchart LR
-  User["Browser, assistant,<br/>or A2A peer"] --> ALB["Application Load Balancer<br/>one domain, TLS"]
-  ALB -- "/mcp, /agent/*" --> API["api<br/>Fargate ARM64"]
-  ALB -- "/a2a, agent card" --> Agent["agent-runtime<br/>Fargate ARM64"]
-  ALB -- "everything else,<br/>incl. OAuth callback" --> Web["web<br/>Fargate ARM64"]
-  Web -- "Service Connect<br/>http://api:8080" --> API
-  API -- "http://agent-runtime:8123" --> Agent
-  API --> RDS[("RDS PostgreSQL 17")]
-  Agent -.->|"optional own database"| RDS
-  Secrets["Secrets Manager"] -.->|injected| API
-  Secrets -.->|injected| Web
-  Secrets -.->|injected| Agent
-```
-
-On AWS the stack is ECS Fargate on ARM64 behind one load balancer with Service Connect, RDS, and Secrets Manager, without a NAT gateway.
-App Runner closed to new customers in April 2026, and ECS Express Mode gives each service its own URL, while careeroc needs three services behind one origin.
-**Rejected:** Lambda, because sync and processing are long-running background loops and MCP uses streaming HTTP.
+Every deployment uses the service names `web`, `api`, and `agent-runtime`, so configuration moves between Compose and Kubernetes unchanged.
+Both targets are started and smoke tested in CI.
+Railway and AWS (ECS Fargate with OpenTofu) configurations exist in the `v1.0.0` tag; they were removed because CI never ran them.
 
 ## Trust boundaries
 

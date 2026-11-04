@@ -30,11 +30,3 @@ coverage/
 apps/web/node_modules/
 apps/web/.next/
 
-infra/.aws-sam/
-
-# OpenTofu / Terraform
-**/.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
