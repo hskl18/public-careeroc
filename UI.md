@@ -18,8 +18,8 @@ Every surface should help answer one of these questions:
 ## Public pages and the workspace
 
 Public pages (`/` and `/tech`) explain the open-source project and lead into the demo.
-They use a compact nav (Overview, Architecture), a two-column first screen with copy on the left and a real product surface on the right, short step-based sections instead of long feature lists, and mascots as occasional brand anchors.
-Hero-scale type belongs only here.
+They look like the workspace: the same header and bottom nav (with Overview and Architecture as the items), the same type scale, and a top summary card followed by panels in a responsive grid.
+There is no separate marketing style, hero-scale type, or decoration a workspace page would not have.
 
 Workspace pages (`/app/*`) are tools.
 They use the constrained workspace shell (`max-w-[104rem]`, `px-5`, `py-6`, `gap-4`), compact cards for bounded content, dense tables only where comparison matters, and no marketing copy.
@@ -89,7 +89,7 @@ Eyebrow labels are short, uppercase, and mono; panel headings are compact; body 
 No viewport-width font sizes and no negative letter spacing.
 Long company names, roles, senders, and email addresses wrap or truncate without covering controls.
 
-Mascots clarify state (loading, mail sync progress, profile icons, public step flows); they are not decoration for every card or navbar.
+Mascots clarify state (loading, mail sync progress, profile icons); they are not decoration for every card or navbar.
 SVG backgrounds stay transparent and keep the existing pixel style.
 
 ## States and freshness
