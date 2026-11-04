@@ -15,7 +15,7 @@ export const metadata: Metadata = buildPageMetadata({
 const agentStages = [
   {
     title: "Pipeline in .NET",
-    body: "Triage, extraction, matching, and reminders are rules first and covered by 400+ tests. An optional model pass is kept only when it is confident.",
+    body: "Triage, extraction, matching, and reminders are rules first and covered by several hundred tests. An optional model pass is kept only when it is confident.",
   },
   {
     title: "Specialist agents",
@@ -64,12 +64,12 @@ const modelRoutes = [
   [
     "Model-backed specialists",
     "Ollama or OpenAI",
-    "Same graph and gate with a model behind each specialist; every node has a timeout and one retry.",
+    "Same graph and gate with a model behind each specialist; every node has a timeout and one retry. The hosted demo and CI do not run them.",
   ],
   [
     "Email pipeline model pass",
     "Optional",
-    "Triage and extraction can ask a fast and a structured model; the rule-based result stands when the model is off, slow, or unsure.",
+    "Extraction and the review evidence pass can ask a model; the rule-based result stands when the model is off, slow, or unsure.",
   ],
   [
     "Graph failure",
@@ -212,7 +212,8 @@ export default function TechnologyPage() {
         title="The real pipeline, scored on the demo inbox in CI"
       >
         <p className="mt-1 max-w-4xl text-sm leading-6 text-[var(--text-secondary)]">
-          Every email in the 51-email demo inbox has a hand-written label.
+          The 48 inbound emails of the 51-email demo inbox have hand-written
+          labels; the 3 replies the user sent are not scored.
           The first run found three defects: a scam email dropped by triage, a
           coding assessment read as an interview, and an agency named as the
           employer. All are fixed, but the labels were written alongside those
@@ -220,7 +221,7 @@ export default function TechnologyPage() {
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="badge bg-[var(--green-soft)] text-[var(--green)]">
-            Latest run 100%
+            Committed run 100%
           </span>
           {datasetComponents.map((component) => (
             <span key={component} className="badge text-[var(--text-secondary)]">

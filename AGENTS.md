@@ -102,7 +102,7 @@ If Application needs a side effect, add an interface in `Application/Abstraction
 5. `ApplicationWorkflowService` matches or creates the `JobApplication`, writes `JobApplicationEvent` rows, and creates or closes reminders.
 6. The review step sends low-confidence or risky evidence to the review queue before anything unsafe enters the pipeline.
 
-The agent services under `src/Careeroc.Application/Services/Agents`:
+The agent services under `src/Careeroc.Application/Services/Agents` are named for their role; only extraction and the review evidence pass can call a model, and the others are rules:
 
 - `InboxTriageAgentService`: is this email about recruiting?
 - `WorkflowExtractionAgentService`: company, role, category, action, due date

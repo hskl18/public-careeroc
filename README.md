@@ -7,11 +7,12 @@ Specialist agents review the search, a person approves what they propose, and yo
 **Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox.
 
 Run the whole system with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
-There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and deleted after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
+There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and removed from the product database after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
 
 ![careeroc dashboard](docs/media/dashboard.png)
 
-This repository is the complete source of careeroc, a hosted product that is now published as a reference implementation.
+careeroc ran as a hosted product with a small beta, did not work out commercially, and was shut down.
+This repository is its complete source, published as a reference implementation.
 It is a working system rather than a template: a .NET 10 API, a Next.js 16 web app, and a Python LangGraph runtime, with tests, evals, traces, and deployment code for Compose, Railway, AWS, and Kubernetes.
 
 ## What it shows
@@ -24,7 +25,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 | Human in the loop | A review that proposes a write pauses on a LangGraph `interrupt()` with a Postgres checkpoint. When the user approves it, the API, never the agents, creates the reminders, and the graph resumes so the decision lands in its trace. |
 | Bring your own assistant | Read-only personal access tokens, an MCP server at `/mcp`, and an A2A 1.0 agent with a public agent card. |
 | Observability | OpenTelemetry from the browser-facing web app through the API into each agent node, using the GenAI `invoke_agent` span conventions. |
-| Evals | A labeled 51-email demo inbox scored in CI for triage, category, company, status, and review precision and recall, and a model-free eval of the evidence gate against invented citations and prompt injection. |
+| Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI for triage, category, company, status, and review precision and recall, and a model-free eval of the evidence gate against invented citations and prompt injection. |
 | Deploy anywhere | Docker Compose, Railway infrastructure as code, AWS ECS Fargate with OpenTofu, a Helm chart for any Kubernetes, and multi-arch images on GHCR. |
 
 ## Screenshots
@@ -61,9 +62,18 @@ flowchart LR
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
   The agent runtime ships a deterministic suite, so the demo and CI need no model or API key.
-- **Every agent output is visible.** Traces, confidence, and evidence references are shown in the app, and low-confidence results and proposed writes stay pending until a person decides.
+  The hosted demo, the screenshots, the trace above, and the evals all come from that suite, not from a model.
+- **Agent output is visible.** Each step's summary, reason, and confidence are shown in the app, and low-confidence results and proposed writes stay pending until a person decides.
 
 [DESIGN.md](DESIGN.md) explains the decisions, the rejected alternatives, trust boundaries, and failure modes.
+
+## Where to start reading
+
+1. [graph.py](services/agent-runtime/src/careeroc_agent_runtime/graph.py): the review graph and the evidence gate in under 300 lines.
+2. [test_evidence_gate_eval.py](services/agent-runtime/tests/test_evidence_gate_eval.py): what a careless or manipulated model can and cannot get past the gate.
+3. [CareerOrchestratorService.cs](src/Careeroc.Application/Services/CareerOrchestratorService.cs): the snapshot the agents see, and the approval that turns a proposal into a write.
+4. [ApplicationWorkflowService.cs](src/Careeroc.Application/Services/ApplicationWorkflowService.cs): how an email matches an application and moves its status.
+5. [ApiRequestSignatureValidator.cs](apps/api/Security/ApiRequestSignatureValidator.cs): the signed requests that carry user identity from the web app to the API.
 
 ## Quick start
 
