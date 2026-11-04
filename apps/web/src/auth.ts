@@ -73,7 +73,6 @@ export const isGoogleAuthConfigured = Boolean(
 export const isAuthEnabled = Boolean(
   authSecret && ((googleClientId && googleClientSecret) || isDemoMode),
 );
-export const signInLabel = isDemoMode ? "Open the demo" : "Start with Google";
 
 assertProductionAuthConfiguration();
 

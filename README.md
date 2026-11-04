@@ -31,9 +31,9 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 
 | | |
 |---|---|
-| ![Landing page](docs/media/landing.png) **Landing.** One click opens a demo workspace. | ![Applications](docs/media/applications.png) **Applications.** 51 emails become 20 tracked applications. |
-| ![Application detail](docs/media/application-detail.png) **Application detail.** Pipeline stage, evidence, the agent brief, and resume fit. | ![Review queue](docs/media/review-queue.png) **Review queue.** The agency and the scam email wait for a person. |
-| ![Agent review](docs/media/agent-review.png) **Multi-agent review.** The agents propose a reminder; nothing is created until the user approves. | ![Assistant access](docs/media/assistant-access.png) **Assistant access.** Tokens, the MCP command, and the A2A card. |
+| ![Applications](docs/media/applications.png) **Applications.** 51 emails become 20 tracked applications. | ![Application detail](docs/media/application-detail.png) **Application detail.** Pipeline stage, evidence, the agent brief, and resume fit. |
+| ![Review queue](docs/media/review-queue.png) **Review queue.** The agency and the scam email wait for a person. | ![Agent review](docs/media/agent-review.png) **Multi-agent review.** The agents propose a reminder; nothing is created until the user approves. |
+| ![Assistant access](docs/media/assistant-access.png) **Assistant access.** Tokens, the MCP command, and the A2A card. |  |
 
 One "Run review" click, traced across all three services in Jaeger:
 

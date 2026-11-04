@@ -317,47 +317,6 @@ a {
   background: rgba(255, 255, 255, 0.92);
 }
 
-.public-landing-page,
-.home-public-page {
-  --home-chip-bg: var(--surface-elevated);
-}
-
-.home-tint-card,
-.home-signal-card {
-  background: var(--surface-elevated);
-  border-color: var(--border);
-}
-
-.home-live-panel {
-  --home-live-text: var(--ink-black);
-  --home-live-muted: rgba(67, 85, 107, 0.78);
-  --home-live-faint: rgba(67, 85, 107, 0.58);
-  --home-live-line: var(--border);
-  --home-live-fill: var(--surface-elevated);
-  background: var(--surface-strong);
-  border-color: var(--home-live-line);
-  color: var(--home-live-text);
-  box-shadow:
-    none;
-}
-
-.home-live-card {
-  background: var(--home-live-fill);
-  border-color: var(--border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-}
-
-.home-live-action {
-  background: var(--blue-soft);
-  border-color: var(--border);
-  color: rgba(15, 23, 42, 0.72);
-}
-
-.home-live-sync {
-  background: var(--surface-elevated);
-  border-color: var(--border);
-}
-
 .public-product-panel {
   background: linear-gradient(
     135deg,
@@ -370,12 +329,6 @@ a {
 
 .public-product-panel [class*="border-[var(--border)]"] {
   border-color: var(--border) !important;
-}
-
-.home-live-panel h1,
-.home-live-panel h2,
-.home-live-panel h3 {
-  color: var(--ink-black);
 }
 
 .page-title {
