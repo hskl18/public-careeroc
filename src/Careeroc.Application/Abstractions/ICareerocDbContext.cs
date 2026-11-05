@@ -22,7 +22,6 @@ public interface ICareerocDbContext
     DbSet<ResumeDocument> ResumeDocuments { get; }
     DbSet<ResumeVersion> ResumeVersions { get; }
     DbSet<ResumeEvaluation> ResumeEvaluations { get; }
-    DbSet<ResumeCorrection> ResumeCorrections { get; }
     DbSet<PersonalAccessToken> PersonalAccessTokens { get; }
     ChangeTracker ChangeTracker { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

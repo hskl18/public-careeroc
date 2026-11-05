@@ -628,134 +628,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/resumes/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ImportResumeFile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/{resumeDocumentId}/reextract": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ReextractResume"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/versions/{resumeVersionId}/analyze": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["AnalyzeResumeVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/{resumeDocumentId}/suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["GetResumeSuggestions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/{resumeDocumentId}/suggestions/{suggestionId}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["AcceptResumeSuggestion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/{resumeDocumentId}/suggestions/{suggestionId}/decline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["DeclineResumeSuggestion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/resumes/versions/{resumeVersionId}/structured-data": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["PatchResumeStructuredData"];
-        trace?: never;
-    };
-    "/api/resumes/versions/{resumeVersionId}/corrections": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["CorrectResumeVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/review": {
         parameters: {
             query?: never;
@@ -1099,12 +971,6 @@ export interface components {
             clearDueDate?: boolean;
             notes?: string | null;
         };
-        CorrectResumeFieldRequest: {
-            fieldPath?: string | null;
-            previousValue?: string | null;
-            correctedValue?: string | null;
-            note?: string | null;
-        };
         CreatePersonalAccessTokenRequest: {
             name?: string | null;
             /** Format: int32 */
@@ -1182,12 +1048,6 @@ export interface components {
             status?: string | null;
             message?: string | null;
         };
-        ImportResumeFileRequest: {
-            title?: string | null;
-            fileName?: string | null;
-            contentType?: string | null;
-            base64Content?: string | null;
-        };
         InboxAccountSetupDto: {
             /** Format: uuid */
             id?: string;
@@ -1246,10 +1106,6 @@ export interface components {
             totalWaiting?: number;
             /** Format: int32 */
             totalUnassigned?: number;
-        };
-        PatchResumeStructuredDataRequest: {
-            operations?: components["schemas"]["ResumeStructuredDataPatchOperation"][] | null;
-            note?: string | null;
         };
         PendingActionDto: {
             /** Format: uuid */
@@ -1366,18 +1222,6 @@ export interface components {
             location?: string | null;
             links?: components["schemas"]["ResumeLinkDto"][] | null;
         };
-        ResumeCorrectionDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            resumeVersionId?: string;
-            fieldPath?: string | null;
-            previousValue?: string | null;
-            correctedValue?: string | null;
-            note?: string | null;
-            /** Format: date-time */
-            createdAtUtc?: string;
-        };
         ResumeDocumentDto: {
             /** Format: uuid */
             id?: string;
@@ -1416,7 +1260,6 @@ export interface components {
             nextActions?: string[] | null;
             sectionReviews?: components["schemas"]["ResumeSectionReviewDto"][] | null;
             evidence?: components["schemas"]["ResumeEvaluationEvidenceDto"];
-            modelRun?: components["schemas"]["ResumeModelRunDto"];
             /** Format: date-time */
             createdAtUtc?: string;
         };
@@ -1462,10 +1305,6 @@ export interface components {
             /** Format: int32 */
             skillCount?: number;
             promptVersion?: string | null;
-            ocrStatus?: string | null;
-            /** Format: double */
-            ocrConfidence?: number | null;
-            ocrError?: string | null;
         };
         ResumeFitDto: {
             /** Format: uuid */
@@ -1515,28 +1354,6 @@ export interface components {
             /** Format: uuid */
             resumeVersionLinkedToOutcome?: string | null;
         };
-        ResumeModelRunDto: {
-            runId?: string | null;
-            purpose?: string | null;
-            provider?: string | null;
-            model?: string | null;
-            outcome?: string | null;
-            /** Format: int32 */
-            promptTokens?: number | null;
-            /** Format: int32 */
-            completionTokens?: number | null;
-            /** Format: int32 */
-            totalTokens?: number | null;
-            /** Format: double */
-            estimatedCostUsd?: number | null;
-            /** Format: int32 */
-            latencyMs?: number | null;
-            /** Format: date-time */
-            occurredAtUtc?: string | null;
-            errorType?: string | null;
-            /** Format: int32 */
-            statusCode?: number | null;
-        };
         ResumeProjectDto: {
             name?: string | null;
             description?: string | null;
@@ -1569,21 +1386,6 @@ export interface components {
             skills?: components["schemas"]["ResumeSkillGroupsDto"];
             projects?: components["schemas"]["ResumeProjectDto"][] | null;
         };
-        ResumeStructuredDataPatchOperation: {
-            op?: string | null;
-            path?: string | null;
-            value?: unknown;
-        };
-        ResumeSuggestionDto: {
-            /** Format: uuid */
-            id?: string;
-            kind?: string | null;
-            targetSection?: string | null;
-            originalText?: string | null;
-            suggestedText?: string | null;
-            rationale?: string | null;
-            evidenceLinks?: string[] | null;
-        };
         ResumeVersionDto: {
             /** Format: uuid */
             id?: string;
@@ -1600,7 +1402,6 @@ export interface components {
             projectCount?: number;
             /** Format: date-time */
             createdAtUtc?: string;
-            corrections?: components["schemas"]["ResumeCorrectionDto"][] | null;
         };
         ResumeWorkspaceDto: {
             documents?: components["schemas"]["ResumeDocumentDto"][] | null;
@@ -2796,239 +2597,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResumeWorkspaceDto"];
                 };
-            };
-        };
-    };
-    ImportResumeFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportResumeFileRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeWorkspaceDto"];
-                };
-            };
-        };
-    };
-    ReextractResume: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeDocumentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeWorkspaceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AnalyzeResumeVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeVersionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeWorkspaceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GetResumeSuggestions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeDocumentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeSuggestionDto"][];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AcceptResumeSuggestion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeDocumentId: string;
-                suggestionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DeclineResumeSuggestion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeDocumentId: string;
-                suggestionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PatchResumeStructuredData: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeVersionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PatchResumeStructuredDataRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeWorkspaceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CorrectResumeVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resumeVersionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CorrectResumeFieldRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeWorkspaceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

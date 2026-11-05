@@ -115,8 +115,7 @@ Agent traces are shown in the review queue and on application detail, not hidden
 
 ### Resume, memory, and the orchestrator
 
-- `ResumeIntelligenceService`: resume ingestion (PDF, image, markdown, text), extraction, evaluation, and correction patching; backs `/api/resumes*`.
-  It is large; split it into ingestion, extraction, evaluation, and mapping before adding more behavior.
+- `ResumeIntelligenceService`: turns pasted resume text into structured data and a rule-based evaluation; backs `/api/resumes`.
 - `UserProfileService`, `UserMemoryProposalService`, and `UserAgentContextSnapshotService`: profile, durable memory (pending, then confirmed), and the context snapshot agents read; backs `/api/profile*`.
 - `CareerOrchestratorService`: builds the bounded snapshot for the LangGraph review and stores the result as confirmed or pending memory.
   When the user approves a pending review, it creates the reminders the agents proposed, after checking each application belongs to the user, and resumes the paused graph so the trace ends with the decision.

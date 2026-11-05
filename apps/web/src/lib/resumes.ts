@@ -29,7 +29,6 @@ export type ResumeVersion = {
   experienceCount: number;
   projectCount: number;
   createdAtUtc: string;
-  corrections: ResumeCorrection[];
 };
 
 export type ResumeStructuredData = {
@@ -84,16 +83,6 @@ export type ResumeProject = {
   bullets: string[];
 };
 
-export type ResumeCorrection = {
-  id: string;
-  resumeVersionId: string;
-  fieldPath: string;
-  previousValue: string | null;
-  correctedValue: string;
-  note: string | null;
-  createdAtUtc: string;
-};
-
 export type ResumeEvaluation = {
   id: string;
   resumeVersionId: string;
@@ -105,7 +94,6 @@ export type ResumeEvaluation = {
   nextActions: string[];
   sectionReviews: ResumeSectionReview[];
   evidence: ResumeEvaluationEvidence;
-  modelRun: ResumeModelRun | null;
   createdAtUtc: string;
 };
 
@@ -116,16 +104,6 @@ export type ResumeFit = {
   strengths: string[];
   gaps: string[];
   rationale: string | null;
-};
-
-export type ResumeSuggestion = {
-  id: string;
-  kind: string | null;
-  targetSection: string | null;
-  originalText: string | null;
-  suggestedText: string | null;
-  rationale: string | null;
-  evidenceLinks: string[];
 };
 
 export type ResumeExtractionMetadata = {
@@ -148,22 +126,6 @@ export type ResumeSectionReview = {
   strengths: string[];
   weaknesses: string[];
   suggestions: string[];
-};
-
-export type ResumeModelRun = {
-  runId: string;
-  purpose: string;
-  provider: string | null;
-  model: string | null;
-  outcome: string;
-  promptTokens: number | null;
-  completionTokens: number | null;
-  totalTokens: number | null;
-  estimatedCostUsd: number | null;
-  latencyMs: number | null;
-  occurredAtUtc: string | null;
-  errorType: string | null;
-  statusCode: number | null;
 };
 
 export type ResumeEvaluationEvidence = {
@@ -189,31 +151,6 @@ export type CreateResumeRequest = {
   sourceKind: string | null;
   sourceText: string;
   sourceFileName?: string | null;
-};
-
-export type ImportResumeFileRequest = {
-  title: string | null;
-  fileName: string;
-  contentType: string;
-  base64Content: string;
-};
-
-export type CorrectResumeFieldRequest = {
-  fieldPath: string;
-  previousValue: string | null;
-  correctedValue: string;
-  note: string | null;
-};
-
-export type PatchResumeStructuredDataRequest = {
-  operations: ResumeStructuredDataPatchOperation[];
-  note: string | null;
-};
-
-export type ResumeStructuredDataPatchOperation = {
-  op: "add" | "replace" | "remove";
-  path: string;
-  value?: unknown;
 };
 
 export const fallbackResumeWorkspace: ResumeWorkspace = {

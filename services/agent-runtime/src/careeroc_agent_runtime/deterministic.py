@@ -108,7 +108,7 @@ class DeterministicAgentSuite:
             return SpecialistAnalysis(
                 agent_name="resume_analyst",
                 summary="No resume is available, so resume evidence cannot support a review.",
-                recommended_actions=["Upload a resume so outcomes can be compared with it."],
+                recommended_actions=["Paste a resume so outcomes can be compared with it."],
                 confidence=0.2,
             )
 

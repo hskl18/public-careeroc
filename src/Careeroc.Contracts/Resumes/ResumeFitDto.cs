@@ -7,12 +7,3 @@ public sealed record ResumeFitDto(
     IReadOnlyList<string> Strengths,
     IReadOnlyList<string> Gaps,
     string Rationale);
-
-public sealed record ResumeSuggestionDto(
-    Guid Id,
-    string Kind,
-    string TargetSection,
-    string OriginalText,
-    string SuggestedText,
-    string Rationale,
-    IReadOnlyList<string> EvidenceLinks);

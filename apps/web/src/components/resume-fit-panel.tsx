@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Route } from "next";
 import { useEffect, useState } from "react";
 import type { ResumeFit } from "@/lib/resumes";
 
@@ -92,7 +91,7 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
     };
   }, [applicationId, proxyPrefix]);
 
-  const resumeHref = `/app/resume?applicationId=${encodeURIComponent(applicationId)}` as Route;
+  const resumeHref = "/app/resume";
   const displayLoading = Boolean(proxyPrefix) && loading;
 
   return (

@@ -8,7 +8,6 @@ using Careeroc.Contracts.Resumes;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using UglyToad.PdfPig;
 
 namespace Careeroc.Application.Services;
 

@@ -1,7 +1,6 @@
 namespace Careeroc.Contracts.Resumes;
 
 using Careeroc.Contracts.Profile;
-using System.Text.Json;
 
 public sealed record ResumeWorkspaceDto(
     IReadOnlyList<ResumeDocumentDto> Documents,
@@ -29,8 +28,7 @@ public sealed record ResumeVersionDto(
     ResumeExtractionMetadataDto ExtractionMetadata,
     int ExperienceCount,
     int ProjectCount,
-    DateTimeOffset CreatedAtUtc,
-    IReadOnlyList<ResumeCorrectionDto> Corrections);
+    DateTimeOffset CreatedAtUtc);
 
 public sealed record ResumeStructuredDataDto(
     ResumeContactDto Contact,
@@ -77,15 +75,6 @@ public sealed record ResumeProjectDto(
     IReadOnlyList<string> Links,
     IReadOnlyList<string> Bullets);
 
-public sealed record ResumeCorrectionDto(
-    Guid Id,
-    Guid ResumeVersionId,
-    string FieldPath,
-    string? PreviousValue,
-    string CorrectedValue,
-    string? Note,
-    DateTimeOffset CreatedAtUtc);
-
 public sealed record ResumeEvaluationDto(
     Guid Id,
     Guid ResumeVersionId,
@@ -97,7 +86,6 @@ public sealed record ResumeEvaluationDto(
     IReadOnlyList<string> NextActions,
     IReadOnlyList<ResumeSectionReviewDto> SectionReviews,
     ResumeEvaluationEvidenceDto Evidence,
-    ResumeModelRunDto? ModelRun,
     DateTimeOffset CreatedAtUtc);
 
 public sealed record ResumeExtractionMetadataDto(
@@ -111,10 +99,7 @@ public sealed record ResumeExtractionMetadataDto(
     int EducationCount,
     int ProjectCount,
     int SkillCount,
-    string? PromptVersion,
-    string OcrStatus = "not_required",
-    decimal? OcrConfidence = null,
-    string? OcrError = null);
+    string? PromptVersion);
 
 public sealed record ResumeSectionReviewDto(
     string Section,
@@ -122,21 +107,6 @@ public sealed record ResumeSectionReviewDto(
     IReadOnlyList<string> Strengths,
     IReadOnlyList<string> Weaknesses,
     IReadOnlyList<string> Suggestions);
-
-public sealed record ResumeModelRunDto(
-    string RunId,
-    string Purpose,
-    string? Provider,
-    string? Model,
-    string Outcome,
-    int? PromptTokens,
-    int? CompletionTokens,
-    int? TotalTokens,
-    decimal? EstimatedCostUsd,
-    int? LatencyMs,
-    DateTimeOffset? OccurredAtUtc,
-    string? ErrorType,
-    int? StatusCode);
 
 public sealed record ResumeEvaluationEvidenceDto(
     int SkillCount,
@@ -153,12 +123,3 @@ public sealed record ResumeReadinessDto(
     bool HasResume,
     string Summary,
     IReadOnlyList<string> NextActions);
-
-public sealed record PatchResumeStructuredDataRequest(
-    IReadOnlyList<ResumeStructuredDataPatchOperation> Operations,
-    string? Note);
-
-public sealed record ResumeStructuredDataPatchOperation(
-    string Op,
-    string Path,
-    JsonElement Value);

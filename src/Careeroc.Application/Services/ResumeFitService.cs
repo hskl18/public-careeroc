@@ -55,7 +55,7 @@ public sealed class ResumeFitService
                 0,
                 [],
                 ["No resume version is available to compare against this application."],
-                "Upload or confirm a resume before scoring role fit.");
+                "Paste a resume before scoring role fit.");
         }
 
         var cached = await _dbContext.ApplicationResumeFits

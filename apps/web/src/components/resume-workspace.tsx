@@ -1,382 +1,315 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
+import { InlineMemoryProposals } from "@/components/inline-memory-proposals";
+import { LocalTime } from "@/components/local-time";
 import type {
-  CorrectResumeFieldRequest,
   CreateResumeRequest,
-  ImportResumeFileRequest,
-  PatchResumeStructuredDataRequest,
-  ResumeStructuredDataPatchOperation,
+  ResumeDocument,
+  ResumeEvaluation,
+  ResumeSectionReview,
+  ResumeStructuredData,
   ResumeWorkspace,
 } from "@/lib/resumes";
 
-const ResumeDossier = dynamic(() =>
-  import("./resume-dossier").then((module) => module.ResumeDossier),
-);
-const ResumeImportPanel = dynamic(() =>
-  import("./resume-import-panel").then((module) => module.ResumeImportPanel),
-);
+const minimumResumeLength = 80;
 
-type ResumePendingOperation = "file-import" | "text-create" | "reanalyze" | "reextract" | null;
-type ResumeImportPhase = "reading" | "saving" | "extracting" | "analyzing" | null;
+const cellClass =
+  "rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2.5";
 
-type ResumeWorkspaceProps = {
-  initialWorkspace: ResumeWorkspace;
-  source: "api" | "fallback";
-  proxyPrefix: string | null;
-  currentUserEmail: string;
-  currentUserName?: string | null;
-  applicationId?: string | null;
-};
-
-async function readErrorMessage(response: Response) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-
-  return `Request failed with ${response.status}`;
+function scoreTier(score: number) {
+  if (score >= 85) return "Strong";
+  if (score >= 70) return "Solid";
+  if (score >= 55) return "Mixed";
+  return "Weak";
 }
 
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      const commaIndex = result.indexOf(",");
-      resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("File read failed."));
-    reader.readAsDataURL(file);
-  });
+function formatSectionName(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function getResumeTitleFromFileName(fileName: string) {
-  return fileName.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").trim();
+function Panel({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="card app-workspace-panel p-3 sm:p-4">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
 }
 
-export function ResumeWorkspace({
-  initialWorkspace,
-  source,
+function SignalList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+  return (
+    <div className={cellClass}>
+      <p className="eyebrow">{title}</p>
+      <ul className="mt-2 space-y-1.5 text-sm leading-5 text-[var(--text-secondary)]">
+        {(items.length > 0 ? items : [empty]).map((item) => (
+          <li key={item} className="break-words">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <ul className="mt-2 list-disc space-y-1 pl-4 text-sm leading-5 text-[var(--text-secondary)]">
+      {items.map((item) => (
+        <li key={item} className="break-words">
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ParsedResume({ summary, data }: { summary: string; data: ResumeStructuredData }) {
+  const skills = [...data.skills.technical, ...data.skills.languages, ...data.skills.other];
+  return (
+    <Panel eyebrow="Parsed" title="What careeroc read">
+      <div className="grid gap-2">
+        <p className={`text-sm leading-6 text-[var(--text-secondary)] ${cellClass}`}>{summary}</p>
+        {data.experience.map((role) => (
+          <article key={`${role.company}-${role.title}-${role.dateRange}`} className={cellClass}>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              {[role.title, role.company].filter(Boolean).join(" at ")}
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {[role.dateRange, role.location].filter(Boolean).join(" · ")}
+            </p>
+            <BulletList items={role.bullets} />
+          </article>
+        ))}
+        {data.projects.map((project) => (
+          <article key={project.name} className={cellClass}>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{project.name}</h3>
+            <p className="text-sm leading-5 text-[var(--text-secondary)]">{project.description}</p>
+            <BulletList items={project.bullets} />
+          </article>
+        ))}
+        {data.education.map((school) => (
+          <article key={`${school.school}-${school.degree}`} className={cellClass}>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{school.school}</h3>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {[school.degree, school.field, school.dateRange].filter(Boolean).join(" · ")}
+            </p>
+          </article>
+        ))}
+        {skills.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <span key={skill} className="badge text-[var(--text-secondary)]">
+                {skill}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
+function RecruiterReview({ evaluation }: { evaluation: ResumeEvaluation }) {
+  const sections = evaluation.sectionReviews.filter(
+    (review: ResumeSectionReview) => review.section.toLowerCase() !== "overall",
+  );
+  return (
+    <Panel eyebrow="Review" title={evaluation.verdict}>
+      <div className="grid gap-2 md:grid-cols-3">
+        <SignalList title="Strengths" items={evaluation.strengths} empty="None detected yet." />
+        <SignalList title="Gaps" items={evaluation.gaps} empty="No major gaps detected." />
+        <SignalList title="Next actions" items={evaluation.nextActions} empty="Nothing to do yet." />
+      </div>
+      {sections.length > 0 ? (
+        <div className="mt-2 grid gap-2 lg:grid-cols-2">
+          {sections.map((review) => (
+            <article key={review.section} className={cellClass}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                  {formatSectionName(review.section)}
+                </h3>
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  {review.score}/100 · {scoreTier(review.score)}
+                </p>
+              </div>
+              <BulletList items={[...review.weaknesses, ...review.suggestions]} />
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+function NewResumeForm({
   proxyPrefix,
-  applicationId,
-}: ResumeWorkspaceProps) {
-  const [workspace, setWorkspace] = useState(initialWorkspace);
+  onCreated,
+}: {
+  proxyPrefix: string | null;
+  onCreated: (workspace: ResumeWorkspace) => void;
+}) {
   const [title, setTitle] = useState("");
   const [sourceText, setSourceText] = useState("");
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(0);
-  const [isImporting, setIsImporting] = useState(false);
-  const [pendingOperation, setPendingOperation] = useState<ResumePendingOperation>(null);
-  const [importPhase, setImportPhase] = useState<ResumeImportPhase>(null);
-  const [correctionFieldPath, setCorrectionFieldPath] = useState("summary");
-  const [correctionValue, setCorrectionValue] = useState("");
-  const [correctionNote, setCorrectionNote] = useState("");
-  const [isCorrecting, setIsCorrecting] = useState(false);
-  const [showNewResumeForm, setShowNewResumeForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const canPersist = Boolean(proxyPrefix);
-  const isResumeBusy = pendingOperation !== null || isImporting || isCorrecting;
-  const canImport = canPersist && Boolean(importFile) && !isResumeBusy;
-  const normalizedSourceText = sourceText.trim();
-  const canCreateFromText =
-    canPersist && normalizedSourceText.length >= 80 && !isResumeBusy;
-  const workspaceLoadWarning =
-    source === "fallback" && canPersist
-      ? "Resume data could not be loaded yet. Saving will retry the live API."
-      : null;
-  const latestDocument = workspace.documents[0] ?? null;
-  const hasResumeData = workspace.documents.length > 0;
-  async function importResumeFile() {
-    if (!proxyPrefix || !canImport || !importFile) return;
+  const canSave = Boolean(proxyPrefix) && sourceText.trim().length >= minimumResumeLength;
 
-    setIsImporting(true);
-    setPendingOperation("file-import");
-    setImportPhase("reading");
+  async function save() {
+    if (!proxyPrefix || !canSave) return;
+    setIsSaving(true);
     setError(null);
-    setNotice(null);
-
-    try {
-      const base64Content = await readFileAsBase64(importFile);
-      setImportPhase("extracting");
-      const request: ImportResumeFileRequest = {
-        title: title.trim() || null,
-        fileName: importFile.name,
-        contentType: importFile.type || "application/octet-stream",
-        base64Content,
-      };
-      const response = await fetch(`${proxyPrefix}/api/resumes/import`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-
-      setImportPhase("analyzing");
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setImportFile(null);
-      setFileInputKey((key) => key + 1);
-      setTitle("");
-      setShowNewResumeForm(false);
-      setNotice("Resume file imported and evaluated.");
-    } catch (importError) {
-      setError(importError instanceof Error ? importError.message : "Resume import failed.");
-    } finally {
-      setIsImporting(false);
-      setPendingOperation(null);
-      setImportPhase(null);
-    }
-  }
-
-  async function createResumeFromText() {
-    if (!proxyPrefix || !canPersist) return;
-
-    const resumeText = sourceText.trim();
-    if (resumeText.length < 80) {
-      setError("Paste at least 80 characters of resume text before saving.");
-      setNotice(null);
-      return;
-    }
-
-    setIsImporting(true);
-    setPendingOperation("text-create");
-    setImportPhase("saving");
-    setError(null);
-    setNotice(null);
-
     try {
       const request: CreateResumeRequest = {
         title: title.trim() || null,
         sourceKind: "text",
-        sourceText: resumeText,
-        sourceFileName: null,
+        sourceText: sourceText.trim(),
       };
       const response = await fetch(`${proxyPrefix}/api/resumes`, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify(request),
       });
-
       if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error ?? `Request failed with ${response.status}`);
       }
-
-      setImportPhase("analyzing");
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setSourceText("");
-      setImportFile(null);
-      setFileInputKey((key) => key + 1);
+      onCreated((await response.json()) as ResumeWorkspace);
       setTitle("");
-      setShowNewResumeForm(false);
-      setNotice("Resume text saved and evaluated.");
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Resume save failed.");
+      setSourceText("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The resume could not be saved.");
     } finally {
-      setIsImporting(false);
-      setPendingOperation(null);
-      setImportPhase(null);
-    }
-  }
-
-  function selectImportFile(file: File | null) {
-    setImportFile(file);
-    if (!file) return;
-
-    setTitle(getResumeTitleFromFileName(file.name) || file.name);
-  }
-
-  async function submitPatch(
-    versionId: string,
-    operations: ResumeStructuredDataPatchOperation[],
-    note: string | null = null,
-  ): Promise<boolean> {
-    if (!proxyPrefix || !canPersist || operations.length === 0) return false;
-    setError(null);
-    setNotice(null);
-    try {
-      const request: PatchResumeStructuredDataRequest = { operations, note };
-      const response = await fetch(
-        `${proxyPrefix}/api/resumes/versions/${versionId}/structured-data`,
-        {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(request),
-        },
-      );
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setNotice("Field saved.");
-      return true;
-    } catch (patchError) {
-      setError(patchError instanceof Error ? patchError.message : "Save failed.");
-      return false;
-    }
-  }
-
-  async function submitCorrection(versionId: string) {
-    if (!proxyPrefix || !canPersist || correctionValue.trim().length === 0) return;
-
-    const request: CorrectResumeFieldRequest = {
-      fieldPath: correctionFieldPath.trim(),
-      previousValue: null,
-      correctedValue: correctionValue,
-      note: correctionNote.trim() || null,
-    };
-
-    setIsCorrecting(true);
-    setError(null);
-    setNotice(null);
-
-    try {
-      const response = await fetch(
-        `${proxyPrefix}/api/resumes/versions/${versionId}/corrections`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(request),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setCorrectionValue("");
-      setCorrectionNote("");
-      setNotice("Correction saved.");
-    } catch (correctionError) {
-      setError(correctionError instanceof Error ? correctionError.message : "Correction save failed.");
-    } finally {
-      setIsCorrecting(false);
-    }
-  }
-
-  async function analyzeResumeVersion(versionId: string) {
-    if (!proxyPrefix || !canPersist || isResumeBusy) return;
-
-    setPendingOperation("reanalyze");
-    setError(null);
-    setNotice(null);
-
-    try {
-      const response = await fetch(
-        `${proxyPrefix}/api/resumes/versions/${versionId}/analyze`,
-        {
-          method: "POST",
-        },
-      );
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setNotice("Resume review re-run.");
-    } catch (analyzeError) {
-      setError(analyzeError instanceof Error ? analyzeError.message : "Resume review failed.");
-    } finally {
-      setPendingOperation(null);
-    }
-  }
-
-  async function reextractResumeDocument(documentId: string) {
-    if (!proxyPrefix || !canPersist || isResumeBusy) return;
-
-    setPendingOperation("reextract");
-    setError(null);
-    setNotice(null);
-
-    try {
-      const response = await fetch(`${proxyPrefix}/api/resumes/${documentId}/reextract`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-      setWorkspace((await response.json()) as ResumeWorkspace);
-      setNotice("Resume re-extracted and reviewed.");
-    } catch (reextractError) {
-      setError(reextractError instanceof Error ? reextractError.message : "Resume re-extract failed.");
-    } finally {
-      setPendingOperation(null);
+      setIsSaving(false);
     }
   }
 
   return (
+    <div className="grid gap-2">
+      <input
+        aria-label="Resume title"
+        className="input"
+        placeholder="Title (optional)"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+      />
+      <textarea
+        aria-label="Resume text"
+        className="input min-h-48"
+        placeholder="Paste the text of your resume"
+        value={sourceText}
+        onChange={(event) => setSourceText(event.target.value)}
+      />
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          disabled={!canSave || isSaving}
+          onClick={() => void save()}
+        >
+          {isSaving ? "Saving..." : "Save resume"}
+        </button>
+        {error ? <p className="text-sm font-medium text-[var(--red)]">{error}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function ResumeDetail({
+  document,
+  proxyPrefix,
+  children,
+}: {
+  document: ResumeDocument;
+  proxyPrefix: string | null;
+  children: React.ReactNode;
+}) {
+  const version = document.latestVersion;
+  const evaluation = document.latestEvaluation;
+  return (
+    <>
+      <section className="card app-workspace-panel p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="eyebrow">Latest resume</p>
+            <h1 className="mt-1 break-words text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:text-2xl">
+              {document.title}
+            </h1>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+              Saved <LocalTime value={document.createdAtUtc} />
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:shrink-0">
+            {[
+              ["Score", evaluation?.score ?? 0],
+              ["Skills", version?.skills.length ?? 0],
+              ["Roles", version?.experienceCount ?? 0],
+              ["Projects", version?.projectCount ?? 0],
+            ].map(([label, value]) => (
+              <div key={label} className={cellClass}>
+                <p className="eyebrow">{label}</p>
+                <p className="mt-1 font-semibold text-[var(--text-primary)]">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {evaluation ? <RecruiterReview evaluation={evaluation} /> : null}
+      {version?.structuredData ? (
+        <ParsedResume summary={version.summary} data={version.structuredData} />
+      ) : null}
+      <InlineMemoryProposals
+        proposals={document.memoryProposals}
+        proxyPrefix={proxyPrefix}
+        title="Resume memory"
+        emptyCopy="No resume-scoped memory proposals are waiting here."
+      />
+      {children}
+    </>
+  );
+}
+
+export function ResumeWorkspace({
+  initialWorkspace,
+  proxyPrefix,
+}: {
+  initialWorkspace: ResumeWorkspace;
+  proxyPrefix: string | null;
+}) {
+  const [workspace, setWorkspace] = useState(initialWorkspace);
+  const latest = workspace.documents[0] ?? null;
+
+  return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col px-4 py-5 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
-        {!hasResumeData ? (
-          <section className="card app-workspace-panel flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-5 py-8 text-center">
-            <ResumeImportPanel
-              inputId="resume-empty-upload"
-              fileInputKey={fileInputKey}
-              importFile={importFile}
-              title={title}
-              canPersist={canPersist}
-              canImport={canImport}
-              canCreateFromText={canCreateFromText}
-              isImporting={isImporting}
-              phase={importPhase}
-              notice={notice}
-              error={error}
-              warning={workspaceLoadWarning}
-              sourceText={sourceText}
-              onFileChange={selectImportFile}
-              onTitleChange={setTitle}
-              onSourceTextChange={setSourceText}
-              onImport={importResumeFile}
-              onCreateFromText={createResumeFromText}
-            />
-          </section>
+      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col gap-3 px-3 pb-6 pt-4 animate-in sm:gap-4 sm:px-5 sm:pt-6">
+        {latest ? (
+          <ResumeDetail document={latest} proxyPrefix={proxyPrefix}>
+            <details className="card app-workspace-panel p-3 sm:p-4">
+              <summary className="text-sm font-semibold text-[var(--text-primary)]">
+                Save a new version
+              </summary>
+              <div className="mt-3">
+                <NewResumeForm proxyPrefix={proxyPrefix} onCreated={setWorkspace} />
+              </div>
+            </details>
+          </ResumeDetail>
         ) : (
-          <ResumeDossier
-            document={latestDocument}
-            documents={workspace.documents}
-            canPersist={canPersist}
-            showNewResumeForm={showNewResumeForm}
-            title={title}
-            sourceText={sourceText}
-            importFile={importFile}
-            fileInputKey={fileInputKey}
-            canImport={canImport}
-            canCreateFromText={canCreateFromText}
-            isImporting={isImporting}
-            pendingOperation={pendingOperation}
-            importPhase={importPhase}
-            fieldPath={correctionFieldPath}
-            correctedValue={correctionValue}
-            note={correctionNote}
-            isCorrecting={isCorrecting}
-            notice={notice}
-            error={error}
-            onToggleNewResumeForm={() => setShowNewResumeForm((value) => !value)}
-            onFileChange={selectImportFile}
-            onTitleChange={setTitle}
-            onSourceTextChange={setSourceText}
-            onImport={importResumeFile}
-            onCreateFromText={createResumeFromText}
-            onFieldPathChange={setCorrectionFieldPath}
-            onCorrectedValueChange={setCorrectionValue}
-            onNoteChange={setCorrectionNote}
-            onSubmit={submitCorrection}
-            onPatch={submitPatch}
-            onAnalyze={analyzeResumeVersion}
-            onReextract={reextractResumeDocument}
-            proxyPrefix={proxyPrefix}
-            applicationId={applicationId}
-          />
+          <Panel eyebrow="Resume" title="Add your resume">
+            <NewResumeForm proxyPrefix={proxyPrefix} onCreated={setWorkspace} />
+          </Panel>
         )}
       </div>
     </main>

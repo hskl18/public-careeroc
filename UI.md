@@ -49,7 +49,7 @@ Routine evidence checks belong to the review agent; review UI appears only when 
 | Review `/app/review` | Only ambiguous items: uncertain company, role, or match, agencies, likely scams |
 | Updates `/app/updates` | The full activity timeline |
 | Analytics `/app/analytics` | Funnel health: counts, stage distribution, company and role tables, drill-downs; never next actions |
-| Resume `/app/resume` | Versions, extracted fields, source links, corrections, recruiter-style evaluation, suggestions tied to target roles |
+| Resume `/app/resume` | The latest resume, what careeroc read from it, and a rule-based evaluation |
 | Memory `/app/memory` | Confirmed and pending memory, the multi-agent review with its trace, and Approve or Reject for a review that proposes reminders or needs a person |
 | Inbox `/app/inbox` | Gmail connection, backfill window, sync health and diagnostics, contact history, disconnect and imported-data deletion |
 | Settings `/app/settings` | Candidate context, timezone, assistant access tokens, data controls |
