@@ -33,7 +33,7 @@ Everything else is reached in context:
 - Inbox from setup prompts, the sync pill, Settings, or the user menu
 - Review from "needs attention" items that are blocked
 - Updates from the dashboard's recent activity
-- Settings, Memory, and Admin (admins only) from the user menu
+- Settings and Memory from the user menu
 
 Human review is never a default destination.
 Routine evidence checks belong to the review agent; review UI appears only when automation is blocked and a correction or trust decision is needed.
@@ -53,7 +53,6 @@ Routine evidence checks belong to the review agent; review UI appears only when 
 | Memory `/app/memory` | Confirmed and pending memory, the multi-agent review with its trace, and Approve or Reject for a review that proposes reminders or needs a person |
 | Inbox `/app/inbox` | Gmail connection, backfill window, sync health and diagnostics, contact history, disconnect and imported-data deletion |
 | Settings `/app/settings` | Candidate context, timezone, assistant access tokens, data controls |
-| Admin `/app/admin` | Configuration checks, queue counts, failed-job retry, and recent model calls, enforced by the API |
 
 When a dashboard section grows longer than its neighbor, move the full list to its own page and keep a capped summary with a link.
 Rejected and closed applications must look terminal and show no open follow-up work.

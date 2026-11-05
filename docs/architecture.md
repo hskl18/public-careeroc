@@ -152,6 +152,5 @@ Maintenance rules for sync, reminders, and company names are in [backend/evidenc
 - DTOs go in Contracts, workflow logic in Application, providers and models in Infrastructure, and endpoints stay thin.
 - Every automated decision the user sees has evidence, a confidence, or a trace, and a deterministic fallback or a review path.
 - Background work is safe to retry, and new reminders are deduplicated.
-- Admin endpoints stay under `/api/admin/*` with an API-side role check and sanitized DTOs.
 - Migrations match entity changes, and memory writes keep their source.
 - In the web app, route files stay thin, authenticated calls go through the proxy, the first render is hydration-stable, and empty, loading, fallback, stale, and blocked states are explicit.

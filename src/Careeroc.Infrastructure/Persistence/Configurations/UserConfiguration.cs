@@ -13,7 +13,6 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(user => user.Id);
         builder.Property(user => user.Email).HasMaxLength(320).IsRequired();
         builder.Property(user => user.Name).HasMaxLength(200).IsRequired();
-        builder.Property(user => user.Role).HasMaxLength(40).HasDefaultValue(UserRoleNames.User).IsRequired();
         builder.Property(user => user.TimeZoneId).HasMaxLength(80).IsRequired();
         builder.Property(user => user.ProfileIcon).HasMaxLength(80).HasDefaultValue("inbox-blue").IsRequired();
         builder.Property(user => user.Location).HasMaxLength(160);

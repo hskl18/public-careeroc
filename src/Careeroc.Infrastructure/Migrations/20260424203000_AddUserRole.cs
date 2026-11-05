@@ -1,4 +1,3 @@
-using Careeroc.Domain;
 using Careeroc.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -21,7 +20,7 @@ namespace Careeroc.Infrastructure.Migrations
                 type: "character varying(40)",
                 maxLength: 40,
                 nullable: false,
-                defaultValue: UserRoleNames.User);
+                defaultValue: "user");
         }
 
         /// <inheritdoc />

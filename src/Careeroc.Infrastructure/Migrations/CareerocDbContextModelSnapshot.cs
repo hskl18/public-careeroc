@@ -1282,14 +1282,6 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasDefaultValue("inbox-blue")
                         .HasColumnName("profile_icon");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasDefaultValue("user")
-                        .HasColumnName("role");
-
                     b.Property<string>("TargetRole")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")

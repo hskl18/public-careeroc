@@ -7,7 +7,6 @@ using Careeroc.Api.Security;
 using Careeroc.Application;
 using Careeroc.Application.Models;
 using Careeroc.Application.Services;
-using Careeroc.Contracts.Admin;
 using Careeroc.Contracts.Agents;
 using Careeroc.Domain;
 using Careeroc.Domain.Entities;
@@ -188,8 +187,6 @@ public sealed class ApiRoutingSecurityTests
             "DELETE /api/inbox-accounts/{inboxAccountId:guid}/purge",
             "DELETE /api/profile/access-tokens/{tokenId:guid}",
             "DELETE /api/profile/memory/{memoryEntryId:guid}",
-            "GET /api/admin/health",
-            "GET /api/admin/summary",
             "GET /api/analytics",
             "GET /api/applications/lookup",
             "GET /api/applications/{jobApplicationId:guid}",
@@ -219,7 +216,6 @@ public sealed class ApiRoutingSecurityTests
             "PATCH /api/reminders/{reminderId:guid}/snooze",
             "PATCH /api/reminders/{reminderId:guid}/status",
             "PATCH /api/resumes/versions/{resumeVersionId:guid}/structured-data",
-            "POST /api/admin/email-processing-jobs/{jobId:guid}/retry",
             "POST /api/applications/{jobApplicationId:guid}/artifacts",
             "POST /api/dashboard/inbox-check",
             "POST /api/inbox-accounts/sync-now",
@@ -239,25 +235,6 @@ public sealed class ApiRoutingSecurityTests
 
         Assert.Empty(apiRoutes.Except(coveredRoutes));
         Assert.Empty(coveredRoutes.Except(apiRoutes));
-    }
-
-    [Fact]
-    public void AdminEndpointsUseSharedRequireAdminGuard()
-    {
-        var source = File.ReadAllText(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "apps",
-            "api",
-            "Endpoints",
-            "AdminEndpoints.cs"));
-
-        Assert.DoesNotContain("RequestUserContext.IsAdmin(", source, StringComparison.Ordinal);
-        Assert.Contains("AdminAuthorization.RequireAdmin(request)", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -489,133 +466,6 @@ public sealed class ApiRoutingSecurityTests
 
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, rejected.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminEndpointRequiresAdminRoleAndSeedsConfiguredAdmins()
-    {
-        await using var factory = new CareerocApiFactory(
-            new Dictionary<string, string?>
-            {
-                ["Admin:Emails"] = "admin@example.com"
-            });
-        using var client = factory.CreateClient();
-        await factory.SeedTwoUsersAsync();
-        using (var seedScope = factory.Services.CreateScope())
-        {
-            var seedDbContext = seedScope.ServiceProvider.GetRequiredService<CareerocDbContext>();
-            var inboxAccount = await seedDbContext.InboxAccounts
-                .SingleAsync(account => account.EmailAddress == "student.visible@gmail.com");
-            inboxAccount.OAuthMetadataJson = """
-                {"connectionStatus":"OAuth pending","refreshToken":"raw-refresh-token-secret"}
-                """;
-            await seedDbContext.SaveChangesAsync();
-        }
-
-        var nonAdmin = await SendSignedAsync(client, HttpMethod.Get, "/api/admin/health", "student@example.com");
-        var admin = await SendSignedAsync(client, HttpMethod.Get, "/api/admin/health", "admin@example.com");
-        var adminSummary = await SendSignedAsync(client, HttpMethod.Get, "/api/admin/summary", "admin@example.com");
-        var nonAdminSummary = await SendSignedAsync(client, HttpMethod.Get, "/api/admin/summary", "student@example.com");
-        var adminSummaryBody = await adminSummary.Content.ReadAsStringAsync();
-
-        Assert.Equal(HttpStatusCode.Forbidden, nonAdmin.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, admin.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, adminSummary.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, nonAdminSummary.StatusCode);
-        Assert.DoesNotContain(
-            "raw-refresh-token-secret",
-            adminSummaryBody,
-            StringComparison.Ordinal);
-
-        using var scope = factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<CareerocDbContext>();
-        var adminUser = await dbContext.Users.SingleAsync(user => user.Email == "admin@example.com");
-        Assert.Equal(UserRoleNames.Admin, adminUser.Role);
-        Assert.Contains(
-            await dbContext.AuditEvents.ToListAsync(),
-            auditEvent => auditEvent.EventType == "admin.summary_viewed" &&
-                          auditEvent.UserEmail == "admin@example.com" &&
-                          auditEvent.Outcome == "success");
-    }
-
-    [Fact]
-    public async Task AdminJobRetryIsConfirmedScopedAndAudited()
-    {
-        await using var factory = new CareerocApiFactory(
-            new Dictionary<string, string?>
-            {
-                ["Admin:Emails"] = "admin@example.com"
-            });
-        using var client = factory.CreateClient();
-        await factory.SeedTwoUsersAsync();
-
-        Guid failedJobId;
-        Guid inboxAccountId;
-        using (var scope = factory.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<CareerocDbContext>();
-            var inboxEmail = await dbContext.InboxEmails
-                .Include(email => email.InboxAccount)
-                .FirstAsync(email => email.InboxAccount.User.Email == "student@example.com");
-            inboxAccountId = inboxEmail.InboxAccountId;
-            inboxEmail.InboxAccount.OAuthMetadataJson = JsonSerializer.Serialize(
-                new InboxAccountMetadata
-                {
-                    SetupMode = "oauth",
-                    ConnectionStatus = "OAuth pending",
-                    NextStep = "Finish OAuth.",
-                    OAuthState = "pending-state",
-                    OAuthCodeVerifier = "pending-verifier",
-                    OAuthReturnUrl = "/app/inbox",
-                    OAuthStateExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(5)
-                },
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
-            var failedJob = new EmailProcessingJob
-            {
-                InboxEmailId = inboxEmail.Id,
-                Status = EmailProcessingStatus.Failed,
-                Attempts = 3,
-                LastError = "Failure for recruiter@example.com with access_token=secret-token-value",
-                UpdatedAtUtc = DateTimeOffset.UtcNow
-            };
-            dbContext.EmailProcessingJobs.Add(failedJob);
-            await dbContext.SaveChangesAsync();
-            failedJobId = failedJob.Id;
-        }
-
-        var rejectedRetry = await SendSignedJsonAsync(
-            client,
-            $"/api/admin/email-processing-jobs/{failedJobId}/retry",
-            new { confirmation = "wrong" },
-            "admin@example.com");
-        var nonAdminRetry = await SendSignedJsonAsync(
-            client,
-            $"/api/admin/email-processing-jobs/{failedJobId}/retry",
-            new { confirmation = "retry" },
-            "student@example.com");
-        var retry = await SendSignedJsonAsync(
-            client,
-            $"/api/admin/email-processing-jobs/{failedJobId}/retry",
-            new { confirmation = "retry" },
-            "admin@example.com");
-
-        Assert.Equal(HttpStatusCode.BadRequest, rejectedRetry.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, nonAdminRetry.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, retry.StatusCode);
-
-        using var verifyScope = factory.Services.CreateScope();
-        var verifyDbContext = verifyScope.ServiceProvider.GetRequiredService<CareerocDbContext>();
-        var retriedJob = await verifyDbContext.EmailProcessingJobs.SingleAsync(job => job.Id == failedJobId);
-        var auditEvents = await verifyDbContext.AuditEvents.ToListAsync();
-
-        Assert.Equal(EmailProcessingStatus.Pending, retriedJob.Status);
-        Assert.Null(retriedJob.LastError);
-        Assert.Equal(0, retriedJob.Attempts);
-        Assert.Contains(
-            auditEvents,
-            auditEvent => auditEvent.EventType == "admin.email_job_retry" &&
-                          auditEvent.Outcome == "success" &&
-                          auditEvent.ResourceId == failedJobId);
     }
 
     [Fact]

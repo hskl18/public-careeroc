@@ -7,7 +7,6 @@ public sealed class User
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Email { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string Role { get; set; } = UserRoleNames.User;
     public string TimeZoneId { get; set; } = "America/Los_Angeles";
     public string ProfileIcon { get; set; } = "inbox-blue";
     public string? Location { get; set; }
