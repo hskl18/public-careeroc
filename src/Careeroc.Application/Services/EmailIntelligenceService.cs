@@ -432,7 +432,7 @@ public sealed class EmailIntelligenceService
                 jobsProcessed++;
 
                 _logger.LogInformation(
-                    "Processed email {EmailId} through {TriageAgent}, {ExtractionSource}, and {ReviewAgent}. Category: {Category}. Company: {Company}. Role: {Role}. Resolved application status: {Status}. Imported attachment evidence: {ImportedAttachmentEvidence}.",
+                    "Processed email {EmailId} through {TriageAgent}, {ExtractionSource}, and {ReviewAgent}. Category: {Category}. Company: {Company}. Role: {Role}. Resolved application status: {Status}.",
                     inboxEmail.Id,
                     triageDecision.AgentName,
                     effectiveParsed.ParsingSource,

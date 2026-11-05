@@ -41,7 +41,7 @@ const responses = {};
 
 async function record(method, pathAndQuery, key = `${method} ${pathAndQuery}`) {
   const result = await call(method, pathAndQuery);
-  // Admin endpoints answer 403 and an application may lack resume fit; those statuses are part of the demo.
+  // An application may lack resume fit; that status is part of the demo.
   if (result.status >= 500 || result.status === 401) {
     throw new Error(`${method} ${pathAndQuery} returned ${result.status}`);
   }
@@ -68,8 +68,6 @@ for (const path of [
   "/api/inbox-accounts",
   "/api/review",
   "/api/recruiting-contacts?limit=50",
-  "/api/admin/health",
-  "/api/admin/summary",
 ]) {
   await record("GET", path);
 }
@@ -92,16 +90,17 @@ for (const view of dashboardViews) {
 if (applications.length === 0) {
   throw new Error("The demo inbox was not processed into applications.");
 }
+const inbox = responses[`GET /api/dashboard?view=${dashboardViews[0]}`].body.inbox;
+if (inbox.backfillStatus !== "complete" || inbox.lastAnalysisError) {
+  throw new Error(`The demo inbox did not finish processing: ${inbox.backfillStatus}, ${inbox.lastAnalysisError}`);
+}
 
 for (const { id } of applications) {
   await record("GET", `/api/applications/${id}`);
   await record("GET", `/api/applications/${id}/resume-fit`);
 }
 
-const resumes = await record("GET", "/api/resumes");
-for (const { id } of resumes.documents) {
-  await record("GET", `/api/resumes/${id}/suggestions`);
-}
+await record("GET", "/api/resumes");
 
 // Analytics links filter by canonical role, which application cards do not carry.
 const applicationIdsByRole = {};
