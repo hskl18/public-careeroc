@@ -5,14 +5,15 @@ careeroc reads recruiting email and keeps an evidence-backed pipeline of applica
 Specialist agents review the search, a person approves what they propose, and your own assistant can read the pipeline over MCP or A2A.
 
 **Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox.
-The recorded multi-agent review is the first thing on the dashboard, and approving it there replays the end of the graph in your browser.
+The multi-agent review on the dashboard is one real run of `gpt-oss:120b`, kept as it came out, and approving it there replays the end of the graph in your browser.
 
 Run the whole system with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
 There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and removed from the product database after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
 
 ![careeroc dashboard](docs/media/dashboard.png)
 
-careeroc ran as a hosted product with a small beta, did not work out commercially, and was shut down.
+careeroc ran as a hosted product with a small beta, and I gave up on it.
+It is a good fit for my own job search and a poor fit for a product, mainly because agents can now do this work themselves.
 This repository is its complete source, published as a reference implementation.
 It is a working system rather than a template: a .NET 10 API, a Next.js 16 web app, and a Python LangGraph runtime, with tests, evals, traces, and deployment code for Compose and Kubernetes.
 
@@ -34,7 +35,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 | | |
 |---|---|
 | ![Applications](docs/media/applications.png) **Applications.** 51 emails become 20 tracked applications. | ![Application detail](docs/media/application-detail.png) **Application detail.** Pipeline stage, evidence, the next move, and resume fit. |
-| ![Review queue](docs/media/review-queue.png) **Review queue.** The agency and the scam email wait for a person. | ![Agent review](docs/media/agent-review.png) **Multi-agent review.** The agents propose a reminder; nothing is created until the user approves. |
+| ![Review queue](docs/media/review-queue.png) **Review queue.** The agency and the scam email wait for a person. | ![Agent review](docs/media/agent-review.png) **Multi-agent review.** The agents propose reminders, the gate drops the citations it cannot find, and nothing is created until the user approves. |
 | ![Assistant access](docs/media/assistant-access.png) **Assistant access.** Tokens, the MCP command, and the A2A card. | ![Landing page](docs/media/landing.png) **Landing.** One click opens the demo. |
 
 One "Run review" click, traced across all three services in Jaeger:
@@ -62,8 +63,8 @@ flowchart LR
 
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
-  The agent runtime ships a deterministic suite, so the demo and CI need no model or API key.
-  The hosted demo, the screenshots, the trace above, and the evals all come from that suite, not from a model.
+  The agent runtime ships a deterministic suite, so local runs and CI need no model or API key, and the trace above and the evals come from it.
+  The review in the hosted demo is one unedited run of `gpt-oss:120b`, with the citations the gate dropped still on show.
 - **Agent output is visible.** Each step's summary, reason, confidence, and evidence are shown on the dashboard, and low-confidence results and proposed writes stay pending until a person decides.
 
 [DESIGN.md](DESIGN.md) explains the decisions, the rejected alternatives, trust boundaries, and failure modes.
@@ -126,7 +127,10 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
 
 ### Use a real model or your own Gmail
 
-- **Model.** Set `AGENT_PROVIDER=ollama` (or `openai`) before `docker compose up`, with the model's base URL, name, and key in `Ollama__BaseUrl`, `Ollama__Model`, and `Ollama__ApiKey`; Compose passes those to the agent runtime for either provider.
+- **Model.** Any strong model that can call tools should work.
+  The full stack has run on `gpt-oss:120b` through Ollama, and the graph alone on `gemma4:31b` and on `gpt-oss:120b` through Ollama's OpenAI-compatible endpoint.
+  Set `AGENT_PROVIDER=ollama` (or `openai`) before `docker compose up`, with the model's base URL, name, and key in `Ollama__BaseUrl`, `Ollama__Model`, and `Ollama__ApiKey`; Compose passes those to the agent runtime for either provider.
+  A signed-in local Ollama needs no key: on Docker Desktop, use `http://host.docker.internal:11434` as the base URL.
   The deterministic suite stays the fallback.
 - **Gmail.** Create a Google OAuth client, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and an access allowlist, and run the services outside demo mode as described in [AGENTS.md](AGENTS.md).
   Before you do, replace the `local-compose-only-*` secrets: the API and web app refuse them once real accounts can sign in.

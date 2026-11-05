@@ -16,7 +16,7 @@ describe("recorded demo", () => {
     expect(inbox.pendingAnalysisEmails).toBe(0);
   });
 
-  it("captured a review that waits for approval and names its suite", () => {
+  it("captured a real model's review that waits for approval", () => {
     const proposals = responses["GET /api/profile/memory/proposals"].body as unknown as {
       kind: string;
       value: string;
@@ -29,7 +29,8 @@ describe("recorded demo", () => {
     };
 
     expect(review.status).toBe("review_required");
-    expect(review.modelPath).toBe("deterministic/evidence-v1");
+    // A timed-out model falls back to the deterministic review, which has no approval to show.
+    expect(review.modelPath).toMatch(/^(ollama|openai)\//);
     expect(review.proposedReminders.length).toBeGreaterThan(0);
   });
 });

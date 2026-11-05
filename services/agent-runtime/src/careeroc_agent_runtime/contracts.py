@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
 class ContractModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+
+def _first(limit: int) -> BeforeValidator:
+    # Models overrun list limits often, and a rejected answer costs a retry that can go nowhere.
+    def cut(value: Any) -> Any:
+        return value[:limit] if isinstance(value, list) else value
+
+    return BeforeValidator(cut)
 
 
 class ApplicationEvidence(ContractModel):
@@ -72,9 +80,11 @@ class TraceStep(ContractModel):
 class SpecialistAnalysis(ContractModel):
     agent_name: str = Field(min_length=1, max_length=160)
     summary: str = Field(min_length=1, max_length=2000)
-    findings: list[str] = Field(default_factory=list, max_length=8)
-    recommended_actions: list[str] = Field(default_factory=list, max_length=6)
-    evidence_references: list[str] = Field(default_factory=list, max_length=12)
+    findings: Annotated[list[str], _first(8)] = Field(default_factory=list, max_length=8)
+    recommended_actions: Annotated[list[str], _first(6)] = Field(default_factory=list, max_length=6)
+    evidence_references: Annotated[list[str], _first(12)] = Field(
+        default_factory=list, max_length=12
+    )
     confidence: float = Field(ge=0, le=1)
 
 
@@ -86,10 +96,14 @@ class ReminderProposal(ContractModel):
 
 class SynthesizedReview(ContractModel):
     summary: str = Field(min_length=1, max_length=2000)
-    findings: list[str] = Field(default_factory=list, max_length=12)
-    next_actions: list[str] = Field(default_factory=list, max_length=8)
-    evidence_references: list[str] = Field(default_factory=list, max_length=20)
-    proposed_reminders: list[ReminderProposal] = Field(default_factory=list, max_length=8)
+    findings: Annotated[list[str], _first(12)] = Field(default_factory=list, max_length=12)
+    next_actions: Annotated[list[str], _first(8)] = Field(default_factory=list, max_length=8)
+    evidence_references: Annotated[list[str], _first(20)] = Field(
+        default_factory=list, max_length=20
+    )
+    proposed_reminders: Annotated[list[ReminderProposal], _first(8)] = Field(
+        default_factory=list, max_length=8
+    )
     confidence: float = Field(ge=0, le=1)
 
 

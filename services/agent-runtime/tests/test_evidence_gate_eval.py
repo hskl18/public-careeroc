@@ -76,6 +76,13 @@ CASES = {
         {},
         ("review_required", 0, 0, []),
     ),
+    "a nested field path is a label, and its value must still be real": (
+        ["latestResume.skills:TypeScript", "latestResume.skills:Rust"],
+        0.9,
+        [],
+        {},
+        ("review_required", 1, 0.45, []),
+    ),
     "a reminder for an unknown application is dropped": (
         ["Roblox · interviewing"],
         0.9,

@@ -4,6 +4,7 @@ import operator
 import re
 from typing import Annotated, Any, TypedDict
 
+from langgraph.errors import GraphRecursionError
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy, TimeoutPolicy, interrupt
 
@@ -71,7 +72,9 @@ def _grounded_references(references: list[str], request: ResumeMailboxReviewRequ
 
     def grounded(reference: str) -> bool:
         label, separator, value = reference.partition(":")
-        claimed = value if separator and label.strip().casefold() in labels else reference
+        # Models cite nested fields by path: latestResume.skills:TypeScript.
+        is_field = all(part.strip().casefold() in labels for part in label.split("."))
+        claimed = value if separator and is_field else reference
         found = _WORD.findall(claimed.casefold())
         return bool(found) and all(word in words for word in found)
 
@@ -257,10 +260,15 @@ def build_graph(
 
     builder = StateGraph(CareerGraphState)
     # Model-backed nodes get a hard per-attempt deadline and one retry for transient failures;
-    # if they still fail, the API falls back to its deterministic orchestrator.
+    # if they still fail, the API falls back to its deterministic orchestrator. An agent cut off
+    # for never returning its schema gets the retry too: a fresh conversation usually succeeds.
+    is_transient = RetryPolicy().retry_on
     agent_policies = {
         "timeout": TimeoutPolicy(run_timeout=agent_timeout_seconds),
-        "retry_policy": RetryPolicy(max_attempts=2),
+        "retry_policy": RetryPolicy(
+            max_attempts=2,
+            retry_on=lambda error: isinstance(error, GraphRecursionError) or is_transient(error),
+        ),
     }
     builder.add_node("resume_analyst", resume_analyst, **agent_policies)
     builder.add_node("mailbox_analyst", mailbox_analyst, **agent_policies)

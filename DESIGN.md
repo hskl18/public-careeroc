@@ -141,7 +141,7 @@ So the demo exercises the real pipeline rather than seeded rows.
 
 The hosted demo at [careeroc.vercel.app](https://careeroc.vercel.app) keeps that product UI without paying for a backend.
 With `DEMO_SNAPSHOT=true`, everyone signs in as one fictional account and the web app answers API calls from responses recorded from that same pipeline, refusing writes.
-The review it shows is a recorded run of the deterministic suite and is labeled that way; approving it replays the graph's last step in the browser and saves nothing.
+The review it shows is one recorded run of `gpt-oss:120b` and names that model; approving it replays the graph's last step in the browser and saves nothing.
 Hosting the API, Postgres, and the agent runtime for a showcase was rejected because of its recurring cost and upkeep, and a marketing-style sample page because it would not be the real product.
 
 ## Decisions
@@ -194,9 +194,16 @@ The A2A server lives in the Python runtime because that is where the graph runs 
 ### A deterministic agent suite
 
 The graph can run with a suite that computes every finding and proposal from the snapshot.
-The demo and CI need no model, cost nothing, and give the same answer every time, and the trace says `deterministic/evidence-v1` so nobody mistakes it for model output.
-The hosted demo, the README screenshots and trace, the smoke tests, and the evals all run this suite.
+Local runs and CI need no model, cost nothing, and give the same answer every time, and the trace says `deterministic/evidence-v1` so nobody mistakes it for model output.
+The README trace, the smoke tests, and the evals all run this suite.
 Setting `CAREEROC_AGENT_PROVIDER` to `ollama` or `openai` swaps in model-backed specialists with the same graph and gate.
+
+The hosted demo's review is the exception, because a suite that computes its answers gives the gate nothing to catch.
+The first real run found what a scripted model could not.
+The prompts asked for short labels, and models cited the bare field names the gate refuses.
+Models also overran list limits, and a failed repair could end in empty replies, which `create_agent` re-asks without limit: 151 calls in 100 seconds, then a timeout.
+Now the prompts say what the gate accepts, over-long lists are cut instead of rejected, and an agent gets four turns before one fresh attempt.
+The recorded run took nine calls and under 30 seconds.
 
 ### OpenTelemetry everywhere
 
@@ -261,6 +268,7 @@ More detail is in [SECURITY.md](SECURITY.md).
 |---|---|
 | Model provider down, slow, malformed, or under-confident | Extraction keeps the deterministic result |
 | An agent node hangs or errors | Each attempt has a timeout and one retry; if the graph still fails, the API returns its deterministic review with status `completed_with_fallback` |
+| A model never returns the schema | The agent is cut off after four turns and gets one fresh attempt, then the same fallback |
 | A review takes longer than its budget | The runtime stops it at 100 seconds, before the API's 120-second timeout, so it never checkpoints a review the API did not store |
 | Agent runtime down, or its checkpoint database down | The same fallback; the runtime's readiness check fails, so it leaves rotation without being restarted |
 | The runtime restarts while a review waits | With a checkpoint database the run resumes, which [a test](services/agent-runtime/tests/test_app.py) proves by deciding on a second app instance; without one the user's decision still applies and only the trace's last step is missing |

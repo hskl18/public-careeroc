@@ -14,20 +14,30 @@ from careeroc_agent_runtime.contracts import (
     SynthesizedReview,
 )
 
+# The evidence gate drops a bare field name and halves confidence for it, so say what it accepts.
+CITATION_RULE = (
+    " Each evidence reference must quote a value from the input: `fieldName:value` such as "
+    "`totalApplications:3`, or company and status such as `Roblox · interviewing`. "
+    "A field name alone is not evidence. "
+    "Keep references out of the summary and findings; they go only in the evidence references."
+)
+
+# create_agent re-asks until a model returns the schema, with no limit of its own: a model that
+# stops calling the tool answers empty in a loop until the deadline, paying for every turn.
+_AGENT_LIMITS = {"recursion_limit": 4}
+
 SPECIALIST_PROMPTS: Mapping[str, str] = {
     "resume_analyst": (
         "You are the Resume Evidence Agent in a career multi-agent system. "
         "Assess only resume quality, evidence density, skills, projects, and the "
         "relationship between resume versions and observed outcomes. Never invent "
-        "experience or skills. Cite compact labels "
-        "from the provided evidence. Return concrete findings and safe next actions."
+        "experience or skills. Return concrete findings and safe next actions."
     ),
     "mailbox_analyst": (
         "You are the Mailbox Outcome Agent in a career multi-agent system. "
         "Analyze application statuses, role patterns, positive outcomes, repeated "
         "rejections, and recent action signals. Treat correlation as correlation, not "
-        "causation. Cite compact labels from the "
-        "provided evidence and do not infer facts that are absent."
+        "causation. Do not infer facts that are absent."
     ),
     "strategy_analyst": (
         "You are the Career Strategy Agent in a career multi-agent system. "
@@ -62,7 +72,7 @@ class LangChainAgentSuite:
             name: create_agent(
                 model=model,
                 tools=[],
-                system_prompt=prompt,
+                system_prompt=prompt + CITATION_RULE,
                 response_format=ToolStrategy(SpecialistAnalysis),
                 name=name,
             )
@@ -79,6 +89,7 @@ class LangChainAgentSuite:
                 "to three follow-up reminders, each for an application listed in the input, "
                 "by its exact id, and only where hasOpenReminder is false. Nothing is written "
                 "until the user approves; never claim that a reminder already exists."
+                + CITATION_RULE
             ),
             response_format=ToolStrategy(SynthesizedReview),
             name="career_supervisor",
@@ -90,13 +101,12 @@ class LangChainAgentSuite:
         request: ResumeMailboxReviewRequest,
     ) -> SpecialistAnalysis:
         agent = self._specialists[specialist]
-        prompt = (
-            "Analyze this bounded Careeroc snapshot. Return evidence references using exact "
-            "short labels "
-            "from the input when possible.\n\n"
-            + json.dumps(request.model_dump(mode="json", by_alias=True), separators=(",", ":"))
+        prompt = "Analyze this bounded Careeroc snapshot.\n\n" + json.dumps(
+            request.model_dump(mode="json", by_alias=True), separators=(",", ":")
         )
-        result = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": prompt}]}, config=_AGENT_LIMITS
+        )
         structured = result.get("structured_response")
         if not isinstance(structured, SpecialistAnalysis):
             raise TypeError(f"{specialist} did not return SpecialistAnalysis")
@@ -129,7 +139,8 @@ class LangChainAgentSuite:
                         "content": json.dumps(payload, separators=(",", ":")),
                     }
                 ]
-            }
+            },
+            config=_AGENT_LIMITS,
         )
         structured = result.get("structured_response")
         if not isinstance(structured, SynthesizedReview):

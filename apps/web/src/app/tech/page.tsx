@@ -59,12 +59,12 @@ const modelRoutes = [
   [
     "Deterministic suite",
     "Default",
-    "Computes every finding from the snapshot. Free and repeatable, so the demo and CI need no model; traces say deterministic/evidence-v1.",
+    "Computes every finding from the snapshot. Free and repeatable, so local runs and CI need no model; traces say deterministic/evidence-v1.",
   ],
   [
     "Model-backed specialists",
     "Ollama or OpenAI",
-    "Same graph and gate with a model behind each specialist; every node has a timeout and one retry. CI runs them against a scripted model only, and the hosted demo does not run them.",
+    "Same graph and gate with a model behind each specialist; every node has a timeout, a limit on turns, and one retry. CI runs them against a scripted model only, and the hosted demo shows one recorded run of gpt-oss:120b.",
   ],
   [
     "Email pipeline model pass",

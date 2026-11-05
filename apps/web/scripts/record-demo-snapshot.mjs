@@ -1,6 +1,7 @@
 // Records the API responses the hosted read-only demo serves, by running the real pipeline once.
 //
-//   CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
+//   AGENT_PROVIDER=ollama Ollama__Model=gpt-oss:120b-cloud Ollama__BaseUrl=http://host.docker.internal:11434 \
+//     CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
 //   node apps/web/scripts/record-demo-snapshot.mjs
 //   docker compose -p careeroc-snapshot down -v
 //

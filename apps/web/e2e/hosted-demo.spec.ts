@@ -28,7 +28,7 @@ test.describe("hosted read-only demo", () => {
 
     await expect(page.getByText("Multi-agent review", { exact: true })).toBeVisible();
     await expect(page.getByText("Recorded run", { exact: true })).toBeVisible();
-    await expect(page.getByText(/deterministic\/evidence-v1/)).toBeVisible();
+    await expect(page.getByText(/^ollama\//)).toBeVisible();
     await expect(page.getByText("deterministic evidence gate", { exact: true })).toBeVisible();
     await expect(page.getByText("Waiting for your approval")).toBeVisible();
 
