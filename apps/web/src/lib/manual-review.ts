@@ -36,30 +36,6 @@ export type ReviewEmail = {
   traceSummary: AgentTraceSummary | null;
 };
 
-export type ReviewArtifactEvidence = {
-  id: string;
-  jobApplicationId: string;
-  company: string;
-  role: string;
-  artifactKind: string;
-  fileName: string;
-  safeTitle: string;
-  extractedFactType: string;
-  extractedFactText: string;
-  normalizedDateUtc: string | null;
-  confidence: number;
-  sourceSnippet: string;
-  reviewReason: string;
-  createdAtUtc: string;
-  traceSummary: AgentTraceSummary;
-  agentTrace: ReviewAgentTrace | null;
-};
-
-export type ReviewApplicationArtifactRequest = {
-  outcome: "keep_evidence" | "dismiss_evidence";
-  notes?: string | null;
-};
-
 export type ReviewThreadMessage = {
   id: string;
   sender: string;
@@ -101,11 +77,9 @@ export type AgentTraceSummary = {
 
 export type ManualReviewResponse = {
   emails: ReviewEmail[];
-  artifacts: ReviewArtifactEvidence[];
   applications: ReviewApplication[];
   categoryOptions: string[];
   statusOptions: string[];
   totalWaiting: number;
   totalUnassigned: number;
-  totalArtifactReviews: number;
 };

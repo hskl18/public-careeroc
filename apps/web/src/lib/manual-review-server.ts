@@ -9,7 +9,6 @@ import { createUserScopedCache } from "./server-user-cache";
 
 const fallbackManualReview: ManualReviewResponse = {
   emails: [],
-  artifacts: [],
   applications: [],
   categoryOptions: [
     "recruiter_outreach",
@@ -32,7 +31,6 @@ const fallbackManualReview: ManualReviewResponse = {
   ],
   totalWaiting: 0,
   totalUnassigned: 0,
-  totalArtifactReviews: 0,
 };
 
 export async function getManualReviewForUser(user: CareerocApiUser): Promise<{

@@ -117,7 +117,6 @@ public static class ServiceCollectionExtensions
             .AddHttpMessageHandler<OllamaHttpResilienceHandler>();
         services.AddScoped<DemoInboxEmailSource>();
         services.AddScoped<IInboxEmailSource, ConfiguredInboxEmailSource>();
-        services.AddScoped<IInboxAttachmentDownloader, ConfiguredInboxAttachmentDownloader>();
         services.AddSingleton<IInboxAccountTokenProtector, ConfiguredInboxAccountTokenProtector>();
         services.AddScoped<ILeaseManager, DatabaseLeaseManager>();
         services.AddScoped<IEmailProcessingQueue, DatabaseEmailProcessingQueue>();

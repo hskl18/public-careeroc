@@ -22,7 +22,7 @@ Endpoints resolve the user, validate the request shape, call one application ser
 
 ### Entities
 
-- Mailbox and pipeline: `User`, `InboxAccount`, `InboxEmail`, `EmailProcessingJob`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `RecruitingContact`, `ApplicationArtifactEvidence`
+- Mailbox and pipeline: `User`, `InboxAccount`, `InboxEmail`, `EmailProcessingJob`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `RecruitingContact`
 - Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeCorrection`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`, `UserSoulProfile`
 - Operations: `ModelCallEvent`, `AuditEvent`, `PersonalAccessToken`
 
@@ -33,7 +33,6 @@ Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate
 - Mailbox: `EmailSyncService` imports messages and queues analysis; `EmailIntelligenceService` runs the agent chain; `ApplicationWorkflowService` matches or creates applications, moves status, and manages reminders.
 - Review and correction: `ManualReviewQueryService` and `ManualReviewService`.
 - Read models: `DashboardQueryService`, `ApplicationDetailQueryService`, `AnalyticsQueryService`, `RecruitingContactQueryService`.
-- Evidence: `ApplicationArtifactEvidenceService` and `EmailAttachmentEvidenceImportService` turn supported PDFs and images into evidence cards.
 - Setup and profile: `InboxSetupService`, `UserProfileService`, `DemoWorkspaceService`.
 - Resume and strategy: `ResumeIntelligenceService`, `ResumeMailboxContextBuilder`, `UserMemoryProposalService`, `UserAgentContextSnapshotService`, `CareerOrchestratorService`.
 - Assistant access: `PersonalAccessTokenService` and `AgentQueryService`.
@@ -113,7 +112,6 @@ The MCP server (`apps/api/Mcp`) and the `/agent/v1/*` endpoints are read-only an
 
 - Email parsing runs deterministic heuristics first; the optional Ollama pass replaces the result only when it is available, returns valid JSON, and is above `Ollama:MinimumConfidence`.
 - Review evidence starts from a deterministic decision; the model can only add evidence.
-- Artifact extraction produces evidence cards and never changes stage or reminders directly.
 - Calls are bounded by retries, concurrency limits, timeouts, and a circuit breaker, and each is recorded as a `ModelCallEvent` without prompts or email bodies.
 - There is one model route; when it fails, the deterministic result stands rather than a second model being tried.
 

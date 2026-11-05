@@ -16,13 +16,6 @@ public sealed class GmailInboxClient : IGmailInboxClient
 {
     private const string GmailReadonlyScope = "https://www.googleapis.com/auth/gmail.readonly";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly HashSet<string> SupportedAttachmentContentTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "application/pdf",
-        "image/png",
-        "image/jpeg",
-        "image/webp"
-    };
     private static readonly string[] RecruitingMailboxQueries =
     [
         "\"thank you for applying\"",
@@ -438,88 +431,6 @@ public sealed class GmailInboxClient : IGmailInboxClient
             latestHistoryId);
     }
 
-    public async Task<IReadOnlyList<DownloadedInboxAttachment>> DownloadSupportedAttachmentsAsync(
-        string accessToken,
-        string messageId,
-        int maxBytes,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(messageId) || maxBytes <= 0)
-        {
-            return [];
-        }
-
-        var message = await GetRawMessageAsync(messageId, accessToken, cancellationToken);
-        if (message?.Payload is null)
-        {
-            return [];
-        }
-
-        var candidates = CollectAttachmentCandidates(message.Payload);
-        if (candidates.Count == 0)
-        {
-            return [];
-        }
-
-        var attachments = new List<DownloadedInboxAttachment>();
-        foreach (var candidate in candidates)
-        {
-            var contentType = ResolveSupportedAttachmentContentType(candidate.ContentType, candidate.FileName);
-            if (contentType is null ||
-                candidate.SizeBytes.HasValue && candidate.SizeBytes.Value > maxBytes)
-            {
-                continue;
-            }
-
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"https://gmail.googleapis.com/gmail/v1/users/me/messages/{Uri.EscapeDataString(messageId)}/attachments/{Uri.EscapeDataString(candidate.AttachmentId)}");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                continue;
-            }
-
-            await EnsureSuccessAsync(response, cancellationToken);
-            var attachmentResponse = await JsonSerializer.DeserializeAsync<GmailAttachmentResponse>(
-                await response.Content.ReadAsStreamAsync(cancellationToken),
-                JsonOptions,
-                cancellationToken);
-
-            if (string.IsNullOrWhiteSpace(attachmentResponse?.Data))
-            {
-                continue;
-            }
-
-            byte[] bytes;
-            try
-            {
-                bytes = WebEncoders.Base64UrlDecode(attachmentResponse.Data);
-            }
-            catch (FormatException)
-            {
-                continue;
-            }
-
-            if (bytes.Length == 0 || bytes.Length > maxBytes)
-            {
-                continue;
-            }
-
-            attachments.Add(
-                new DownloadedInboxAttachment(
-                    candidate.AttachmentId,
-                    candidate.FileName,
-                    contentType,
-                    bytes.Length,
-                    bytes));
-        }
-
-        return attachments;
-    }
-
     private static string BuildRecruitingSearchQuery(
         string query,
         DateTimeOffset? receivedAfterUtc)
@@ -840,52 +751,6 @@ public sealed class GmailInboxClient : IGmailInboxClient
         }
     }
 
-    private static IReadOnlyList<GmailAttachmentCandidate> CollectAttachmentCandidates(GmailMessagePayload payload)
-    {
-        var candidates = new List<GmailAttachmentCandidate>();
-        Visit(payload, candidates);
-        return candidates;
-    }
-
-    private static void Visit(
-        GmailMessagePayload payload,
-        List<GmailAttachmentCandidate> candidates)
-    {
-        if (!string.IsNullOrWhiteSpace(payload.FileName) &&
-            !string.IsNullOrWhiteSpace(payload.Body?.AttachmentId))
-        {
-            candidates.Add(
-                new GmailAttachmentCandidate(
-                    payload.Body.AttachmentId,
-                    Path.GetFileName(payload.FileName),
-                    payload.MimeType,
-                    payload.Body.Size));
-        }
-
-        foreach (var part in payload.Parts ?? [])
-        {
-            Visit(part, candidates);
-        }
-    }
-
-    private static string? ResolveSupportedAttachmentContentType(string? contentType, string fileName)
-    {
-        if (!string.IsNullOrWhiteSpace(contentType) &&
-            SupportedAttachmentContentTypes.Contains(contentType))
-        {
-            return contentType.ToLowerInvariant();
-        }
-
-        return Path.GetExtension(fileName).ToLowerInvariant() switch
-        {
-            ".pdf" => "application/pdf",
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".webp" => "image/webp",
-            _ => null
-        };
-    }
-
     private static string? GetHeaderValue(IReadOnlyList<GmailHeader>? headers, string name)
     {
         return headers?.FirstOrDefault(
@@ -1134,15 +999,7 @@ public sealed class GmailInboxClient : IGmailInboxClient
         IReadOnlyList<GmailHeader>? Headers,
         IReadOnlyList<GmailMessagePayload>? Parts);
 
-    private sealed record GmailMessageBody(string? Data, string? AttachmentId, int? Size);
+    private sealed record GmailMessageBody(string? Data);
 
     private sealed record GmailHeader(string Name, string Value);
-
-    private sealed record GmailAttachmentResponse(string? Data);
-
-    private sealed record GmailAttachmentCandidate(
-        string AttachmentId,
-        string FileName,
-        string? ContentType,
-        int? SizeBytes);
 }

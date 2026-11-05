@@ -164,38 +164,6 @@ export interface paths {
         patch: operations["UpdateApplicationStatus"];
         trace?: never;
     };
-    "/api/applications/{jobApplicationId}/artifacts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["CreateApplicationArtifactEvidence"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/applications/{jobApplicationId}/artifacts/{artifactEvidenceId}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["ReviewApplicationArtifactEvidence"];
-        trace?: never;
-    };
     "/api/applications/{jobApplicationId}/correction": {
         parameters: {
             query?: never;
@@ -929,36 +897,6 @@ export interface components {
             recommendedSurface?: string | null;
             confidenceSummary?: string | null;
         };
-        ApplicationArtifactEvidenceDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            jobApplicationId?: string;
-            artifactKind?: string | null;
-            fileName?: string | null;
-            contentType?: string | null;
-            safeTitle?: string | null;
-            extractedFactType?: string | null;
-            extractedFactText?: string | null;
-            /** Format: date-time */
-            normalizedDateUtc?: string | null;
-            /** Format: double */
-            confidence?: number;
-            sourceSnippet?: string | null;
-            requiresReview?: boolean;
-            reviewReason?: string | null;
-            /** Format: date-time */
-            createdAtUtc?: string;
-            traceSummary?: components["schemas"]["AgentTraceSummaryDto"];
-            agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
-        };
-        ApplicationArtifactInputDto: {
-            artifactKind?: string | null;
-            fileName?: string | null;
-            contentType?: string | null;
-            base64Content?: string | null;
-            sourceLabel?: string | null;
-        };
         ApplicationContactDto: {
             name?: string | null;
             email?: string | null;
@@ -999,11 +937,8 @@ export interface components {
             recentActivity?: components["schemas"]["ApplicationDetailActivityDto"][] | null;
             threads?: components["schemas"]["ApplicationThreadDto"][] | null;
             feedbackNotes?: components["schemas"]["ApplicationFeedbackNoteDto"][] | null;
-            artifactEvidence?: components["schemas"]["ApplicationArtifactEvidenceDto"][] | null;
             /** Format: int32 */
             recentActivityTotalCount?: number;
-            /** Format: int32 */
-            artifactEvidenceTotalCount?: number;
             memoryProposals?: components["schemas"]["UserMemoryEntryDto"][] | null;
             agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
         };
@@ -1304,7 +1239,6 @@ export interface components {
         };
         ManualReviewResponse: {
             emails?: components["schemas"]["ReviewEmailDto"][] | null;
-            artifacts?: components["schemas"]["ReviewArtifactEvidenceDto"][] | null;
             applications?: components["schemas"]["ReviewApplicationDto"][] | null;
             categoryOptions?: string[] | null;
             statusOptions?: string[] | null;
@@ -1312,8 +1246,6 @@ export interface components {
             totalWaiting?: number;
             /** Format: int32 */
             totalUnassigned?: number;
-            /** Format: int32 */
-            totalArtifactReviews?: number;
         };
         PatchResumeStructuredDataRequest: {
             operations?: components["schemas"]["ResumeStructuredDataPatchOperation"][] | null;
@@ -1691,10 +1623,6 @@ export interface components {
             reason?: string | null;
             facts?: components["schemas"]["ReviewAgentTraceFactDto"][] | null;
         };
-        ReviewApplicationArtifactRequest: {
-            outcome?: string | null;
-            notes?: string | null;
-        };
         ReviewApplicationDto: {
             /** Format: uuid */
             id?: string;
@@ -1705,29 +1633,6 @@ export interface components {
             priority?: number;
             /** Format: date-time */
             lastActivityAtUtc?: string;
-        };
-        ReviewArtifactEvidenceDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            jobApplicationId?: string;
-            company?: string | null;
-            role?: string | null;
-            artifactKind?: string | null;
-            fileName?: string | null;
-            safeTitle?: string | null;
-            extractedFactType?: string | null;
-            extractedFactText?: string | null;
-            /** Format: date-time */
-            normalizedDateUtc?: string | null;
-            /** Format: double */
-            confidence?: number;
-            sourceSnippet?: string | null;
-            reviewReason?: string | null;
-            /** Format: date-time */
-            createdAtUtc?: string;
-            traceSummary?: components["schemas"]["AgentTraceSummaryDto"];
-            agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
         };
         ReviewEmailDto: {
             /** Format: uuid */
@@ -2157,73 +2062,6 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CreateApplicationArtifactEvidence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobApplicationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApplicationArtifactInputDto"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationArtifactEvidenceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ReviewApplicationArtifactEvidence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobApplicationId: string;
-                artifactEvidenceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReviewApplicationArtifactRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationArtifactEvidenceDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

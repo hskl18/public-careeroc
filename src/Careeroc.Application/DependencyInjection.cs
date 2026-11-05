@@ -20,7 +20,6 @@ public static class DependencyInjection
         services.AddSingleton<ICareerAgentGraphClient>(NullCareerAgentGraphClient.Instance);
         services.AddSingleton<IUserAgentContextSnapshotProvider>(NullUserAgentContextSnapshotProvider.Instance);
         services.AddSingleton<IModelCallEventRecorder>(NullModelCallEventRecorder.Instance);
-        services.AddSingleton<IInboxAttachmentDownloader>(NoopInboxAttachmentDownloader.Instance);
         services.AddScoped<ReviewEvidenceAgentService>();
         services.AddScoped<FollowUpTaskAgentService>();
         services.AddScoped<InboxSetupService>();
@@ -33,8 +32,6 @@ public static class DependencyInjection
         services.AddScoped<RecruitingContactGraphService>();
         services.AddScoped<RecruitingContactQueryService>();
         services.AddScoped<ApplicationDetailQueryService>();
-        services.AddScoped<ApplicationArtifactEvidenceService>();
-        services.AddScoped<IEmailAttachmentEvidenceImporter, EmailAttachmentEvidenceImportService>();
         services.AddScoped<ApplicationLookupQueryService>();
         services.AddScoped<EmailIntelligenceService>();
         services.AddScoped<ReminderEvidenceRefreshService>();

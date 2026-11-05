@@ -43,7 +43,7 @@ public sealed class ManualReviewQueryService
 
         if (user is null)
         {
-            return new ManualReviewResponse([], [], [], categoryOptions, statusOptions, 0, 0, 0);
+            return new ManualReviewResponse([], [], categoryOptions, statusOptions, 0, 0);
         }
 
         var inboxAccounts = await _dbContext.InboxAccounts
@@ -145,49 +145,6 @@ public sealed class ManualReviewQueryService
                     application.Priority,
                     application.LastActivityAtUtc))
             .ToList();
-        var visibleApplicationIdsForReview = applicationEntities
-            .Select(application => application.Id)
-            .ToHashSet();
-
-        var artifactReviewQuery = _dbContext.ApplicationArtifactEvidence
-            .AsNoTracking()
-            .Where(
-                evidence =>
-                    evidence.UserId == user.Id &&
-                    evidence.RequiresReview &&
-                    visibleApplicationIdsForReview.Contains(evidence.JobApplicationId));
-        var totalArtifactReviews = await artifactReviewQuery.CountAsync(cancellationToken);
-        var artifactEntities = await artifactReviewQuery
-            .OrderByDescending(evidence => evidence.CreatedAtUtc)
-            .Take(20)
-            .ToListAsync(cancellationToken);
-        var applicationById = applicationEntities.ToDictionary(application => application.Id);
-        var artifacts = artifactEntities
-            .Where(evidence => applicationById.ContainsKey(evidence.JobApplicationId))
-            .Select(
-                evidence =>
-                {
-                    var application = applicationById[evidence.JobApplicationId];
-                    return new ReviewArtifactEvidenceDto(
-                        evidence.Id,
-                        evidence.JobApplicationId,
-                        application.Company,
-                        application.Role,
-                        evidence.ArtifactKind,
-                        evidence.FileName,
-                        evidence.SafeTitle,
-                        evidence.ExtractedFactType,
-                        evidence.ExtractedFactText,
-                        evidence.NormalizedDateUtc,
-                        evidence.Confidence,
-                        evidence.SourceSnippet,
-                        evidence.ReviewReason ?? "Artifact evidence needs manual review before it can influence application state or reminders.",
-                        evidence.CreatedAtUtc,
-                        AgentTraceSummaryBuilder.FromArtifactEvidence(evidence),
-                        BuildArtifactAgentTrace(evidence));
-                })
-            .ToList();
-
         var emails = emailEntities
             .Select(
                 email =>
@@ -217,7 +174,7 @@ public sealed class ManualReviewQueryService
                         email.ActionRequired,
                         email.DueDateUtc,
                         email.ProcessingNotes,
-                        ExtractProcessingSource(email.ProcessingNotes, agentTrace),
+                        ExtractProcessingSource(agentTrace),
                         agentTrace,
                         email.JobApplicationId,
                         BuildThreadMessages(
@@ -231,13 +188,11 @@ public sealed class ManualReviewQueryService
 
         return new ManualReviewResponse(
             emails,
-            artifacts,
             applications,
             categoryOptions,
             statusOptions,
-            totalWaiting + totalArtifactReviews,
-            totalUnassigned,
-            totalArtifactReviews);
+            totalWaiting,
+            totalUnassigned);
     }
 
     private static string BuildSnippet(string parsedBody, string rawBody)
@@ -309,9 +264,7 @@ public sealed class ManualReviewQueryService
         return $"{value[..lastSpaceIndex].TrimEnd()}...";
     }
 
-    private static string? ExtractProcessingSource(
-        string? notes,
-        ReviewAgentTraceDto? agentTrace)
+    private static string? ExtractProcessingSource(ReviewAgentTraceDto? agentTrace)
     {
         var trace = agentTrace is null
             ? null
@@ -325,199 +278,13 @@ public sealed class ManualReviewQueryService
                         step.Reason,
                         step.Facts.Select(fact => new AgentTraceFact(fact.Label, fact.Value)).ToArray()))
                 .ToArray());
-        var traceSource = InboxEmailAgentTraceJson.ExtractProcessingSource(trace);
-        if (!string.IsNullOrWhiteSpace(traceSource))
-        {
-            return traceSource;
-        }
-
-        return ExtractLegacyProcessingSource(notes);
-    }
-
-    private static string? ExtractLegacyProcessingSource(string? notes)
-    {
-        if (string.IsNullOrWhiteSpace(notes) || !notes.StartsWith("[", StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        var closingBracketIndex = notes.IndexOf(']');
-        if (closingBracketIndex <= 1)
-        {
-            return null;
-        }
-
-        return notes[1..closingBracketIndex].Trim();
+        return InboxEmailAgentTraceJson.ExtractProcessingSource(trace);
     }
 
     private static ReviewAgentTraceDto? BuildAgentTrace(Domain.Entities.InboxEmail email)
     {
         var trace = InboxEmailAgentTraceJson.Deserialize(email.ProcessingTraceJson);
-        if (trace is not null)
-        {
-            return ToReviewAgentTrace(trace, email);
-        }
-
-        var steps = new List<ReviewAgentTraceStepDto>();
-        var legacyProcessingSource = ExtractLegacyProcessingSource(email.ProcessingNotes);
-
-        if (!string.IsNullOrWhiteSpace(legacyProcessingSource) ||
-            email.Category.HasValue ||
-            email.ClassificationConfidence.HasValue ||
-            !string.IsNullOrWhiteSpace(email.ExtractedCompany) ||
-            !string.IsNullOrWhiteSpace(email.ExtractedRole))
-        {
-            var extractionFacts = new List<ReviewAgentTraceFactDto>();
-
-            if (email.Category.HasValue)
-            {
-                extractionFacts.Add(new ReviewAgentTraceFactDto("Category", ToSnakeCase(email.Category.Value)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(email.ExtractedCompany))
-            {
-                extractionFacts.Add(new ReviewAgentTraceFactDto("Company", email.ExtractedCompany));
-            }
-
-            if (!string.IsNullOrWhiteSpace(email.ExtractedRole))
-            {
-                extractionFacts.Add(new ReviewAgentTraceFactDto("Role", email.ExtractedRole));
-            }
-
-            if (email.ClassificationConfidence.HasValue)
-            {
-                extractionFacts.Add(
-                    new ReviewAgentTraceFactDto(
-                        "Classification confidence",
-                        $"{email.ClassificationConfidence.Value:0.00}"));
-            }
-
-            extractionFacts.Add(new ReviewAgentTraceFactDto("Action required", email.ActionRequired ? "Yes" : "No"));
-
-            if (email.DueDateUtc.HasValue)
-            {
-                extractionFacts.Add(
-                    new ReviewAgentTraceFactDto(
-                        "Due date (UTC)",
-                        email.DueDateUtc.Value.ToString("O")));
-            }
-
-            steps.Add(
-                new ReviewAgentTraceStepDto(
-                    "workflow_extraction",
-                    legacyProcessingSource ?? "Legacy workflow extraction",
-                    email.ProcessingNotes ?? "Structured extraction metadata was recorded before agent tracing was available.",
-                    null,
-                    extractionFacts));
-        }
-
-        if (!string.IsNullOrWhiteSpace(email.ContactEmail) ||
-            !string.IsNullOrWhiteSpace(email.ContactName) ||
-            email.ContactType.HasValue ||
-            !string.IsNullOrWhiteSpace(email.ContactRoleHint))
-        {
-            var contactFacts = new List<ReviewAgentTraceFactDto>();
-
-            if (!string.IsNullOrWhiteSpace(email.ContactName))
-            {
-                contactFacts.Add(new ReviewAgentTraceFactDto("Contact name", email.ContactName));
-            }
-
-            if (!string.IsNullOrWhiteSpace(email.ContactEmail))
-            {
-                contactFacts.Add(new ReviewAgentTraceFactDto("Contact email", email.ContactEmail));
-            }
-
-            if (email.ContactType.HasValue)
-            {
-                contactFacts.Add(new ReviewAgentTraceFactDto("Contact type", ToLabel(email.ContactType.Value)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(email.ContactRoleHint))
-            {
-                contactFacts.Add(new ReviewAgentTraceFactDto("Role hint", email.ContactRoleHint));
-            }
-
-            steps.Add(
-                new ReviewAgentTraceStepDto(
-                    "recruiter_identity",
-                    "Recruiter Identity Agent",
-                    "Captured recruiting contact metadata from the sender and message heuristics.",
-                    null,
-                    contactFacts));
-        }
-
-        if (email.RequiresManualReview || !string.IsNullOrWhiteSpace(email.ReviewReason) || email.MatchingConfidence.HasValue)
-        {
-            var reviewFacts = new List<ReviewAgentTraceFactDto>
-            {
-                new("Requires manual review", email.RequiresManualReview ? "Yes" : "No")
-            };
-
-            if (email.MatchingConfidence.HasValue)
-            {
-                reviewFacts.Add(
-                    new ReviewAgentTraceFactDto(
-                        "Match confidence",
-                        $"{email.MatchingConfidence.Value:0.00}"));
-            }
-
-            steps.Add(
-                new ReviewAgentTraceStepDto(
-                    "review_evidence",
-                    "Legacy review evidence",
-                    email.RequiresManualReview
-                        ? "Escalated by the review agent."
-                        : "Cleared by the review agent.",
-                    email.ReviewReason,
-                    reviewFacts));
-        }
-
-        return steps.Count == 0
-            ? null
-            : new ReviewAgentTraceDto(email.ProcessedAtUtc, steps, AgentTraceSummaryBuilder.FromInboxEmail(email));
-    }
-
-    private static ReviewAgentTraceDto BuildArtifactAgentTrace(ApplicationArtifactEvidence evidence)
-    {
-        var summary = AgentTraceSummaryBuilder.FromArtifactEvidence(evidence);
-
-        return new ReviewAgentTraceDto(
-            evidence.CreatedAtUtc,
-            [
-                new ReviewAgentTraceStepDto(
-                    "artifact_ingestion",
-                    "Artifact evidence importer",
-                    $"Accepted {evidence.ContentType} evidence as {ToLabel(evidence.ArtifactKind)}.",
-                    "The artifact path stores evidence metadata and does not keep raw uploaded or downloaded bytes.",
-                    [
-                        new ReviewAgentTraceFactDto("file", evidence.FileName),
-                        new ReviewAgentTraceFactDto("source", summary.EvidenceSource)
-                    ]),
-                new ReviewAgentTraceStepDto(
-                    "gemma_extraction",
-                    "Artifact extractor",
-                    evidence.ExtractedFactText,
-                    evidence.SourceSnippet,
-                    [
-                        new ReviewAgentTraceFactDto("model", summary.ModelPath ?? "not recorded"),
-                        new ReviewAgentTraceFactDto("purpose", summary.Purpose),
-                        new ReviewAgentTraceFactDto("confidence", $"{Math.Round(evidence.Confidence * 100)}%")
-                    ]),
-                new ReviewAgentTraceStepDto(
-                    "review_gate",
-                    "Artifact review gate",
-                    evidence.RequiresReview
-                        ? "Blocked this artifact from mutating application state."
-                        : "Recorded evidence without mutating application state.",
-                    evidence.ReviewReason ??
-                    "Artifact evidence remains an auditable card; application status and reminders require a separate review path.",
-                    [
-                        new ReviewAgentTraceFactDto("outcome", summary.ReviewGateResult),
-                        new ReviewAgentTraceFactDto("fallback", summary.FallbackPath)
-                    ])
-            ],
-            summary);
+        return trace is null ? null : ToReviewAgentTrace(trace, email);
     }
 
     private static ReviewAgentTraceDto ToReviewAgentTrace(InboxEmailAgentTrace trace, Domain.Entities.InboxEmail email)

@@ -21,5 +21,4 @@ public sealed class JobApplication
     public ICollection<InboxEmail> Emails { get; set; } = new List<InboxEmail>();
     public ICollection<JobApplicationEvent> Events { get; set; } = new List<JobApplicationEvent>();
     public ICollection<Reminder> Reminders { get; set; } = new List<Reminder>();
-    public ICollection<ApplicationArtifactEvidence> ArtifactEvidence { get; set; } = new List<ApplicationArtifactEvidence>();
 }

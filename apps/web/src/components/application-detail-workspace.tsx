@@ -86,7 +86,6 @@ const APPLICATION_STATUS_OPTIONS = [
   "Closed",
 ];
 const maxVisibleRecentActivity = 8;
-const maxVisibleArtifactEvidence = 6;
 
 function isAssessmentReminder(action: ApplicationDetailReminder) {
   return (
@@ -477,14 +476,6 @@ export function ApplicationDetailWorkspace({
   const visiblePendingActions = terminal ? [] : detail.pendingActions;
   const latestOutboundReply = findLatestOutboundReply(detail);
   const reviewAgentDecisions = buildReviewAgentDecisions(detail);
-  const artifactEvidence = detail.artifactEvidence ?? [];
-  const visibleArtifactEvidence = artifactEvidence.slice(0, maxVisibleArtifactEvidence);
-  const artifactEvidenceTotalCount =
-    detail.artifactEvidenceTotalCount ?? artifactEvidence.length;
-  const hiddenArtifactEvidenceCount = Math.max(
-    0,
-    artifactEvidenceTotalCount - visibleArtifactEvidence.length,
-  );
   const visibleRecentActivity = detail.recentActivity.slice(0, maxVisibleRecentActivity);
   const recentActivityTotalCount =
     detail.recentActivityTotalCount ?? detail.recentActivity.length;
@@ -596,14 +587,6 @@ export function ApplicationDetailWorkspace({
                   </dt>
                   <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
                   {detail.threads.length}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Artifacts
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {artifactEvidenceTotalCount}
                   </dd>
                 </div>
                 <div>
@@ -817,98 +800,6 @@ export function ApplicationDetailWorkspace({
                       </p>
                     </article>
                   ))}
-                </div>
-              )}
-              </div>
-
-              <div className="border-t border-[var(--border)] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="eyebrow">Artifact evidence</p>
-                <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-                  {artifactEvidenceTotalCount}
-                </span>
-              </div>
-
-              {artifactEvidence.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--text-tertiary)]">
-                  No uploaded offer, screenshot, or attachment evidence yet.
-                </p>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {visibleArtifactEvidence.map((artifact) => (
-                    <article key={artifact.id} className="card-elevated p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                            {formatEnumLabel(artifact.artifactKind)}
-                          </p>
-                          <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                            {artifact.safeTitle}
-                          </h3>
-                          <p className="mt-1 break-all text-xs text-[var(--text-tertiary)]">
-                            {artifact.fileName}
-                          </p>
-                        </div>
-                        <span
-                          className={`badge ${
-                            artifact.requiresReview
-                              ? "bg-[var(--yellow-soft)] text-[var(--yellow)]"
-                              : "bg-[var(--green-soft)] text-[var(--green)]"
-                          }`}
-                        >
-                          {artifact.requiresReview ? "Review" : "Accepted"}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
-                        <p className="eyebrow">
-                          Extracted {formatEnumLabel(artifact.extractedFactType)}
-                        </p>
-                        <p className="mt-1 text-sm font-medium leading-6 text-[var(--text-primary)]">
-                          {artifact.extractedFactText}
-                        </p>
-                        <p className="mt-2 text-xs leading-5 text-[var(--text-tertiary)]">
-                          {artifact.sourceSnippet}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                          confidence {formatConfidence(artifact.confidence)}
-                        </span>
-                        <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                          added {formatTimestamp(artifact.createdAtUtc, timeZoneId)}
-                        </span>
-                      </div>
-
-                      {artifact.reviewReason ? (
-                        <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">
-                          {artifact.reviewReason}
-                        </p>
-                      ) : null}
-
-                      <div className="mt-3">
-                        <AgentTraceSummaryCard
-                          summary={artifact.traceSummary}
-                          title="Artifact trace"
-                          compact
-                        />
-                      </div>
-                      <div className="mt-3">
-                        <AgentTraceStepsPanel
-                          steps={artifact.agentTrace?.steps ?? []}
-                          title="Artifact step trace"
-                        />
-                      </div>
-                    </article>
-                  ))}
-                  {hiddenArtifactEvidenceCount > 0 ? (
-                    <p className="rounded-md border border-[var(--border)] bg-[var(--surface-overlay)] px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-                      Showing the latest {visibleArtifactEvidence.length} artifacts;{" "}
-                      {hiddenArtifactEvidenceCount} older artifact
-                      {hiddenArtifactEvidenceCount === 1 ? " is" : "s are"} not shown.
-                    </p>
-                  ) : null}
                 </div>
               )}
               </div>

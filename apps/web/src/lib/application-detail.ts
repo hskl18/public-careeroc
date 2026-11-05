@@ -115,25 +115,6 @@ export type ApplicationFeedbackNote = {
   occurredAtUtc: string;
 };
 
-export type ApplicationArtifactEvidence = {
-  id: string;
-  jobApplicationId: string;
-  artifactKind: string;
-  fileName: string;
-  contentType: string;
-  safeTitle: string;
-  extractedFactType: string;
-  extractedFactText: string;
-  normalizedDateUtc: string | null;
-  confidence: number;
-  sourceSnippet: string;
-  requiresReview: boolean;
-  reviewReason: string | null;
-  createdAtUtc: string;
-  traceSummary: AgentTraceSummary;
-  agentTrace: AgentTrace | null;
-};
-
 export type ApplicationDetail = {
   id: string;
   company: string;
@@ -152,8 +133,6 @@ export type ApplicationDetail = {
   recentActivityTotalCount?: number;
   threads: ApplicationThread[];
   feedbackNotes: ApplicationFeedbackNote[];
-  artifactEvidence: ApplicationArtifactEvidence[] | null;
-  artifactEvidenceTotalCount?: number;
   memoryProposals?: UserMemoryEntry[] | null;
   agentTrace?: AgentTrace | null;
 };

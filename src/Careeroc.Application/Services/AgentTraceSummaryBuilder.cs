@@ -41,17 +41,6 @@ public static class AgentTraceSummaryBuilder
             ResolveFallbackPath(parsingSource, parsingModel, requiresManualReview));
     }
 
-    public static AgentTraceSummaryDto FromArtifactEvidence(ApplicationArtifactEvidence evidence)
-    {
-        return new AgentTraceSummaryDto(
-            evidence.ModelPath,
-            evidence.Purpose,
-            evidence.Confidence,
-            evidence.EvidenceSource,
-            evidence.ReviewGateResult,
-            evidence.FallbackPath);
-    }
-
     private static string ResolveEvidenceSource(
         Guid emailId,
         string threadId,

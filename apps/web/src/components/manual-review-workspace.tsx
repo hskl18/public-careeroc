@@ -2,10 +2,6 @@
 
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
-import {
-  AgentTraceStepsPanel,
-  AgentTraceSummaryCard,
-} from "@/components/application-thread-evidence-section";
 import { ManualReviewEmailDetail } from "@/components/manual-review-email-detail";
 import { StatusPill } from "@/components/status-pill";
 import { fetchWithInFlightDedup } from "@/lib/client-fetch";
@@ -15,7 +11,6 @@ import {
 } from "@/lib/date-time";
 import type {
   ManualReviewResponse,
-  ReviewArtifactEvidence,
   ReviewApplication,
   ReviewEmail,
 } from "@/lib/manual-review";
@@ -160,124 +155,6 @@ function ApplicationOverridesSection({
   );
 }
 
-function ArtifactReviewSection({
-  artifacts,
-  canPersist,
-  pendingKey,
-  timeZoneId,
-  onReview,
-}: {
-  artifacts: ReviewArtifactEvidence[];
-  canPersist: boolean;
-  pendingKey: string | null;
-  timeZoneId: string;
-  onReview: (
-    artifact: ReviewArtifactEvidence,
-    outcome: "keep_evidence" | "dismiss_evidence",
-  ) => void;
-}) {
-  return (
-    <section className="card p-5">
-      <div className="flex items-center justify-between gap-3">
-        <p className="eyebrow">Artifact reviews</p>
-        <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">
-          {artifacts.length}
-        </span>
-      </div>
-
-      {artifacts.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--text-tertiary)]">
-          No artifact evidence is waiting for review.
-        </p>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {artifacts.map((artifact) => (
-            <article key={artifact.id} className="card-elevated p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    {formatEnumLabel(artifact.artifactKind)}
-                  </p>
-                  <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                    {artifact.safeTitle}
-                  </h3>
-                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                    {artifact.company} / {artifact.role}
-                  </p>
-                </div>
-                <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">
-                  {(artifact.confidence * 100).toFixed(0)}%
-                </span>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-                {artifact.reviewReason}
-              </p>
-              <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
-                <p className="eyebrow">Extracted {formatEnumLabel(artifact.extractedFactType)}</p>
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--text-primary)]">
-                  {artifact.extractedFactText}
-                </p>
-                <p className="mt-2 text-xs leading-5 text-[var(--text-tertiary)]">
-                  {artifact.sourceSnippet}
-                </p>
-              </div>
-
-              <div className="mt-3">
-                <AgentTraceSummaryCard
-                  summary={artifact.traceSummary}
-                  title="Artifact model trace"
-                  compact
-                />
-              </div>
-              <div className="mt-3">
-                <AgentTraceStepsPanel
-                  steps={artifact.agentTrace?.steps ?? []}
-                  title="Artifact step trace"
-                />
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  Added {formatTimestamp(artifact.createdAtUtc, timeZoneId)}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    href={`/app/applications/${artifact.jobApplicationId}`}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Open application
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    disabled={!canPersist || pendingKey !== null}
-                    onClick={() => onReview(artifact, "dismiss_evidence")}
-                  >
-                    {pendingKey === `artifact:${artifact.id}:dismiss_evidence`
-                      ? <><span className="spinner" /> Dismissing...</>
-                      : "Dismiss"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    disabled={!canPersist || pendingKey !== null}
-                    onClick={() => onReview(artifact, "keep_evidence")}
-                  >
-                    {pendingKey === `artifact:${artifact.id}:keep_evidence`
-                      ? <><span className="spinner" /> Keeping...</>
-                      : "Keep evidence"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 export function ManualReviewWorkspace({
   initialReview,
   source,
@@ -306,9 +183,6 @@ export function ManualReviewWorkspace({
   const totalUnassigned =
     review.totalUnassigned ??
     review.emails.filter((email) => !email.jobApplicationId).length;
-  const reviewArtifacts = review.artifacts ?? [];
-  const totalArtifactReviews =
-    review.totalArtifactReviews ?? reviewArtifacts.length;
   const coldStart =
     source === "api" &&
     review.emails.length === 0 &&
@@ -349,18 +223,6 @@ export function ManualReviewWorkspace({
       containsText(e.contactRoleHint, normalizedSearchQuery) ||
       containsText(e.reviewReason, normalizedSearchQuery) ||
       containsText(e.notes, normalizedSearchQuery)
-    );
-  });
-  const filteredArtifacts = reviewArtifacts.filter((artifact) => {
-    if (!normalizedSearchQuery) return true;
-    return (
-      containsText(artifact.company, normalizedSearchQuery) ||
-      containsText(artifact.role, normalizedSearchQuery) ||
-      containsText(artifact.safeTitle, normalizedSearchQuery) ||
-      containsText(artifact.extractedFactType, normalizedSearchQuery) ||
-      containsText(artifact.extractedFactText, normalizedSearchQuery) ||
-      containsText(artifact.sourceSnippet, normalizedSearchQuery) ||
-      containsText(artifact.reviewReason, normalizedSearchQuery)
     );
   });
   const selectedEmail =
@@ -455,42 +317,6 @@ export function ManualReviewWorkspace({
     } finally { setPendingKey(null); }
   }
 
-  async function handleArtifactReview(
-    artifact: ReviewArtifactEvidence,
-    outcome: "keep_evidence" | "dismiss_evidence",
-  ) {
-    if (!proxyPrefix) { setError("API proxy is not configured."); return; }
-    const pendingArtifactKey = `artifact:${artifact.id}:${outcome}`;
-    setPendingKey(pendingArtifactKey); setError(null); setNotice(null);
-    try {
-      const response = await fetch(
-        `${proxyPrefix}/api/applications/${artifact.jobApplicationId}/artifacts/${artifact.id}/review`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ outcome }),
-        },
-      );
-      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
-      const refreshed = await refreshReviewFromApi();
-      if (!refreshed) {
-        setReview((current) => ({
-          ...current,
-          artifacts: (current.artifacts ?? []).filter((item) => item.id !== artifact.id),
-          totalArtifactReviews: Math.max(0, (current.totalArtifactReviews ?? 1) - 1),
-          totalWaiting: Math.max(0, (current.totalWaiting ?? 1) - 1),
-        }));
-      }
-      setNotice(
-        outcome === "dismiss_evidence"
-          ? `Dismissed "${artifact.safeTitle}".`
-          : `Kept "${artifact.safeTitle}" as reviewed evidence.`,
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to review artifact evidence.");
-    } finally { setPendingKey(null); }
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 animate-in">
       <section className="card shrink-0 p-4">
@@ -513,7 +339,7 @@ export function ManualReviewWorkspace({
                   ? coldStartHint
                   : review.emails.length === 0
                     ? "Queue is clear."
-                    : `${totalWaiting} waiting · ${totalUnassigned} unassigned · ${totalArtifactReviews} artifacts · showing ${review.emails.length}`}
+                    : `${totalWaiting} waiting · ${totalUnassigned} unassigned · showing ${review.emails.length}`}
               </p>
             </div>
           </div>
@@ -696,18 +522,6 @@ export function ManualReviewWorkspace({
               </div>
             )}
           </section>
-
-          <div className="mt-4">
-            <ArtifactReviewSection
-              artifacts={filteredArtifacts}
-              canPersist={canPersist}
-              pendingKey={pendingKey}
-              timeZoneId={timeZoneId}
-              onReview={(artifact, outcome) =>
-                void handleArtifactReview(artifact, outcome)
-              }
-            />
-          </div>
         </div>
 
         <div className="workspace-scroll-region min-h-0 pr-1">

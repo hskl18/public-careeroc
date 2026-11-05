@@ -23,7 +23,6 @@ public sealed class EmailIntelligenceService
     private readonly FollowUpTaskAgentService _followUpTaskAgentService;
     private readonly ApplicationWorkflowService _applicationWorkflowService;
     private readonly RecruitingContactGraphService _recruitingContactGraphService;
-    private readonly IEmailAttachmentEvidenceImporter _emailAttachmentEvidenceImporter;
     private readonly IModelCallEventRecorder _modelCallEventRecorder;
     private readonly ILeaseManager _leaseManager;
     private readonly IClock _clock;
@@ -68,7 +67,6 @@ public sealed class EmailIntelligenceService
         RecruitingContactGraphService recruitingContactGraphService,
         IClock clock,
         ILogger<EmailIntelligenceService> logger,
-        IEmailAttachmentEvidenceImporter? emailAttachmentEvidenceImporter = null,
         IModelCallEventRecorder? modelCallEventRecorder = null,
         ILeaseManager? leaseManager = null)
     {
@@ -82,7 +80,6 @@ public sealed class EmailIntelligenceService
         _followUpTaskAgentService = followUpTaskAgentService;
         _applicationWorkflowService = applicationWorkflowService;
         _recruitingContactGraphService = recruitingContactGraphService;
-        _emailAttachmentEvidenceImporter = emailAttachmentEvidenceImporter ?? NoopEmailAttachmentEvidenceImporter.Instance;
         _modelCallEventRecorder = modelCallEventRecorder ?? NullModelCallEventRecorder.Instance;
         _leaseManager = leaseManager ?? NoopLeaseManager.Instance;
         _clock = clock;
@@ -419,15 +416,6 @@ public sealed class EmailIntelligenceService
                         processedAtUtcForTrace));
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
-                var importedAttachmentEvidence = 0;
-                if (acceptedApplication is not null)
-                {
-                    importedAttachmentEvidence = await _emailAttachmentEvidenceImporter.ImportForEmailAsync(
-                        inboxEmail.Id,
-                        cancellationToken);
-                }
-                jobActivity?.SetTag("artifact.attachments_imported", importedAttachmentEvidence);
-
                 await _emailProcessingQueue.MarkCompletedAsync(job.Id, cancellationToken, job.LockedAtUtc);
                 jobsProcessed++;
 
@@ -440,8 +428,7 @@ public sealed class EmailIntelligenceService
                     effectiveParsed.Category,
                     effectiveParsed.Company,
                     effectiveParsed.Role,
-                    resolvedStatus,
-                    importedAttachmentEvidence);
+                    resolvedStatus);
             }
             catch (Exception exception)
             {

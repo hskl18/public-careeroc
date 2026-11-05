@@ -22,137 +22,6 @@ namespace Careeroc.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationArtifactEvidence", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ArtifactKind")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("artifact_kind");
-
-                    b.Property<decimal>("Confidence")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)")
-                        .HasColumnName("confidence");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("content_hash");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("content_type");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("EvidenceSource")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("evidence_source");
-
-                    b.Property<string>("ExtractedFactText")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("extracted_fact_text");
-
-                    b.Property<string>("ExtractedFactType")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("extracted_fact_type");
-
-                    b.Property<string>("FallbackPath")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("fallback_path");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("file_name");
-
-                    b.Property<Guid>("JobApplicationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_application_id");
-
-                    b.Property<string>("ModelPath")
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("model_path");
-
-                    b.Property<DateTimeOffset?>("NormalizedDateUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("normalized_date_utc");
-
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("purpose");
-
-                    b.Property<bool>("RequiresReview")
-                        .HasColumnType("boolean")
-                        .HasColumnName("requires_review");
-
-                    b.Property<string>("ReviewGateResult")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("review_gate_result");
-
-                    b.Property<string>("ReviewReason")
-                        .HasMaxLength(280)
-                        .HasColumnType("character varying(280)")
-                        .HasColumnName("review_reason");
-
-                    b.Property<string>("SafeTitle")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("safe_title");
-
-                    b.Property<string>("SourceLabel")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("source_label");
-
-                    b.Property<string>("SourceSnippet")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("source_snippet");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_application_artifact_evidence");
-
-                    b.HasIndex("JobApplicationId", "CreatedAtUtc")
-                        .HasDatabaseName("ix_application_artifact_evidence_job_application_id_created_at");
-
-                    b.HasIndex("UserId", "CreatedAtUtc")
-                        .HasDatabaseName("ix_application_artifact_evidence_user_id_created_at_utc");
-
-                    b.ToTable("application_artifact_evidence", (string)null);
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationResumeFit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1443,27 +1312,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("user_soul_profiles", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationArtifactEvidence", b =>
-                {
-                    b.HasOne("Careeroc.Domain.Entities.JobApplication", "JobApplication")
-                        .WithMany("ArtifactEvidence")
-                        .HasForeignKey("JobApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_application_artifact_evidence_job_applications_job_applicat");
-
-                    b.HasOne("Careeroc.Domain.Entities.User", "User")
-                        .WithMany("ApplicationArtifactEvidence")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_application_artifact_evidence_users_user_id");
-
-                    b.Navigation("JobApplication");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationResumeFit", b =>
                 {
                     b.HasOne("Careeroc.Domain.Entities.JobApplication", "JobApplication")
@@ -1698,8 +1546,6 @@ namespace Careeroc.Infrastructure.Migrations
 
             modelBuilder.Entity("Careeroc.Domain.Entities.JobApplication", b =>
                 {
-                    b.Navigation("ArtifactEvidence");
-
                     b.Navigation("Emails");
 
                     b.Navigation("Events");
@@ -1726,8 +1572,6 @@ namespace Careeroc.Infrastructure.Migrations
 
             modelBuilder.Entity("Careeroc.Domain.Entities.User", b =>
                 {
-                    b.Navigation("ApplicationArtifactEvidence");
-
                     b.Navigation("InboxAccounts");
 
                     b.Navigation("JobApplications");

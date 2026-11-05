@@ -17,7 +17,6 @@ public sealed class CareerocDbContext : DbContext, ICareerocDbContext
     public DbSet<RecruitingContact> RecruitingContacts => Set<RecruitingContact>();
     public DbSet<JobApplication> JobApplications => Set<JobApplication>();
     public DbSet<ApplicationResumeFit> ApplicationResumeFits => Set<ApplicationResumeFit>();
-    public DbSet<ApplicationArtifactEvidence> ApplicationArtifactEvidence => Set<ApplicationArtifactEvidence>();
     public DbSet<JobApplicationEvent> JobApplicationEvents => Set<JobApplicationEvent>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<EmailProcessingJob> EmailProcessingJobs => Set<EmailProcessingJob>();
