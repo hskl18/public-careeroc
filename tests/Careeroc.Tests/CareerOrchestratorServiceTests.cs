@@ -159,6 +159,47 @@ public sealed class CareerOrchestratorServiceTests
     }
 
     [Fact]
+    public async Task ReviewResumeMailboxFitAsync_FitsALongModelSummaryIntoTheMemoryColumn()
+    {
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        dbContext.Users.Add(
+            new User
+            {
+                Email = ApplicationDefaults.DefaultUserEmail,
+                Name = ApplicationDefaults.DefaultUserName
+            });
+        await dbContext.SaveChangesAsync();
+        var clock = new TestClock(new DateTimeOffset(2026, 7, 13, 12, 0, 0, TimeSpan.Zero));
+        var longSummary = new string('x', UserMemoryEntry.MaxSummaryLength + 500);
+        var graphClient = new StubCareerAgentGraphClient(
+            request => CareerAgentGraphRunOutcome.Succeeded(
+                new CareerAgentGraphReviewResponse(
+                    request.ThreadId,
+                    "completed",
+                    "langgraph.resume_mailbox_review.v1",
+                    "scripted/test-model",
+                    longSummary,
+                    [],
+                    [],
+                    false,
+                    0.9m,
+                    [])));
+        var service = new CareerOrchestratorService(
+            dbContext,
+            new UserAgentContextSnapshotService(dbContext, clock),
+            new ResumeMailboxContextBuilder(dbContext, clock),
+            graphClient,
+            clock);
+
+        var review = await service.ReviewResumeMailboxFitAsync(ApplicationDefaults.DefaultUserEmail);
+
+        Assert.Equal(longSummary, review.Summary);
+        var memory = Assert.Single(dbContext.UserMemoryEntries);
+        Assert.Equal(UserMemoryEntry.MaxSummaryLength, memory.Summary!.Length);
+        Assert.Contains(longSummary, memory.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ReviewResumeMailboxFitAsync_ExposesDeterministicFallbackWhenGraphFails()
     {
         await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
