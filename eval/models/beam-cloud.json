@@ -1,0 +1,22 @@
+{
+  "dataset": "src/Careeroc.Infrastructure/Demo/demo-inbox.json",
+  "pipeline": "heuristic extraction with beam:cloud",
+  "modelCalls": 86,
+  "modelCallFailures": 0,
+  "modelSeconds": 670,
+  "triageAccuracy": 1,
+  "categoryAccuracy": 0.976,
+  "companyAccuracy": 1,
+  "applicationStatusAccuracy": 0.95,
+  "reviewRecall": 1,
+  "reviewPrecision": 0.667,
+  "unexpectedApplications": [],
+  "categoryMisses": [
+    "aurora-002: expected OaInvitation, got RecruiterOutreach"
+  ],
+  "flaggedForReview": [
+    "agency-001",
+    "beacon-002",
+    "scam-001"
+  ]
+}

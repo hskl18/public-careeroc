@@ -150,10 +150,10 @@ public sealed class ReviewEvidenceAgentService
                 true,
                 NormalizeReason(modelDecision.Reason) ??
                 NormalizeReason(baselineDecision.Reason) ??
-                "Gemma review agent found unresolved workflow evidence.",
+                "Model review agent found unresolved workflow evidence.",
                 NormalizeVisibleOutput(
                     modelDecision.VisibleOutput,
-                    "Gemma review agent escalated because the workflow evidence still needs correction."),
+                    "Model review agent escalated because the workflow evidence still needs correction."),
                 NormalizeAgentName(modelDecision.AgentName));
         }
 
@@ -164,7 +164,7 @@ public sealed class ReviewEvidenceAgentService
                 null,
                 NormalizeVisibleOutput(
                     modelDecision.VisibleOutput,
-                    "Gemma review agent cleared the workflow state after a second-pass evidence check."),
+                    "Model review agent cleared the workflow state after a second-pass evidence check."),
                 NormalizeAgentName(modelDecision.AgentName));
         }
 
@@ -175,7 +175,7 @@ public sealed class ReviewEvidenceAgentService
                 null,
                 NormalizeVisibleOutput(
                     modelDecision.VisibleOutput,
-                    "Gemma review agent cleared the workflow state after a second-pass evidence check."),
+                    "Model review agent cleared the workflow state after a second-pass evidence check."),
                 NormalizeAgentName(modelDecision.AgentName));
         }
 

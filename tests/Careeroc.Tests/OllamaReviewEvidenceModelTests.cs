@@ -15,7 +15,7 @@ namespace Careeroc.Tests;
 public sealed class OllamaReviewEvidenceModelTests
 {
     [Fact]
-    public async Task EvaluateAsync_ReturnsGemmaReviewDecision_WhenConfigured()
+    public async Task EvaluateAsync_ReturnsModelReviewDecision_WhenConfigured()
     {
         string? requestBody = null;
         var handler = new StubHttpMessageHandler(
@@ -32,7 +32,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         {
                           "message": {
                             "role": "assistant",
-                            "content": "{\"requiresManualReview\":true,\"reason\":\"Application match is too ambiguous for an offer.\",\"visibleOutput\":\"Gemma review agent escalated the offer evidence.\",\"confidence\":0.87}"
+                            "content": "{\"requiresManualReview\":true,\"reason\":\"Application match is too ambiguous for an offer.\",\"visibleOutput\":\"Model review agent escalated the offer evidence.\",\"confidence\":0.87}"
                           }
                         }
                         """,
@@ -73,7 +73,7 @@ public sealed class OllamaReviewEvidenceModelTests
         Assert.NotNull(decision);
         Assert.True(decision.RequiresManualReview);
         Assert.Equal(0.87m, decision.Confidence);
-        Assert.Equal("Review Evidence Agent: Gemma via Ollama (gemma4:26b)", decision.AgentName);
+        Assert.Equal("Review Evidence Agent: Ollama (gemma4:26b)", decision.AgentName);
         Assert.Contains("Review Evidence Agent, a second-pass reviewer", requestBody, StringComparison.Ordinal);
         Assert.Contains("Application match:", requestBody, StringComparison.Ordinal);
         Assert.Contains("Trusted user context from DB-backed memory", requestBody, StringComparison.Ordinal);
@@ -95,7 +95,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         {
                           "message": {
                             "role": "assistant",
-                            "content": "{\"requiresManualReview\":false,\"reason\":\"\",\"visibleOutput\":\"Gemma review agent cleared the evidence.\",\"confidence\":0.91}"
+                            "content": "{\"requiresManualReview\":false,\"reason\":\"\",\"visibleOutput\":\"Model review agent cleared the evidence.\",\"confidence\":0.91}"
                           },
                           "prompt_eval_count": 100,
                           "eval_count": 25
@@ -168,7 +168,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         {
                           "message": {
                             "role": "assistant",
-                            "content": "{\"requiresManualReview\":false,\"reason\":\"\",\"visibleOutput\":\"Gemma review agent cleared the evidence.\",\"confidence\":0.91}"
+                            "content": "{\"requiresManualReview\":false,\"reason\":\"\",\"visibleOutput\":\"Model review agent cleared the evidence.\",\"confidence\":0.91}"
                           }
                         }
                         """,
@@ -212,7 +212,7 @@ public sealed class OllamaReviewEvidenceModelTests
             DueDateUtc: null,
             ClassificationConfidence: 0.92m,
             WorkflowNote: "Offer email with a deadline.",
-            ParsingSource: "Gemma via Ollama",
+            ParsingSource: "Ollama",
             ParsingModel: "gemma4:26b");
     }
 

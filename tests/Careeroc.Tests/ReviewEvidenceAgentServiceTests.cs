@@ -10,15 +10,15 @@ namespace Careeroc.Tests;
 public sealed class ReviewEvidenceAgentServiceTests
 {
     [Fact]
-    public async Task EvaluateAsync_Escalates_WhenGemmaSecondPassFindsRisk()
+    public async Task EvaluateAsync_Escalates_WhenModelSecondPassFindsRisk()
     {
         var service = new ReviewEvidenceAgentService(
             new StubReviewEvidenceModel(
                 new ReviewEvidenceModelDecision(
                     true,
                     "Offer deadline needs a clearer evidence check.",
-                    "Gemma review agent escalated the offer workflow.",
-                    "Review Evidence Agent: Gemma via Ollama (gemma4:26b)",
+                    "Model review agent escalated the offer workflow.",
+                    "Review Evidence Agent: Ollama (gemma4:26b)",
                     0.88m)));
         var parsed = BuildParsed(EmailCategory.Offer, "Figma", "Product Engineer", actionRequired: true);
         var match = BuildMatch("Figma", "Product Engineer", 0.92m);
@@ -27,19 +27,19 @@ public sealed class ReviewEvidenceAgentServiceTests
 
         Assert.True(decision.RequiresManualReview);
         Assert.Equal("Offer deadline needs a clearer evidence check.", decision.Reason);
-        Assert.Equal("Review Evidence Agent: Gemma via Ollama (gemma4:26b)", decision.AgentName);
+        Assert.Equal("Review Evidence Agent: Ollama (gemma4:26b)", decision.AgentName);
     }
 
     [Fact]
-    public async Task EvaluateAsync_AllowsHighConfidenceGemmaClear_ForKnownEntities()
+    public async Task EvaluateAsync_AllowsHighConfidenceModelClear_ForKnownEntities()
     {
         var service = new ReviewEvidenceAgentService(
             new StubReviewEvidenceModel(
                 new ReviewEvidenceModelDecision(
                     false,
                     null,
-                    "Gemma review agent cleared a known-company offer after second-pass evidence review.",
-                    "Review Evidence Agent: Gemma via Ollama (gemma4:31b)",
+                    "Model review agent cleared a known-company offer after second-pass evidence review.",
+                    "Review Evidence Agent: Ollama (gemma4:31b)",
                     0.91m)));
         var parsed = BuildParsed(EmailCategory.Offer, "Northgate Physics", "Offer Letter / Hire Paperwork", actionRequired: true);
         var match = BuildMatch("Northgate Physics", "Offer Letter / Hire Paperwork", 0.42m, "Existing application match was weak.");
@@ -48,19 +48,19 @@ public sealed class ReviewEvidenceAgentServiceTests
 
         Assert.False(decision.RequiresManualReview);
         Assert.Null(decision.Reason);
-        Assert.Contains("Gemma review agent cleared", decision.VisibleOutput, StringComparison.Ordinal);
+        Assert.Contains("Model review agent cleared", decision.VisibleOutput, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task EvaluateAsync_DoesNotLetGemmaClearUnknownRoleEscalation()
+    public async Task EvaluateAsync_DoesNotLetModelClearUnknownRoleEscalation()
     {
         var service = new ReviewEvidenceAgentService(
             new StubReviewEvidenceModel(
                 new ReviewEvidenceModelDecision(
                     false,
                     null,
-                    "Gemma review agent cleared the workflow.",
-                    "Review Evidence Agent: Gemma via Ollama (gemma4:31b)",
+                    "Model review agent cleared the workflow.",
+                    "Review Evidence Agent: Ollama (gemma4:31b)",
                     0.99m)));
         var parsed = BuildParsed(EmailCategory.Offer, "Northgate Physics", ApplicationDefaults.UnknownRole, actionRequired: true);
         var match = BuildMatch("Northgate Physics", "Teaching Assistant", 0.93m);

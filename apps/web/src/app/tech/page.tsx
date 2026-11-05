@@ -64,12 +64,12 @@ const modelRoutes = [
   [
     "Model-backed specialists",
     "Ollama or OpenAI",
-    "Same graph and gate with a model behind each specialist; every node has a timeout, a limit on turns, and one retry. CI runs them against a scripted model only, and the hosted demo shows one recorded run of gpt-oss:120b.",
+    "Same graph and gate with a model behind each specialist; every node has a timeout, a limit on turns, and one retry. CI runs them against a scripted model only, and the hosted demo shows one recorded run of gpt-oss:120b through Ollama.",
   ],
   [
     "Email pipeline model pass",
     "Optional",
-    "Extraction and the review evidence pass can ask a model; the rule-based result stands when the model is off, slow, or unsure.",
+    "Extraction and the review evidence pass can ask a model; the rule-based result stands when the model is off, slow, or unsure. The hosted demo was recorded with gemma4:31b.",
   ],
   [
     "Graph failure",

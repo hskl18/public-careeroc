@@ -42,9 +42,9 @@ services:
     environment:
       # deterministic needs no model or API key; set ollama or openai to use a real model.
       CAREEROC_AGENT_PROVIDER: ${AGENT_PROVIDER:-deterministic}
-      CAREEROC_AGENT_MODEL: ${Ollama__Model:-gemma4:31b-cloud}
-      CAREEROC_AGENT_BASE_URL: ${Ollama__BaseUrl:-https://ollama.com}
-      CAREEROC_AGENT_API_KEY: ${Ollama__ApiKey:-}
+      CAREEROC_AGENT_MODEL: ${AGENT_MODEL:-gemma4:31b-cloud}
+      CAREEROC_AGENT_BASE_URL: ${AGENT_BASE_URL:-https://ollama.com}
+      CAREEROC_AGENT_API_KEY: ${AGENT_API_KEY:-}
       CAREEROC_AGENT_SHARED_SECRET: *agent-shared-secret
       # Its own database and role: the runtime cannot read careeroc's tables.
       CAREEROC_AGENT_CHECKPOINT_DATABASE_URL: postgresql://careeroc_agent:careeroc_agent@postgres:5432/careeroc_agent
@@ -91,6 +91,11 @@ services:
       AgentRuntime__BaseUrl: http://agent-runtime:8123
       AgentRuntime__SharedSecret: *agent-shared-secret
       SyncWorker__Enabled: "false"
+      # The optional model pass on each email, separate from the review agents' model above.
+      Ollama__Enabled: ${Ollama__Enabled:-false}
+      Ollama__BaseUrl: ${Ollama__BaseUrl:-https://ollama.com}
+      Ollama__Model: ${Ollama__Model:-gemma4:31b-cloud}
+      Ollama__ApiKey: ${Ollama__ApiKey:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_SERVICE_NAME: careeroc-api
     depends_on:

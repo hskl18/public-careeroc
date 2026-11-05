@@ -199,9 +199,9 @@ public sealed class OllamaReviewEvidenceModel : IReviewEvidenceModel
                     NormalizeText(
                         result.VisibleOutput,
                         result.RequiresManualReview.Value
-                            ? "Gemma review agent escalated because the workflow evidence still needs correction."
-                            : "Gemma review agent cleared the workflow state after a second-pass evidence check."),
-                    $"Review Evidence Agent: Gemma via Ollama ({resolvedModel})",
+                            ? "Model review agent escalated because the workflow evidence still needs correction."
+                            : "Model review agent cleared the workflow state after a second-pass evidence check."),
+                    $"Review Evidence Agent: Ollama ({resolvedModel})",
                     decimal.Clamp(result.Confidence, 0m, 1m));
             }
             catch (Exception exception)

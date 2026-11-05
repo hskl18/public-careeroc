@@ -621,7 +621,7 @@ public sealed class OllamaRecruitingEmailParser : IRecruitingEmailParser
             dueDateUtc,
             classificationConfidence,
             workflowNote,
-            "Gemma via Ollama",
+            "Ollama",
             resolvedModel);
     }
 
