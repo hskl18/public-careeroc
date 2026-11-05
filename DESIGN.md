@@ -141,7 +141,7 @@ So the demo exercises the real pipeline rather than seeded rows.
 
 The hosted demo at [careeroc.vercel.app](https://careeroc.vercel.app) keeps that product UI without paying for a backend.
 With `DEMO_SNAPSHOT=true`, everyone signs in as one fictional account and the web app answers API calls from responses recorded from that same pipeline, refusing writes.
-The review it shows is one recorded run of `gpt-oss:120b` and names that model; approving it replays the graph's last step in the browser and saves nothing.
+Its emails ran through `gemma4:31b` and its review through `gpt-oss:120b`, both free through a signed-in local Ollama; approving the review replays the graph's last step in the browser and saves nothing.
 Hosting the API, Postgres, and the agent runtime for a showcase was rejected because of its recurring cost and upkeep, and a marketing-style sample page because it would not be the real product.
 
 ## Decisions
@@ -203,7 +203,7 @@ The first real run found what a scripted model could not.
 The prompts asked for short labels, and models cited the bare field names the gate refuses.
 Models also overran list limits, and a failed repair could end in empty replies, which `create_agent` re-asks without limit: 151 calls in 100 seconds, then a timeout.
 Now the prompts say what the gate accepts, over-long lists are cut instead of rejected, and an agent gets four turns before one fresh attempt.
-The recorded run took nine calls and under 30 seconds.
+A review then took nine calls and under 30 seconds.
 
 ### OpenTelemetry everywhere
 
@@ -284,9 +284,28 @@ More detail is in [SECURITY.md](SECURITY.md).
 
 **Pipeline.** `eval/pipeline-labels.json` labels the 48 inbound emails of the 51-email demo inbox: the expected category and company of 42 recruiting emails, 4 that triage should drop, and the 2 that must go to review, plus the 20 applications they should produce.
 The other 3 emails are the user's own replies, which are processed but not scored.
-`PipelineEvaluationTests` runs the real pipeline on them in CI and fails below the thresholds; `CAREEROC_WRITE_EVAL_RESULTS=1` refreshes [eval/pipeline-results.json](eval/pipeline-results.json).
+`PipelineEvaluationTests` runs the real pipeline on them in CI and fails below the thresholds; `CAREEROC_EVAL_RESULTS_PATH=eval/pipeline-results.json` refreshes [its results](eval/pipeline-results.json).
 The first run found three defects: a scam email dropped by triage, a coding assessment classified as an interview, and an agency named as the employer.
 All metrics are now 1.0, but the labels were written alongside those fixes, so this is a regression guard, not a benchmark.
+
+**Models.** [scripts/eval-model.sh](scripts/eval-model.sh) runs the same test with a free Ollama model behind the optional pass and writes the scores to [eval/models/](eval/models/).
+In this run all seven kept triage, company, and review recall at 1.0 and created no unexpected application; they differ here:
+
+| Model | Category | Application status | Review precision | Failed calls of about 85 | Model seconds | CI thresholds |
+|---|---|---|---|---|---|---|
+| `gemma4:31b` | 1.0 | 1.0 | 0.67 | 0 | 48 | Missed |
+| `gpt-oss:120b` | 1.0 | 1.0 | 0.67 | 2 | 114 | Missed |
+| `gpt-oss:20b` | 1.0 | 0.95 | 0.5 | 1 | 192 | Missed |
+| `beam` | 0.98 | 0.95 | 0.67 | 0 | 670 | Missed |
+| `nemotron-3-nano:30b` | 1.0 | 0.95 | 0.4 | 6 | 687 | Missed |
+| `nemotron-3-ultra` | 0.98 | 0.95 | 1.0 | 0 | 759 | Met |
+| `nemotron-3-super` | 1.0 | 1.0 | 0.5 | 0 | 1024 | Missed |
+
+Model seconds adds up the latency of every call, and a failed call leaves the rules' answer in place.
+These are single runs of a small inbox, and they move between runs.
+An earlier run had `gemma4:31b` flagging only the two expected emails, as it did when the hosted demo was recorded; here it also sent a vague "quick update" email to review, which misses the precision threshold.
+`nemotron-3-ultra` met the thresholds here and missed them on that earlier run.
+The hosted demo uses `gemma4:31b` because it is the fastest and its category and status scores match the rules, and an extra email in the review queue costs a person a glance.
 
 **Evidence gate.** [test_evidence_gate_eval.py](services/agent-runtime/tests/test_evidence_gate_eval.py) scripts what a careless or manipulated model could return and checks what the gate lets through, so it holds for any model:
 

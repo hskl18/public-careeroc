@@ -1,0 +1,20 @@
+{
+  "dataset": "src/Careeroc.Infrastructure/Demo/demo-inbox.json",
+  "pipeline": "heuristic extraction with gemma4:31b-cloud",
+  "modelCalls": 85,
+  "modelCallFailures": 0,
+  "modelSeconds": 48,
+  "triageAccuracy": 1,
+  "categoryAccuracy": 1,
+  "companyAccuracy": 1,
+  "applicationStatusAccuracy": 1,
+  "reviewRecall": 1,
+  "reviewPrecision": 0.667,
+  "unexpectedApplications": [],
+  "categoryMisses": [],
+  "flaggedForReview": [
+    "agency-001",
+    "lumen-005",
+    "scam-001"
+  ]
+}

@@ -253,7 +253,7 @@ function buildProgressEstimate(
       kind: "estimating",
       label: processing > 0 ? "Model analysis running..." : "Checking for progress...",
       detail: processing > 0
-        ? `${remaining} email${remaining === 1 ? "" : "s"} remain. ${processing} email${processing === 1 ? " is" : "s are"} currently in analysis; Gemma/Ollama calls can take up to the configured timeout before falling back.`
+        ? `${remaining} email${remaining === 1 ? "" : "s"} remain. ${processing} email${processing === 1 ? " is" : "s are"} currently in analysis; model calls can take up to the configured timeout before falling back.`
         : `${remaining} email${remaining === 1 ? "" : "s"} remain. No completed analysis has appeared in the latest samples yet.`,
     };
   }

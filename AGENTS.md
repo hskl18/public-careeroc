@@ -186,7 +186,7 @@ Then run `pnpm --dir apps/web gen:api` against the running API, and `pnpm --dir 
 - `TestDbContextFactory` gives each test an isolated EF Core in-memory `DbContext`.
   Do not mock `DbContext`; each test creates its own data.
 - Behavior the in-memory provider cannot model (bulk deletes, column limits, `SKIP LOCKED`) goes in a `[PostgresFact]` test using `PostgresTestDatabase`; it runs when `CAREEROC_TEST_POSTGRES` is set.
-- `PipelineEvaluationTests` scores the pipeline against `eval/pipeline-labels.json`.
+- `PipelineEvaluationTests` scores the pipeline against `eval/pipeline-labels.json`, and `scripts/eval-model.sh` runs it with a real model behind the optional pass.
   Change a label only when the old label was wrong, never to make a regression pass.
 - `services/agent-runtime/tests/test_evidence_gate_eval.py` scripts what a careless or manipulated model could return and checks what the evidence gate lets through; add a case for every new gate rule.
 - Use `TestClock`, and fakes for Gmail, the model provider, and the agent runtime; tests make no network calls.
@@ -208,7 +208,7 @@ The main ones:
 - `DEMO_MODE` (web) and `Demo__Enabled` (API): per-visitor demo workspaces; set both together
 - `DEMO_SNAPSHOT` (web): with `DEMO_MODE`, serves the recorded read-only demo without an API; see `docs/deploy/README.md`
 - `AgentRuntime__Enabled`, `AgentRuntime__BaseUrl`, `AgentRuntime__SharedSecret`: the API's connection to the agent runtime; the secret is required outside Development
-- `CAREEROC_AGENT_PROVIDER`: `deterministic`, `ollama`, or `openai` for the runtime's specialists
+- `CAREEROC_AGENT_PROVIDER`, `CAREEROC_AGENT_MODEL`, `CAREEROC_AGENT_BASE_URL`, `CAREEROC_AGENT_API_KEY`: the runtime's specialists, `deterministic`, `ollama`, or `openai`; Compose sets them from `AGENT_PROVIDER`, `AGENT_MODEL`, `AGENT_BASE_URL`, and `AGENT_API_KEY`
 - `CAREEROC_AGENT_CHECKPOINT_DATABASE_URL`: the runtime's own checkpoint database; without it, checkpoints live in memory
 - `Ollama__Enabled`, `Ollama__BaseUrl`, `Ollama__Model`, `Ollama__ApiKey`: optional model pass in the email pipeline
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP/HTTP collector for all three services

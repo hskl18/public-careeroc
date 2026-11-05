@@ -4,8 +4,8 @@ An open-source, multi-agent job search workspace.
 careeroc reads recruiting email and keeps an evidence-backed pipeline of applications, deadlines, and next actions.
 Specialist agents review the search, a person approves what they propose, and your own assistant can read the pipeline over MCP or A2A.
 
-**Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox.
-The multi-agent review on the dashboard is one real run of `gpt-oss:120b`, kept as it came out, and approving it there replays the end of the graph in your browser.
+**Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox, with free Ollama models behind it: `gemma4:31b` on each email and `gpt-oss:120b` for the multi-agent review.
+The recording is kept as it came out, and approving the review on the dashboard replays the end of the graph in your browser.
 
 Run the whole system with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
 There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and removed from the product database after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
@@ -27,7 +27,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 | Human in the loop | A review that proposes a write pauses on a LangGraph `interrupt()` with a Postgres checkpoint. When the user approves it, the API, never the agents, creates the reminders, and the graph resumes so the decision lands in its trace. |
 | Bring your own assistant | Read-only personal access tokens, an MCP server at `/mcp`, and an A2A 1.0 agent with a public agent card. |
 | Observability | OpenTelemetry from the browser-facing web app through the API into each agent node, using the GenAI `invoke_agent` span conventions. |
-| Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI for triage, category, company, status, and review precision and recall, and a model-free eval of the evidence gate against invented citations and prompt injection. |
+| Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI for triage, category, company, status, and review precision and recall, the same scores for each free Ollama model, and a model-free eval of the evidence gate against invented citations and prompt injection. |
 | Deploy | Docker Compose and a Helm chart for any Kubernetes, both started and smoke tested in CI, and multi-arch images on GHCR. |
 
 ## Screenshots
@@ -63,8 +63,8 @@ flowchart LR
 
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
-  The agent runtime ships a deterministic suite, so local runs and CI need no model or API key, and the trace above and the evals come from it.
-  The review in the hosted demo is one unedited run of `gpt-oss:120b`, with the citations the gate dropped still on show.
+  The agent runtime ships a deterministic suite, so local runs and CI need no model or API key, and the trace above and CI's evals come from it.
+  The hosted demo is one unedited recording with real models behind both steps, with the citations the gate dropped still on show.
 - **Agent output is visible.** Each step's summary, reason, confidence, and evidence are shown on the dashboard, and low-confidence results and proposed writes stay pending until a person decides.
 
 [DESIGN.md](DESIGN.md) explains the decisions, the rejected alternatives, trust boundaries, and failure modes.
@@ -127,11 +127,19 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
 
 ### Use a real model or your own Gmail
 
-- **Model.** Any strong model that can call tools should work.
-  The full stack has run on `gpt-oss:120b` through Ollama, and the graph alone on `gemma4:31b` and on `gpt-oss:120b` through Ollama's OpenAI-compatible endpoint.
-  Set `AGENT_PROVIDER=ollama` (or `openai`) before `docker compose up`, with the model's base URL, name, and key in `Ollama__BaseUrl`, `Ollama__Model`, and `Ollama__ApiKey`; Compose passes those to the agent runtime for either provider.
-  A signed-in local Ollama needs no key: on Docker Desktop, use `http://host.docker.internal:11434` as the base URL.
-  The deterministic suite stays the fallback.
+- **Model.** Free Ollama models run both steps with no API key, after `ollama signin`; this is how the hosted demo was recorded:
+
+  ```bash
+  export OLLAMA=http://host.docker.internal:11434   # Docker Desktop
+  Ollama__Enabled=true Ollama__BaseUrl=$OLLAMA Ollama__Model=gemma4:31b-cloud \
+    AGENT_PROVIDER=ollama AGENT_BASE_URL=$OLLAMA AGENT_MODEL=gpt-oss:120b-cloud \
+    docker compose --profile full up -d
+  ```
+
+  `Ollama__*` sets the pass on each email, which sends the email's text to that model, so use it on real mail only with a provider you trust.
+  `AGENT_*` sets the review agents, which see only the bounded snapshot; set `AGENT_PROVIDER=openai` and `AGENT_API_KEY` for an OpenAI-compatible endpoint.
+  All seven free models finished the review, but they differ on email: [DESIGN.md](DESIGN.md#evals) has their scores, and `scripts/eval-model.sh` reproduces them.
+  The rules and the deterministic suite stay the fallback.
 - **Gmail.** Create a Google OAuth client, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and an access allowlist, and run the services outside demo mode as described in [AGENTS.md](AGENTS.md).
   Before you do, replace the `local-compose-only-*` secrets: the API and web app refuse them once real accounts can sign in.
 

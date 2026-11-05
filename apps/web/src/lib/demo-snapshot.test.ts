@@ -16,6 +16,10 @@ describe("recorded demo", () => {
     expect(inbox.pendingAnalysisEmails).toBe(0);
   });
 
+  it("captured the email pass from a real model", () => {
+    expect(JSON.stringify(recording)).toContain("Workflow Extraction Agent: Ollama (");
+  });
+
   it("captured a real model's review that waits for approval", () => {
     const proposals = responses["GET /api/profile/memory/proposals"].body as unknown as {
       kind: string;

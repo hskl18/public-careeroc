@@ -1,0 +1,22 @@
+{
+  "dataset": "src/Careeroc.Infrastructure/Demo/demo-inbox.json",
+  "pipeline": "heuristic extraction with nemotron-3-nano:30b-cloud",
+  "modelCalls": 85,
+  "modelCallFailures": 6,
+  "modelSeconds": 687,
+  "triageAccuracy": 1,
+  "categoryAccuracy": 1,
+  "companyAccuracy": 1,
+  "applicationStatusAccuracy": 0.95,
+  "reviewRecall": 1,
+  "reviewPrecision": 0.4,
+  "unexpectedApplications": [],
+  "categoryMisses": [],
+  "flaggedForReview": [
+    "agency-001",
+    "beacon-002",
+    "kestrel-002",
+    "quanta-002",
+    "scam-001"
+  ]
+}

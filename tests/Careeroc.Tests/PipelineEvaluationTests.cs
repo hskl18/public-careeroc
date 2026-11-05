@@ -1,13 +1,16 @@
 using System.Text.Json;
 using Careeroc.Application.Services;
+using Careeroc.Infrastructure.Email;
 using Careeroc.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Careeroc.Tests;
 
 // Scores the production pipeline (full API dependency injection) against eval/pipeline-labels.json.
-// Set CAREEROC_WRITE_EVAL_RESULTS=1 to refresh eval/pipeline-results.json.
+// Set CAREEROC_EVAL_RESULTS_PATH to a repo-relative path to write the scores there.
+// scripts/eval-model.sh does this with a model behind the optional pass; CI runs the rules alone.
 public sealed class PipelineEvaluationTests
 {
     private const string VisitorEmail = "visitor-eval@demo.careeroc.example";
@@ -28,6 +31,8 @@ public sealed class PipelineEvaluationTests
             .Include(email => email.JobApplication)
             .ToDictionaryAsync(email => email.ExternalMessageId);
         var applications = await dbContext.JobApplications.AsNoTracking().ToListAsync();
+        var modelCalls = await dbContext.ModelCallEvents.AsNoTracking().ToListAsync();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<OllamaEmailExtractionOptions>>().Value;
 
         var labeledEmails = labels.RootElement.GetProperty("emails").EnumerateObject().ToList();
         var categoryHits = labeledEmails.Count(label =>
@@ -52,7 +57,10 @@ public sealed class PipelineEvaluationTests
         var results = new
         {
             dataset = "src/Careeroc.Infrastructure/Demo/demo-inbox.json",
-            pipeline = "heuristic extraction, no model",
+            pipeline = options.Enabled ? $"heuristic extraction with {options.Model}" : "heuristic extraction, no model",
+            modelCalls = modelCalls.Count,
+            modelCallFailures = modelCalls.Count(call => call.Outcome != "success"),
+            modelSeconds = Math.Round(modelCalls.Sum(call => call.LatencyMs) / 1000d),
             triageAccuracy = Ratio(triageHits, ignored.Count + labeledEmails.Count),
             categoryAccuracy = Ratio(categoryHits, labeledEmails.Count),
             companyAccuracy = Ratio(companyHits, labeledEmails.Count),
@@ -67,10 +75,10 @@ public sealed class PipelineEvaluationTests
             flaggedForReview = flagged.Order().ToList()
         };
 
-        if (Environment.GetEnvironmentVariable("CAREEROC_WRITE_EVAL_RESULTS") == "1")
+        if (Environment.GetEnvironmentVariable("CAREEROC_EVAL_RESULTS_PATH") is { Length: > 0 } resultsPath)
         {
             await File.WriteAllTextAsync(
-                Path.Combine(repositoryRoot, "eval", "pipeline-results.json"),
+                Path.Combine(repositoryRoot, resultsPath),
                 JsonSerializer.Serialize(results, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }) + "\n");
         }
 

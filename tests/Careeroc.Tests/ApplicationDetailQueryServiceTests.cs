@@ -394,7 +394,7 @@ public sealed class ApplicationDetailQueryServiceTests
                             "Application receipt logged for TikTok.",
                             null,
                             [
-                                new AgentTraceFact("Parsing source", "Gemma"),
+                                new AgentTraceFact("Parsing source", "Ollama"),
                                 new AgentTraceFact("Parsing model", "gemma4:31b")
                             ])
                     ])),

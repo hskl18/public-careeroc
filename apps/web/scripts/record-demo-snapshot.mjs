@@ -1,6 +1,8 @@
 // Records the API responses the hosted read-only demo serves, by running the real pipeline once.
 //
-//   AGENT_PROVIDER=ollama Ollama__Model=gpt-oss:120b-cloud Ollama__BaseUrl=http://host.docker.internal:11434 \
+//   export OLLAMA=http://host.docker.internal:11434   # a signed-in local Ollama, no key
+//   Ollama__Enabled=true Ollama__BaseUrl=$OLLAMA Ollama__Model=gemma4:31b-cloud \
+//     AGENT_PROVIDER=ollama AGENT_BASE_URL=$OLLAMA AGENT_MODEL=gpt-oss:120b-cloud \
 //     CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
 //   node apps/web/scripts/record-demo-snapshot.mjs
 //   docker compose -p careeroc-snapshot down -v
