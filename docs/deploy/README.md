@@ -63,10 +63,12 @@ Use the settings above, and set only `DEMO_MODE=true`, `DEMO_SNAPSHOT=true`, `AU
 The app refuses to start if Google credentials are also set.
 Deploy from the repository root, because the root `.vercelignore` decides what is uploaded.
 
-Re-record the snapshot on an empty database when an API response changes shape:
+Re-record the snapshot on an empty database when an API response changes shape.
+Its review comes from a real model, here a signed-in local Ollama, and a test fails if the recording fell back to the deterministic review:
 
 ```bash
-CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
+AGENT_PROVIDER=ollama Ollama__Model=gpt-oss:120b-cloud Ollama__BaseUrl=http://host.docker.internal:11434 \
+  CAREEROC_VERSION=snapshot-recording docker compose -p careeroc-snapshot up -d --build --wait api
 node apps/web/scripts/record-demo-snapshot.mjs
 docker compose -p careeroc-snapshot down -v
 ```

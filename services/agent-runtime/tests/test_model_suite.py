@@ -13,8 +13,11 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.errors import GraphRecursionError
+from pydantic import Field
 
 from careeroc_agent_runtime.agents import LangChainAgentSuite
+from careeroc_agent_runtime.contracts import SpecialistAnalysis
 from careeroc_agent_runtime.graph import build_graph
 from tests.test_graph import build_request
 
@@ -25,6 +28,9 @@ class ScriptedChatModel(BaseChatModel):
     """Answers with a structured-output tool call for whichever schema the agent bound."""
 
     tool_name: str = ""
+    # Real models do this after a failed repair: an empty reply with no tool call, forever.
+    silent_turns: int = 0
+    turns: list[int] = Field(default_factory=list)
 
     @property
     def _llm_type(self) -> str:
@@ -35,6 +41,9 @@ class ScriptedChatModel(BaseChatModel):
         return self.model_copy(update={"tool_name": name})
 
     def _generate(self, messages: Any, stop: Any = None, run_manager: Any = None, **kwargs: Any):
+        self.turns.append(1)
+        if len(self.turns) <= self.silent_turns:
+            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=""))])
         if self.tool_name == "SpecialistAnalysis":
             args = {
                 "agent_name": "model",
@@ -99,3 +108,37 @@ async def test_model_backed_suite_runs_through_the_graph_and_the_gate_judges_its
         {"label": "Dropped citation", "value": "Stripe · offer"},
     ]
     assert review["status"] == "review_required"
+
+
+@pytest.mark.asyncio
+async def test_a_model_that_stops_answering_is_cut_off_instead_of_looping() -> None:
+    model = ScriptedChatModel(silent_turns=1000)
+    suite = LangChainAgentSuite(model, "scripted/silent")
+
+    with pytest.raises(GraphRecursionError):
+        await suite.analyze("resume_analyst", build_request("review:model-suite-002"))
+
+    assert len(model.turns) <= 4
+
+
+@pytest.mark.asyncio
+async def test_a_specialist_cut_off_once_gets_a_fresh_attempt() -> None:
+    # Three specialists run at once, so this is every turn of each one's first attempt.
+    model = ScriptedChatModel(silent_turns=12)
+    request = build_request("review:model-suite-003")
+    graph = build_graph(LangChainAgentSuite(model, "scripted/flaky"), InMemorySaver())
+
+    state = await graph.ainvoke(
+        {"request": request.model_dump(mode="json", by_alias=True), "analyses": [], "trace": []},
+        config={"configurable": {"thread_id": request.thread_id}},
+    )
+
+    assert state["review"]["summary"] == "The model merged the specialists."
+
+
+def test_lists_over_the_limit_are_cut_instead_of_rejected() -> None:
+    analysis = SpecialistAnalysis(
+        agent_name="model", summary="s", confidence=1, evidence_references=["x"] * 30
+    )
+
+    assert len(analysis.evidence_references) == 12
