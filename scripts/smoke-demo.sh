@@ -36,6 +36,10 @@ case "$email" in *@demo.careeroc.example) pass "signed in as $email" ;; *) fail 
 
 kestrel=$(web "$WEB_URL/api/careeroc/api/applications/lookup?q=Kestrel&limit=1" | json 'len(d["items"])')
 [ "$kestrel" -ge 1 ] || fail "the demo inbox was not processed into applications"
+inbox=$(web "$WEB_URL/api/careeroc/api/dashboard?view=active&limit=1")
+backfill=$(printf '%s' "$inbox" | json 'd["inbox"]["backfillStatus"]')
+analysis_error=$(printf '%s' "$inbox" | json 'd["inbox"]["lastAnalysisError"]')
+[ "$backfill" = complete ] || fail "the demo inbox did not finish processing: $backfill, $analysis_error"
 pass "demo inbox processed into applications"
 
 review=$(web -d "" -H "Origin: $SITE_ORIGIN" "$WEB_URL/api/careeroc/api/orchestrator/resume-mailbox-review")

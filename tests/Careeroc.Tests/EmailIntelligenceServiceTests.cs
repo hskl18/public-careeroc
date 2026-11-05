@@ -5,6 +5,7 @@ using Careeroc.Application.Services;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Careeroc.Infrastructure.Email;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Careeroc.Tests;
@@ -813,6 +814,80 @@ public sealed class EmailIntelligenceServiceTests
         Assert.False(inboundEmail.ActionRequired);
         Assert.Null(inboundEmail.DueDateUtc);
         Assert.Contains("sent Gmail reply", inboundEmail.ProcessingNotes, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // NullLogger never formats, so a log template that disagrees with its arguments only fails here.
+    private sealed class FormattingLogger<T> : ILogger<T>
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter) => _ = formatter(state, exception);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_CompletesTheJob_WhenTheLoggerFormatsItsMessages()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 3, 18, 0, 0, TimeSpan.Zero));
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var user = new User { Email = "jlee@example.edu", Name = "Jordan Lee" };
+        var inboxAccount = new InboxAccount
+        {
+            UserId = user.Id,
+            User = user,
+            Provider = "gmail",
+            EmailAddress = user.Email
+        };
+        var email = new InboxEmail
+        {
+            InboxAccountId = inboxAccount.Id,
+            InboxAccount = inboxAccount,
+            ExternalMessageId = "alderbrook-applied-001",
+            ThreadId = "thread-alderbrook-applied-001",
+            Sender = "Recruiting <recruiting@alderbrook.example>",
+            Subject = "Thanks for applying",
+            ParsedBody = "Thanks for applying to the Software Engineering Internship.",
+            RawBody = "Thanks for applying to the Software Engineering Internship.",
+            ReceivedAtUtc = clock.UtcNow.AddHours(-2)
+        };
+        dbContext.Users.Add(user);
+        dbContext.InboxAccounts.Add(inboxAccount);
+        dbContext.InboxEmails.Add(email);
+        await dbContext.SaveChangesAsync();
+        var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
+        await queue.EnqueueAsync(email.Id);
+        var service = new EmailIntelligenceService(
+            dbContext,
+            queue,
+            new StubRecruitingEmailParser(
+                new ParsedRecruitingEmail(
+                    EmailCategory.ApplicationReceived,
+                    ApplicationStatus.Applied,
+                    "Alderbrook Systems",
+                    "Software Engineering Internship",
+                    false,
+                    null,
+                    0.96m,
+                    "Detected an application receipt.",
+                    "Stub parser",
+                    null)),
+            new ApplicationWorkflowService(dbContext, clock),
+            clock,
+            new FormattingLogger<EmailIntelligenceService>());
+
+        var result = await service.ProcessPendingAsync();
+
+        Assert.Equal(1, result.JobsProcessed);
+        var job = Assert.Single(dbContext.EmailProcessingJobs);
+        Assert.Equal(EmailProcessingStatus.Completed, job.Status);
+        Assert.Null(job.LastError);
     }
 
     [Fact]
