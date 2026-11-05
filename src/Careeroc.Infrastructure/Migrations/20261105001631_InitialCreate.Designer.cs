@@ -12,18 +12,81 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Careeroc.Infrastructure.Migrations
 {
     [DbContext(typeof(CareerocDbContext))]
-    [Migration("20260428024028_AddTesterRequests")]
-    partial class AddTesterRequests
+    [Migration("20261105001631_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationResumeFit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("GapsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("gaps_json");
+
+                    b.Property<Guid>("JobApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_application_id");
+
+                    b.Property<int>("MatchScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("match_score");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("rationale");
+
+                    b.Property<Guid>("ResumeVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resume_version_id");
+
+                    b.Property<string>("StrengthsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("strengths_json");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_application_resume_fits");
+
+                    b.HasIndex("ResumeVersionId")
+                        .HasDatabaseName("ix_application_resume_fits_resume_version_id");
+
+                    b.HasIndex("JobApplicationId", "ResumeVersionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_application_resume_fits_job_application_id_resume_version_id");
+
+                    b.HasIndex("UserId", "UpdatedAtUtc")
+                        .HasDatabaseName("ix_application_resume_fits_user_id_updated_at_utc");
+
+                    b.ToTable("application_resume_fits", (string)null);
+                });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.AuditEvent", b =>
                 {
@@ -121,9 +184,23 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("completed_at_utc");
 
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("correlation_id");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DeadLetterReason")
+                        .HasMaxLength(280)
+                        .HasColumnType("character varying(280)")
+                        .HasColumnName("dead_letter_reason");
+
+                    b.Property<DateTimeOffset?>("DeadLetteredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dead_lettered_at_utc");
 
                     b.Property<Guid>("InboxEmailId")
                         .HasColumnType("uuid")
@@ -137,6 +214,11 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_at_utc");
 
+                    b.Property<string>("RunId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("run_id");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -148,12 +230,21 @@ namespace Careeroc.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_email_processing_jobs");
 
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("ix_email_processing_jobs_correlation_id");
+
                     b.HasIndex("InboxEmailId")
                         .IsUnique()
                         .HasDatabaseName("ix_email_processing_jobs_inbox_email_id");
 
+                    b.HasIndex("RunId")
+                        .HasDatabaseName("ix_email_processing_jobs_run_id");
+
                     b.HasIndex("Status", "AvailableAtUtc")
                         .HasDatabaseName("ix_email_processing_jobs_status_available_at_utc");
+
+                    b.HasIndex("Status", "DeadLetteredAtUtc")
+                        .HasDatabaseName("ix_email_processing_jobs_status_dead_lettered_at_utc");
 
                     b.ToTable("email_processing_jobs", (string)null);
                 });
@@ -164,6 +255,10 @@ namespace Careeroc.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("AccessTokenEncrypted")
+                        .HasColumnType("text")
+                        .HasColumnName("access_token_encrypted");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -188,6 +283,10 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("provider");
+
+                    b.Property<string>("RefreshTokenEncrypted")
+                        .HasColumnType("text")
+                        .HasColumnName("refresh_token_encrypted");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -309,6 +408,10 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at_utc");
 
+                    b.Property<Guid?>("RecruitingContactId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recruiting_contact_id");
+
                     b.Property<bool>("RequiresManualReview")
                         .HasColumnType("boolean")
                         .HasColumnName("requires_manual_review");
@@ -351,6 +454,9 @@ namespace Careeroc.Infrastructure.Migrations
 
                     b.HasIndex("JobApplicationId", "ReceivedAtUtc")
                         .HasDatabaseName("ix_inbox_emails_job_application_id_received_at_utc");
+
+                    b.HasIndex("RecruitingContactId", "ReceivedAtUtc")
+                        .HasDatabaseName("ix_inbox_emails_recruiting_contact_id_received_at_utc");
 
                     b.HasIndex("RequiresManualReview", "ReceivedAtUtc")
                         .HasDatabaseName("ix_inbox_emails_requires_manual_review_received_at_utc");
@@ -501,6 +607,11 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("completion_tokens");
 
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("correlation_id");
+
                     b.Property<string>("ErrorType")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -575,6 +686,9 @@ namespace Careeroc.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_model_call_events");
 
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("ix_model_call_events_correlation_id");
+
                     b.HasIndex("InboxAccountId")
                         .HasDatabaseName("ix_model_call_events_inbox_account_id");
 
@@ -593,106 +707,137 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("model_call_events", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.ModelUsageDailyRollup", b =>
+            modelBuilder.Entity("Careeroc.Domain.Entities.PersonalAccessToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int>("BlockedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("blocked_count");
-
-                    b.Property<int>("CallCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("call_count");
-
-                    b.Property<int>("CompletionTokens")
-                        .HasColumnType("integer")
-                        .HasColumnName("completion_tokens");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
-                    b.Property<decimal>("EstimatedCostUsd")
-                        .HasColumnType("numeric(12,6)")
-                        .HasColumnName("estimated_cost_usd");
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
-                    b.Property<int>("FailureCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("failure_count");
+                    b.Property<DateTimeOffset?>("LastUsedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at_utc");
 
-                    b.Property<Guid>("InboxAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("inbox_account_id");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("model");
-
-                    b.Property<int>("PromptTokens")
-                        .HasColumnType("integer")
-                        .HasColumnName("prompt_tokens");
-
-                    b.Property<string>("Provider")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
-                        .HasColumnName("provider");
+                        .HasColumnName("name");
 
-                    b.Property<string>("Purpose")
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at_utc");
+
+                    b.Property<string>("Scope")
                         .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("purpose");
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("scope");
 
-                    b.Property<int>("SuccessCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("success_count");
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
 
-                    b.Property<int>("TotalLatencyMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_latency_ms");
+                    b.Property<string>("TokenPrefix")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("token_prefix");
 
-                    b.Property<int>("TotalTokens")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_personal_access_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_personal_access_tokens_token_hash");
+
+                    b.HasIndex("UserId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_personal_access_tokens_user_id_created_at_utc");
+
+                    b.ToTable("personal_access_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("Careeroc.Domain.Entities.RecruitingContact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CompanyHint")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("company_hint");
+
+                    b.Property<decimal?>("Confidence")
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("confidence");
+
+                    b.Property<int?>("ContactType")
                         .HasColumnType("integer")
-                        .HasColumnName("total_tokens");
+                        .HasColumnName("contact_type");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("FirstSeenAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_seen_at_utc");
+
+                    b.Property<DateTimeOffset>("LastSeenAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at_utc");
+
+                    b.Property<int>("MessageCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("message_count");
+
+                    b.Property<string>("RoleHint")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("role_hint");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
-                    b.Property<DateOnly>("UsageDate")
-                        .HasColumnType("date")
-                        .HasColumnName("usage_date");
-
-                    b.Property<string>("UserEmail")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("user_email");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_model_usage_daily_rollups");
+                        .HasName("pk_recruiting_contacts");
 
-                    b.HasIndex("UsageDate")
-                        .HasDatabaseName("ix_model_usage_daily_rollups_usage_date");
-
-                    b.HasIndex("InboxAccountId", "UsageDate")
-                        .HasDatabaseName("ix_model_usage_daily_rollups_inbox_account_id_usage_date");
-
-                    b.HasIndex("UserEmail", "UsageDate")
-                        .HasDatabaseName("ix_model_usage_daily_rollups_user_email_usage_date");
-
-                    b.HasIndex("UsageDate", "UserEmail", "InboxAccountId", "Provider", "Model", "Purpose")
+                    b.HasIndex("UserId", "Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_model_usage_rollups_day_user_account_model_purpose");
+                        .HasDatabaseName("ix_recruiting_contacts_user_id_email");
 
-                    b.ToTable("model_usage_daily_rollups", (string)null);
+                    b.HasIndex("UserId", "LastSeenAtUtc")
+                        .HasDatabaseName("ix_recruiting_contacts_user_id_last_seen_at_utc");
+
+                    b.ToTable("recruiting_contacts", (string)null);
                 });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.Reminder", b =>
@@ -742,52 +887,6 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasDatabaseName("ix_reminders_status_due_at_utc");
 
                     b.ToTable("reminders", (string)null);
-                });
-
-            modelBuilder.Entity("Careeroc.Domain.Entities.ResumeCorrection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CorrectedValue")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("corrected_value");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("FieldPath")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("field_path");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("note");
-
-                    b.Property<string>("PreviousValue")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("previous_value");
-
-                    b.Property<Guid>("ResumeVersionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("resume_version_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_resume_corrections");
-
-                    b.HasIndex("ResumeVersionId", "CreatedAtUtc")
-                        .HasDatabaseName("ix_resume_corrections_resume_version_id_created_at_utc");
-
-                    b.ToTable("resume_corrections", (string)null);
                 });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeDocument", b =>
@@ -921,11 +1020,6 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
-                    b.Property<string>("EvaluationRunId")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("evaluation_run_id");
-
                     b.Property<int>("ExperienceCount")
                         .HasColumnType("integer")
                         .HasColumnName("experience_count");
@@ -973,75 +1067,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("resume_versions", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.TesterRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("email");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("message");
-
-                    b.Property<string>("RemoteIp")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("remote_ip");
-
-                    b.Property<int>("RequestCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("request_count");
-
-                    b.Property<string>("SourcePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("source_path");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasDefaultValue("new")
-                        .HasColumnName("status");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("user_agent");
-
-                    b.HasKey("Id")
-                        .HasName("pk_tester_requests");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_tester_requests_email");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_tester_requests_status");
-
-                    b.HasIndex("UpdatedAtUtc")
-                        .HasDatabaseName("ix_tester_requests_updated_at_utc");
-
-                    b.ToTable("tester_requests", (string)null);
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1077,14 +1102,6 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasColumnType("character varying(80)")
                         .HasDefaultValue("inbox-blue")
                         .HasColumnName("profile_icon");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasDefaultValue("user")
-                        .HasColumnName("role");
 
                     b.Property<string>("TargetRole")
                         .HasMaxLength(200)
@@ -1173,8 +1190,8 @@ namespace Careeroc.Infrastructure.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
+                        .HasMaxLength(32000)
+                        .HasColumnType("character varying(32000)")
                         .HasColumnName("value");
 
                     b.HasKey("Id")
@@ -1198,53 +1215,34 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("user_memory_entries", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.UserSoulProfile", b =>
+            modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationResumeFit", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CareerNarrative")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("career_narrative");
-
-                    b.Property<string>("CommunicationPreferencesJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("communication_preferences_json");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("NarrativeTone")
+                    b.HasOne("Careeroc.Domain.Entities.JobApplication", "JobApplication")
+                        .WithMany()
+                        .HasForeignKey("JobApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("narrative_tone");
+                        .HasConstraintName("fk_application_resume_fits_job_applications_job_application_id");
 
-                    b.Property<string>("RenderedSoulMarkdown")
+                    b.HasOne("Careeroc.Domain.Entities.ResumeVersion", "ResumeVersion")
+                        .WithMany()
+                        .HasForeignKey("ResumeVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("rendered_soul_markdown");
+                        .HasConstraintName("fk_application_resume_fits_resume_versions_resume_version_id");
 
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
+                    b.HasOne("Careeroc.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_application_resume_fits_users_user_id");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
+                    b.Navigation("JobApplication");
 
-                    b.HasKey("Id")
-                        .HasName("pk_user_soul_profiles");
+                    b.Navigation("ResumeVersion");
 
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_soul_profiles_user_id");
-
-                    b.ToTable("user_soul_profiles", (string)null);
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.EmailProcessingJob", b =>
@@ -1286,9 +1284,17 @@ namespace Careeroc.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_inbox_emails_job_applications_job_application_id");
 
+                    b.HasOne("Careeroc.Domain.Entities.RecruitingContact", "RecruitingContact")
+                        .WithMany("Emails")
+                        .HasForeignKey("RecruitingContactId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_inbox_emails_recruiting_contacts_recruiting_contact_id");
+
                     b.Navigation("InboxAccount");
 
                     b.Navigation("JobApplication");
+
+                    b.Navigation("RecruitingContact");
                 });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.JobApplication", b =>
@@ -1323,6 +1329,30 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("JobApplication");
                 });
 
+            modelBuilder.Entity("Careeroc.Domain.Entities.PersonalAccessToken", b =>
+                {
+                    b.HasOne("Careeroc.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_personal_access_tokens_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Careeroc.Domain.Entities.RecruitingContact", b =>
+                {
+                    b.HasOne("Careeroc.Domain.Entities.User", "User")
+                        .WithMany("RecruitingContacts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recruiting_contacts_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Careeroc.Domain.Entities.Reminder", b =>
                 {
                     b.HasOne("Careeroc.Domain.Entities.JobApplication", "JobApplication")
@@ -1333,18 +1363,6 @@ namespace Careeroc.Infrastructure.Migrations
                         .HasConstraintName("fk_reminders_job_applications_job_application_id");
 
                     b.Navigation("JobApplication");
-                });
-
-            modelBuilder.Entity("Careeroc.Domain.Entities.ResumeCorrection", b =>
-                {
-                    b.HasOne("Careeroc.Domain.Entities.ResumeVersion", "ResumeVersion")
-                        .WithMany("Corrections")
-                        .HasForeignKey("ResumeVersionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_resume_corrections_resume_versions_resume_version_id");
-
-                    b.Navigation("ResumeVersion");
                 });
 
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeDocument", b =>
@@ -1395,18 +1413,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.UserSoulProfile", b =>
-                {
-                    b.HasOne("Careeroc.Domain.Entities.User", "User")
-                        .WithOne("SoulProfile")
-                        .HasForeignKey("Careeroc.Domain.Entities.UserSoulProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_user_soul_profiles_users_user_id");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.InboxAccount", b =>
                 {
                     b.Navigation("Emails");
@@ -1426,6 +1432,11 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("Reminders");
                 });
 
+            modelBuilder.Entity("Careeroc.Domain.Entities.RecruitingContact", b =>
+                {
+                    b.Navigation("Emails");
+                });
+
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeDocument", b =>
                 {
                     b.Navigation("Versions");
@@ -1433,8 +1444,6 @@ namespace Careeroc.Infrastructure.Migrations
 
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeVersion", b =>
                 {
-                    b.Navigation("Corrections");
-
                     b.Navigation("Evaluation");
                 });
 
@@ -1446,9 +1455,9 @@ namespace Careeroc.Infrastructure.Migrations
 
                     b.Navigation("MemoryEntries");
 
-                    b.Navigation("ResumeDocuments");
+                    b.Navigation("RecruitingContacts");
 
-                    b.Navigation("SoulProfile");
+                    b.Navigation("ResumeDocuments");
                 });
 #pragma warning restore 612, 618
         }
