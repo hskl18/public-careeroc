@@ -575,9 +575,7 @@ export function DashboardWorkspace({
 
   return (
     <main className="app-scroll-main">
-      {coldStart ? null : (
-        <div className="mx-auto w-full max-w-[104rem] px-3 pt-4 sm:px-5 sm:pt-6">{agentReview}</div>
-      )}
+      <div className="mx-auto w-full max-w-[104rem] px-3 pt-4 sm:px-5 sm:pt-6">{agentReview}</div>
       <div className="workspace-shell mx-auto flex w-full max-w-[104rem] flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-6">
         {!liveData ? (
           <div className="alert alert-warning shrink-0">
