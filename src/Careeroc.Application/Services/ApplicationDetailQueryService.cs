@@ -522,18 +522,18 @@ public sealed class ApplicationDetailQueryService
         var agentBrief = BuildAgentBrief(application, effectiveStatus, reminders, emails, recentActivity);
         var summary = new AgentTraceSummaryDto(
             null,
-            "application_detail_orchestrator",
+            "application_detail_summary",
             null,
             "application_detail",
             flaggedMessages > 0 ? "review_gated_messages_present" : "no_blocking_messages",
-            "deterministic_application_detail_orchestrator");
+            "computed_on_page_load");
 
         return new ReviewAgentTraceDto(
             application.LastActivityAtUtc,
             [
                 new ReviewAgentTraceStepDto(
-                    "strategy_snapshot",
-                    "Application orchestrator",
+                    "application_summary",
+                    "Application summary",
                     agentBrief.Summary,
                     agentBrief.ConfidenceSummary,
                     [
@@ -542,25 +542,24 @@ public sealed class ApplicationDetailQueryService
                         new ReviewAgentTraceFactDto("latest activity", latestActivity)
                     ]),
                 new ReviewAgentTraceStepDto(
-                    "evidence_links",
-                    "Application evidence linker",
-                    "Connected threads, artifacts, reminders, contacts, and activity into the application brief.",
-                    "The orchestrator brief is grounded in application detail evidence already visible on this page.",
+                    "linked_evidence",
+                    "Linked evidence",
+                    "Threads, reminders, contacts, and activity linked to this application.",
+                    "Computed from the evidence on this page when it loads.",
                     [
                         new ReviewAgentTraceFactDto("messages", emails.Count.ToString(CultureInfo.InvariantCulture)),
                         new ReviewAgentTraceFactDto("open actions", reminders.Count.ToString(CultureInfo.InvariantCulture)),
                         new ReviewAgentTraceFactDto("recent activity", recentActivity.Count.ToString(CultureInfo.InvariantCulture))
                     ]),
                 new ReviewAgentTraceStepDto(
-                    "review_gate",
-                    "Application trust gate",
+                    "review_status",
+                    "Review status",
                     flaggedMessages > 0
                         ? "Review-gated messages keep this strategy from being fully trusted."
                         : "No linked message is currently blocking the application strategy.",
                     agentBrief.NextAction,
                     [
-                        new ReviewAgentTraceFactDto("flagged messages", flaggedMessages.ToString(CultureInfo.InvariantCulture)),
-                        new ReviewAgentTraceFactDto("runtime", "deterministic.application_detail_orchestrator.v1")
+                        new ReviewAgentTraceFactDto("flagged messages", flaggedMessages.ToString(CultureInfo.InvariantCulture))
                     ])
             ],
             summary);

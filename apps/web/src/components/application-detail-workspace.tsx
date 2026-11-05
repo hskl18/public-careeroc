@@ -921,7 +921,7 @@ export function ApplicationDetailWorkspace({
             <section className="card app-workspace-panel p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="eyebrow">Agent brief</p>
+                  <p className="eyebrow">Brief</p>
                   <h2 className="mt-1.5 text-base font-semibold text-[var(--text-primary)]">
                     {detail.agentBrief.headline}
                   </h2>
@@ -942,7 +942,7 @@ export function ApplicationDetailWorkspace({
               <div className="mt-3">
                 <AgentTraceStepsPanel
                   steps={detail.agentTrace?.steps ?? []}
-                  title="Orchestrator step trace"
+                  title="Evidence summary"
                 />
               </div>
             </section>

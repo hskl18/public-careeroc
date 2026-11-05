@@ -91,7 +91,6 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
     };
   }, [applicationId, proxyPrefix]);
 
-  const resumeHref = "/app/resume";
   const displayLoading = Boolean(proxyPrefix) && loading;
 
   return (
@@ -131,8 +130,8 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
             <ResumeFitList title="Strengths" items={fit.strengths.slice(0, 3)} tone="success" />
             <ResumeFitList title="Gaps" items={fit.gaps.slice(0, 3)} tone="warning" />
           </div>
-          <Link href={resumeHref} className="btn btn-secondary btn-sm w-fit">
-            Tailor resume for this role
+          <Link href="/app/resume" className="btn btn-secondary btn-sm w-fit">
+            Open resume
           </Link>
         </div>
       ) : null}

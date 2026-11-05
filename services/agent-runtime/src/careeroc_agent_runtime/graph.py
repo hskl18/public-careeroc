@@ -45,6 +45,10 @@ def _deduplicate(values: list[str], limit: int) -> list[str]:
     return result
 
 
+def _count_reminders(count: int) -> str:
+    return "1 reminder" if count == 1 else f"{count} reminders"
+
+
 def _collect_terms(node: Any, labels: set[str], words: set[str]) -> None:
     if isinstance(node, dict):
         labels.update(key.casefold() for key in node)
@@ -170,7 +174,7 @@ def build_graph(
             stage="evidence_gate",
             agent_name="deterministic_evidence_gate",
             summary=(
-                f"{len(reminders)} proposed reminders wait for the user's approval."
+                f"{_count_reminders(len(reminders))} proposed; waiting for the user's approval."
                 if reminders
                 else "Review requires human confirmation before it becomes durable strategy memory."
                 if requires_human_review
@@ -230,7 +234,8 @@ def build_graph(
             stage="human_review",
             agent_name="human_reviewer",
             summary=(
-                f"The user approved this review and {len(review.proposed_reminders)} reminders."
+                "The user approved this review and "
+                f"{_count_reminders(len(review.proposed_reminders))}."
                 if decision.approved
                 else "The user rejected this review; nothing from it is saved."
             ),
