@@ -2,13 +2,6 @@ import type { ReactNode } from "react";
 import { LocalTime } from "@/components/local-time";
 import type { UserMemoryEntry } from "@/lib/profile";
 
-export type MemoryEditDraft = {
-  value: string;
-  summary: string;
-  confidence: string;
-  expiresAtUtc: string;
-};
-
 const kindLabels: Record<string, string> = {
   preference: "Preferences",
   fact: "Facts",
@@ -204,29 +197,15 @@ export function PendingProposalCard({
 export function MemoryEntryCard({
   entry,
   expanded,
-  editing,
-  draft,
-  draftValueError,
   busy,
   onToggle,
-  onStartEdit,
   onDelete,
-  onDraftChange,
-  onSave,
-  onCancel,
 }: {
   entry: UserMemoryEntry;
   expanded: boolean;
-  editing: boolean;
-  draft: MemoryEditDraft | null;
-  draftValueError: string | null;
   busy: boolean;
   onToggle: () => void;
-  onStartEdit: () => void;
   onDelete: () => void;
-  onDraftChange: (draft: MemoryEditDraft) => void;
-  onSave: () => void;
-  onCancel: () => void;
 }) {
   const formatted = tryFormatMemoryJson(entry.value);
 
@@ -236,7 +215,6 @@ export function MemoryEntryCard({
         type="button"
         className="flex w-full items-start justify-between gap-3 text-left"
         onClick={onToggle}
-        disabled={editing}
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-[var(--text-primary)]">
@@ -253,7 +231,7 @@ export function MemoryEntryCard({
         </span>
       </button>
 
-      {expanded && !editing ? (
+      {expanded ? (
         <div className="mt-3 space-y-3">
           {formatted.isJson ? (
             <pre className="max-h-72 overflow-x-auto rounded-md bg-[var(--surface-strong)] p-3 text-xs text-[var(--text-secondary)]">
@@ -273,98 +251,10 @@ export function MemoryEntryCard({
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={onStartEdit}
-              disabled={busy}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
               onClick={onDelete}
               disabled={busy}
             >
               Remove
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {editing && draft ? (
-        <div className="mt-3 space-y-3">
-          <label className="block text-xs text-[var(--text-tertiary)]">
-            Summary
-            <input
-              type="text"
-              value={draft.summary}
-              onChange={(event) => onDraftChange({ ...draft, summary: event.target.value })}
-              className="input mt-1"
-              maxLength={1000}
-            />
-          </label>
-          <label className="block text-xs text-[var(--text-tertiary)]">
-            Value
-            <textarea
-              value={draft.value}
-              onChange={(event) => onDraftChange({ ...draft, value: event.target.value })}
-              rows={8}
-              className="input mt-1 font-mono text-xs"
-              maxLength={2000}
-            />
-            {draftValueError ? (
-              <span className="mt-1 block text-xs text-[var(--red)]">
-                {draftValueError}
-              </span>
-            ) : draft.value.trim().startsWith("{") ||
-              draft.value.trim().startsWith("[") ? (
-              <span className="mt-1 block text-xs text-[var(--green)]">
-                Valid JSON memory.
-              </span>
-            ) : null}
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-xs text-[var(--text-tertiary)]">
-              Confidence (0-1)
-              <input
-                type="number"
-                value={draft.confidence}
-                onChange={(event) =>
-                  onDraftChange({ ...draft, confidence: event.target.value })
-                }
-                min={0}
-                max={1}
-                step={0.05}
-                className="input mt-1"
-              />
-            </label>
-            <label className="block text-xs text-[var(--text-tertiary)]">
-              Expires (optional)
-              <input
-                type="datetime-local"
-                value={draft.expiresAtUtc}
-                onChange={(event) =>
-                  onDraftChange({ ...draft, expiresAtUtc: event.target.value })
-                }
-                className="input mt-1"
-              />
-            </label>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={onSave}
-              disabled={busy || Boolean(draftValueError)}
-            >
-              {busy ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={onCancel}
-              disabled={busy}
-            >
-              Cancel
             </button>
           </div>
         </div>

@@ -26,13 +26,7 @@ public sealed class NullUserAgentContextSnapshotProvider : IUserAgentContextSnap
 
                 No confirmed long-term memory is available in this execution context.
                 """,
-                """
-                # soul.md
-
-                No user soul profile is available in this execution context.
-                """,
                 0,
-                null,
                 null));
     }
 

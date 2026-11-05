@@ -468,22 +468,6 @@ export interface paths {
         patch: operations["UpdateProfile"];
         trace?: never;
     };
-    "/api/profile/agent-context": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["GetProfileAgentContext"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/profile/memory/proposals": {
         parameters: {
             query?: never;
@@ -529,7 +513,7 @@ export interface paths {
         delete: operations["DeleteProfileMemory"];
         options?: never;
         head?: never;
-        patch: operations["UpdateProfileMemory"];
+        patch?: never;
         trace?: never;
     };
     "/api/profile/memory/proposals/{memoryEntryId}": {
@@ -1509,32 +1493,12 @@ export interface components {
         UpdateReminderStatusRequest: {
             status?: string | null;
         };
-        UpdateUserMemoryRequest: {
-            value?: string | null;
-            summary?: string | null;
-            /** Format: double */
-            confidence?: number | null;
-            /** Format: date-time */
-            expiresAtUtc?: string | null;
-        };
         UpdateUserProfileRequest: {
             name?: string | null;
             timeZoneId?: string | null;
             location?: string | null;
             targetRole?: string | null;
             profileIcon?: string | null;
-        };
-        UserAgentContextSnapshotDto: {
-            /** Format: date-time */
-            generatedAtUtc?: string;
-            memoryMarkdown?: string | null;
-            soulMarkdown?: string | null;
-            /** Format: int32 */
-            memoryEntryCount?: number;
-            /** Format: date-time */
-            latestMemoryUpdatedAtUtc?: string | null;
-            /** Format: date-time */
-            soulUpdatedAtUtc?: string | null;
         };
         UserMemoryEntryDto: {
             /** Format: uuid */
@@ -2336,26 +2300,6 @@ export interface operations {
             };
         };
     };
-    GetProfileAgentContext: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserAgentContextSnapshotDto"];
-                };
-            };
-        };
-    };
     GetProfileMemoryProposals: {
         parameters: {
             query?: never;
@@ -2413,32 +2357,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    UpdateProfileMemory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                memoryEntryId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateUserMemoryRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserMemoryEntryDto"];
-                };
             };
         };
     };

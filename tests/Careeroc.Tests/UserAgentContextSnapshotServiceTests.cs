@@ -7,7 +7,7 @@ namespace Careeroc.Tests;
 public sealed class UserAgentContextSnapshotServiceTests
 {
     [Fact]
-    public async Task GetSnapshotAsync_RendersConfirmedMemoryAndSoulMarkdown()
+    public async Task GetSnapshotAsync_RendersConfirmedMemory()
     {
         var databaseName = Guid.NewGuid().ToString("N");
 
@@ -57,15 +57,6 @@ public sealed class UserAgentContextSnapshotServiceTests
                 ConfirmationStatus = "confirmed",
                 ExpiresAtUtc = nowUtc.AddDays(-1)
             });
-        dbContext.UserSoulProfiles.Add(
-            new UserSoulProfile
-            {
-                User = user,
-                UserId = user.Id,
-                NarrativeTone = "direct",
-                CareerNarrative = "Builds agentic career tools.",
-                CommunicationPreferencesJson = "{\"detail\":\"concise\"}"
-            });
         await dbContext.SaveChangesAsync();
 
         var service = new UserAgentContextSnapshotService(dbContext, new TestClock(nowUtc));
@@ -77,10 +68,6 @@ public sealed class UserAgentContextSnapshotServiceTests
         Assert.Contains("Latest resume is strong.", snapshot.MemoryMarkdown, StringComparison.Ordinal);
         Assert.DoesNotContain("target_stack", snapshot.MemoryMarkdown, StringComparison.Ordinal);
         Assert.DoesNotContain("old_fact", snapshot.MemoryMarkdown, StringComparison.Ordinal);
-        Assert.Contains("# soul.md", snapshot.SoulMarkdown, StringComparison.Ordinal);
-        Assert.Contains("Narrative tone: direct", snapshot.SoulMarkdown, StringComparison.Ordinal);
-        Assert.Contains("Builds agentic career tools.", snapshot.SoulMarkdown, StringComparison.Ordinal);
-        Assert.Contains("detail", snapshot.SoulMarkdown, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -95,7 +82,5 @@ public sealed class UserAgentContextSnapshotServiceTests
 
         Assert.Equal(0, snapshot.MemoryEntryCount);
         Assert.Contains("No confirmed long-term memory", snapshot.MemoryMarkdown, StringComparison.Ordinal);
-        Assert.Contains("missing@example.com", snapshot.SoulMarkdown, StringComparison.Ordinal);
-        Assert.Contains("Prefer concrete facts", snapshot.SoulMarkdown, StringComparison.Ordinal);
     }
 }

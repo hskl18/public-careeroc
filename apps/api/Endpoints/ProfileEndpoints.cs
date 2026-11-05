@@ -28,24 +28,6 @@ public static class ProfileEndpoints
 
         endpoints
             .MapGet(
-                "/api/profile/agent-context",
-                async (
-                    HttpRequest request,
-                    UserAgentContextSnapshotService snapshotService,
-                    CancellationToken cancellationToken) =>
-                {
-                    var response = await snapshotService.GetSnapshotAsync(
-                        RequestUserContext.GetUserEmail(request),
-                        cancellationToken);
-
-                    return TypedResults.Ok(response);
-                })
-            .WithName("GetProfileAgentContext")
-            .WithTags("Profile")
-            .Produces<UserAgentContextSnapshotDto>();
-
-        endpoints
-            .MapGet(
                 "/api/profile/memory/proposals",
                 async (
                     HttpRequest request,
@@ -79,66 +61,6 @@ public static class ProfileEndpoints
             .WithName("GetProfileMemory")
             .WithTags("Profile")
             .Produces<IReadOnlyList<UserMemoryEntryDto>>();
-
-        endpoints
-            .MapPatch(
-                "/api/profile/memory/{memoryEntryId:guid}",
-                async (
-                    Guid memoryEntryId,
-                    UpdateUserMemoryRequest updateRequest,
-                    HttpRequest request,
-                    UserMemoryProposalService memoryProposalService,
-                    Api.Security.ApiSecurityEventLogger auditLogger,
-                    CancellationToken cancellationToken) =>
-                {
-                    var userEmail = RequestUserContext.GetUserEmail(request);
-                    try
-                    {
-                        var response = await memoryProposalService.UpdateConfirmedMemoryAsync(
-                            memoryEntryId,
-                            updateRequest,
-                            userEmail,
-                            cancellationToken);
-
-                        if (response is null)
-                        {
-                            await auditLogger.LogMutationAsync(
-                                request,
-                                "profile.memory_updated",
-                                userEmail,
-                                "user_memory",
-                                memoryEntryId,
-                                "not_found");
-                            return Results.NotFound();
-                        }
-
-                        await auditLogger.LogMutationAsync(
-                            request,
-                            "profile.memory_updated",
-                            userEmail,
-                            "user_memory",
-                            response.Id,
-                            "success",
-                            $"{response.Kind}/{response.Key}");
-
-                        return Results.Ok(response);
-                    }
-                    catch (InvalidOperationException exception)
-                    {
-                        await auditLogger.LogMutationAsync(
-                            request,
-                            "profile.memory_updated",
-                            userEmail,
-                            "user_memory",
-                            memoryEntryId,
-                            "rejected",
-                            exception.Message);
-                        return Results.BadRequest(new { error = exception.Message });
-                    }
-                })
-            .WithName("UpdateProfileMemory")
-            .WithTags("Profile")
-            .Produces<UserMemoryEntryDto>();
 
         endpoints
             .MapDelete(

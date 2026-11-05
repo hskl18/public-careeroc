@@ -192,40 +192,6 @@ public sealed class UserMemoryProposalService
         return MapMemory(proposal);
     }
 
-    public async Task<UserMemoryEntryDto?> UpdateConfirmedMemoryAsync(
-        Guid memoryEntryId,
-        UpdateUserMemoryRequest request,
-        string? userEmail,
-        CancellationToken cancellationToken = default)
-    {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
-        var nowUtc = _clock.UtcNow;
-        var normalized = NormalizeMemoryUpdate(request, nowUtc);
-        var memory = await _dbContext.UserMemoryEntries
-            .FirstOrDefaultAsync(
-                entry =>
-                    entry.Id == memoryEntryId &&
-                    entry.UserId == user.Id &&
-                    entry.ConfirmationStatus == "confirmed" &&
-                    (!entry.ExpiresAtUtc.HasValue || entry.ExpiresAtUtc > nowUtc),
-                cancellationToken);
-
-        if (memory is null)
-        {
-            return null;
-        }
-
-        memory.Value = normalized.Value;
-        memory.Summary = normalized.Summary;
-        memory.Confidence = normalized.Confidence;
-        memory.ExpiresAtUtc = normalized.ExpiresAtUtc;
-        memory.SourceType = "user";
-        memory.UpdatedAtUtc = nowUtc;
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapMemory(memory);
-    }
-
     public async Task<bool> DeleteMemoryAsync(
         Guid memoryEntryId,
         string? userEmail,
@@ -369,21 +335,6 @@ public sealed class UserMemoryProposalService
             expiresAtUtc);
     }
 
-    private static NormalizedMemoryUpdate NormalizeMemoryUpdate(UpdateUserMemoryRequest request, DateTimeOffset nowUtc)
-    {
-        var value = NormalizeMemoryValue(request.Value);
-        var summary = NormalizeOptionalText(request.Summary, 1000, "Memory summary");
-        var confidence = Math.Clamp(request.Confidence ?? 1.0, 0.0, 1.0);
-        var expiresAtUtc = request.ExpiresAtUtc;
-
-        if (expiresAtUtc.HasValue && expiresAtUtc <= nowUtc)
-        {
-            throw new InvalidOperationException("Memory expiration must be in the future.");
-        }
-
-        return new NormalizedMemoryUpdate(value, summary, confidence, expiresAtUtc);
-    }
-
     private static string NormalizeToken(string? value, int maxLength, string label)
     {
         var normalized = NormalizeRequiredText(value, maxLength, label);
@@ -496,9 +447,4 @@ public sealed class UserMemoryProposalService
         double Confidence,
         DateTimeOffset? ExpiresAtUtc);
 
-    private sealed record NormalizedMemoryUpdate(
-        string Value,
-        string? Summary,
-        double Confidence,
-        DateTimeOffset? ExpiresAtUtc);
 }

@@ -27,7 +27,6 @@ public sealed class UserAgentContextSnapshotService : IUserAgentContextSnapshotP
         var resolvedUserEmail = ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
         var user = await _dbContext.Users
             .AsNoTracking()
-            .Include(candidate => candidate.SoulProfile)
             .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
 
         if (user is null)
@@ -36,24 +35,19 @@ public sealed class UserAgentContextSnapshotService : IUserAgentContextSnapshotP
             return new UserAgentContextSnapshotDto(
                 nowUtc,
                 RenderEmptyMemoryMarkdown(nowUtc),
-                RenderDefaultSoulMarkdown(resolvedUserEmail, null, null, null, nowUtc),
                 0,
-                null,
                 null);
         }
 
         var generatedAtUtc = _clock.UtcNow;
         var memoryEntries = await LoadConfirmedMemoryAsync(user.Id, generatedAtUtc, cancellationToken);
         var memoryMarkdown = RenderMemoryMarkdown(user, memoryEntries, generatedAtUtc);
-        var soulMarkdown = RenderSoulMarkdown(user, user.SoulProfile, generatedAtUtc);
 
         return new UserAgentContextSnapshotDto(
             generatedAtUtc,
             memoryMarkdown,
-            soulMarkdown,
             memoryEntries.Count,
-            memoryEntries.Count == 0 ? null : memoryEntries.Max(entry => (DateTimeOffset?)entry.UpdatedAtUtc),
-            user.SoulProfile?.UpdatedAtUtc);
+            memoryEntries.Count == 0 ? null : memoryEntries.Max(entry => (DateTimeOffset?)entry.UpdatedAtUtc));
     }
 
     private async Task<IReadOnlyList<UserMemoryEntry>> LoadConfirmedMemoryAsync(
@@ -113,73 +107,6 @@ public sealed class UserAgentContextSnapshotService : IUserAgentContextSnapshotP
             }
         }
 
-        return builder.ToString().TrimEnd();
-    }
-
-    private static string RenderSoulMarkdown(
-        User user,
-        UserSoulProfile? soulProfile,
-        DateTimeOffset generatedAtUtc)
-    {
-        if (soulProfile is null)
-        {
-            return RenderDefaultSoulMarkdown(user.Email, user.Name, user.Location, user.TargetRole, generatedAtUtc);
-        }
-
-        var rendered = soulProfile.RenderedSoulMarkdown?.Trim();
-        if (!string.IsNullOrWhiteSpace(rendered))
-        {
-            return rendered;
-        }
-
-        var builder = new StringBuilder();
-        builder.AppendLine("# soul.md");
-        builder.AppendLine();
-        builder.AppendLine($"Generated: {generatedAtUtc:O}");
-        builder.AppendLine($"User: {SanitizeInline(user.Email)}");
-        builder.AppendLine();
-        builder.AppendLine("## Voice");
-        builder.AppendLine($"- Narrative tone: {SanitizeInline(soulProfile.NarrativeTone)}");
-
-        if (!string.IsNullOrWhiteSpace(soulProfile.CareerNarrative))
-        {
-            builder.AppendLine();
-            builder.AppendLine("## Career Narrative");
-            builder.AppendLine(SanitizeBlock(soulProfile.CareerNarrative));
-        }
-
-        var preferences = RenderCommunicationPreferences(soulProfile.CommunicationPreferencesJson);
-        if (!string.IsNullOrWhiteSpace(preferences))
-        {
-            builder.AppendLine();
-            builder.AppendLine("## Communication Preferences");
-            builder.Append(preferences);
-        }
-
-        return builder.ToString().TrimEnd();
-    }
-
-    private static string RenderDefaultSoulMarkdown(
-        string email,
-        string? name,
-        string? location,
-        string? targetRole,
-        DateTimeOffset generatedAtUtc)
-    {
-        var builder = new StringBuilder();
-        builder.AppendLine("# soul.md");
-        builder.AppendLine();
-        builder.AppendLine($"Generated: {generatedAtUtc:O}");
-        builder.AppendLine($"User: {SanitizeInline(email)}");
-        builder.AppendLine();
-        builder.AppendLine("## Voice");
-        builder.AppendLine("- Narrative tone: clear, direct, evidence-backed");
-        builder.AppendLine("- Prefer concrete facts over invented personalization.");
-        builder.AppendLine();
-        builder.AppendLine("## Profile");
-        builder.AppendLine($"- Name: {SanitizeInline(string.IsNullOrWhiteSpace(name) ? "Unknown" : name)}");
-        builder.AppendLine($"- Target role: {SanitizeInline(string.IsNullOrWhiteSpace(targetRole) ? "Not set" : targetRole)}");
-        builder.AppendLine($"- Location: {SanitizeInline(string.IsNullOrWhiteSpace(location) ? "Not set" : location)}");
         return builder.ToString().TrimEnd();
     }
 

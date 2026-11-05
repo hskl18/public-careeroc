@@ -1212,55 +1212,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("user_memory_entries", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.UserSoulProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CareerNarrative")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("career_narrative");
-
-                    b.Property<string>("CommunicationPreferencesJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("communication_preferences_json");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("NarrativeTone")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("narrative_tone");
-
-                    b.Property<string>("RenderedSoulMarkdown")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("rendered_soul_markdown");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_user_soul_profiles");
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_soul_profiles_user_id");
-
-                    b.ToTable("user_soul_profiles", (string)null);
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.ApplicationResumeFit", b =>
                 {
                     b.HasOne("Careeroc.Domain.Entities.JobApplication", "JobApplication")
@@ -1459,18 +1410,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.UserSoulProfile", b =>
-                {
-                    b.HasOne("Careeroc.Domain.Entities.User", "User")
-                        .WithOne("SoulProfile")
-                        .HasForeignKey("Careeroc.Domain.Entities.UserSoulProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_user_soul_profiles_users_user_id");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.InboxAccount", b =>
                 {
                     b.Navigation("Emails");
@@ -1516,8 +1455,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("RecruitingContacts");
 
                     b.Navigation("ResumeDocuments");
-
-                    b.Navigation("SoulProfile");
                 });
 #pragma warning restore 612, 618
         }
