@@ -64,7 +64,7 @@ const modelRoutes = [
   [
     "Model-backed specialists",
     "Ollama or OpenAI",
-    "Same graph and gate with a model behind each specialist; every node has a timeout and one retry. The hosted demo and CI do not run them.",
+    "Same graph and gate with a model behind each specialist; every node has a timeout and one retry. CI runs them against a scripted model only, and the hosted demo does not run them.",
   ],
   [
     "Email pipeline model pass",

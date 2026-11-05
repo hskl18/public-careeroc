@@ -9,7 +9,7 @@ Expose `api` too if assistants should reach `/mcp`, and `agent-runtime` if other
 | Docker Compose | [docker-compose.yml](../../docker-compose.yml) | CI starts it and runs [scripts/smoke-demo.sh](../../scripts/smoke-demo.sh) |
 | Kubernetes | [deploy/helm/careeroc](../../deploy/helm/careeroc/README.md) | CI installs it on kind and runs the same smoke test ([scripts/smoke-kubernetes.sh](../../scripts/smoke-kubernetes.sh)) |
 | Vercel (web only) | steps below | Not tested |
-| Vercel (read-only demo) | steps below | Runs [careeroc.vercel.app](https://careeroc.vercel.app); not in CI |
+| Vercel (read-only demo) | steps below | Runs [careeroc.vercel.app](https://careeroc.vercel.app); CI builds it and walks it in a browser |
 
 ## Secrets
 

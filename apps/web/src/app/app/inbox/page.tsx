@@ -59,9 +59,11 @@ export default async function InboxPage() {
                       : "Connect your Gmail inbox"}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">
-                  {hasConnectedGmail
-                    ? "Review sync health, analysis progress, and Gmail data controls for the connected recruiting inbox."
-                    : "careeroc finds recruiting emails, application confirmations, interview invites, and recruiter updates from your Gmail inbox."}
+                  {isDemoMode
+                    ? "Fictional recruiting mail, run through the real pipeline."
+                    : hasConnectedGmail
+                      ? "Review sync health, analysis progress, and Gmail data controls for the connected recruiting inbox."
+                      : "careeroc finds recruiting emails, application confirmations, interview invites, and recruiter updates from your Gmail inbox."}
                 </p>
               </div>
             </div>
@@ -76,7 +78,7 @@ export default async function InboxPage() {
           </div>
         </section>
 
-        <section className="grid min-h-0 flex-1 items-stretch gap-4 [grid-template-rows:minmax(0,1fr)] xl:grid-cols-[1.14fr_0.86fr]">
+        <section className={`grid min-h-0 flex-1 items-stretch gap-4 [grid-template-rows:minmax(0,1fr)] ${isDemoMode ? "" : "xl:grid-cols-[1.14fr_0.86fr]"}`}>
           <div className="workspace-scroll-region min-h-0 space-y-4">
             {isDemoMode ? (
               <section className="card app-workspace-panel p-5">
@@ -114,15 +116,17 @@ export default async function InboxPage() {
             />
           </div>
 
-          <div className="workspace-scroll-region min-h-0">
-            <MailSyncPanel
-              dashboard={dashboard}
-              dashboardSource={dashboardSource}
-              setup={setup}
-              inboxSetupSource={inboxSetupSource}
-              timeZoneId={profile.timeZoneId}
-            />
-          </div>
+          {isDemoMode ? null : (
+            <div className="workspace-scroll-region min-h-0">
+              <MailSyncPanel
+                dashboard={dashboard}
+                dashboardSource={dashboardSource}
+                setup={setup}
+                inboxSetupSource={inboxSetupSource}
+                timeZoneId={profile.timeZoneId}
+              />
+            </div>
+          )}
         </section>
       </div>
     </main>
