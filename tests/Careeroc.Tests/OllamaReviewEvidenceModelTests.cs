@@ -57,12 +57,6 @@ public sealed class OllamaReviewEvidenceModelTests
 
                 ## preference
                 - target_role: backend platform intern
-                """,
-                """
-                # soul.md
-
-                ## Voice
-                - Narrative tone: direct
                 """),
             NullLogger<OllamaReviewEvidenceModel>.Instance);
 
@@ -260,8 +254,7 @@ public sealed class OllamaReviewEvidenceModelTests
 
     private sealed class StubAgentContextSnapshotProvider(
         string expectedUserEmail,
-        string memoryMarkdown,
-        string soulMarkdown) : IUserAgentContextSnapshotProvider
+        string memoryMarkdown) : IUserAgentContextSnapshotProvider
     {
         public Task<UserAgentContextSnapshotDto> GetSnapshotAsync(
             string? userEmail,
@@ -272,9 +265,7 @@ public sealed class OllamaReviewEvidenceModelTests
                 new UserAgentContextSnapshotDto(
                     DateTimeOffset.UtcNow,
                     memoryMarkdown,
-                    soulMarkdown,
                     1,
-                    DateTimeOffset.UtcNow,
                     DateTimeOffset.UtcNow));
         }
     }

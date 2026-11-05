@@ -18,7 +18,6 @@ public interface ICareerocDbContext
     DbSet<AuditEvent> AuditEvents { get; }
     DbSet<ModelCallEvent> ModelCallEvents { get; }
     DbSet<UserMemoryEntry> UserMemoryEntries { get; }
-    DbSet<UserSoulProfile> UserSoulProfiles { get; }
     DbSet<ResumeDocument> ResumeDocuments { get; }
     DbSet<ResumeVersion> ResumeVersions { get; }
     DbSet<ResumeEvaluation> ResumeEvaluations { get; }

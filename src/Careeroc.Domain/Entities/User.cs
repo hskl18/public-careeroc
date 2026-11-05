@@ -17,6 +17,5 @@ public sealed class User
     public ICollection<RecruitingContact> RecruitingContacts { get; set; } = new List<RecruitingContact>();
     public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
     public ICollection<UserMemoryEntry> MemoryEntries { get; set; } = new List<UserMemoryEntry>();
-    public UserSoulProfile? SoulProfile { get; set; }
     public ICollection<ResumeDocument> ResumeDocuments { get; set; } = new List<ResumeDocument>();
 }

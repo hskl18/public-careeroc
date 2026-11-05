@@ -12,8 +12,6 @@ import {
   MemorySectionShell,
   PendingProposalCard,
   SourceEvidencePanel,
-  tryFormatMemoryJson,
-  type MemoryEditDraft,
 } from "@/components/profile-memory-review-sections";
 import { LocalTime } from "@/components/local-time";
 import { fetchWithInFlightDedup } from "@/lib/client-fetch";
@@ -29,22 +27,6 @@ type ProfileMemoryPanelProps = {
   initialMemory: UserMemoryEntry[];
   initialPendingMemory?: UserMemoryEntry[];
 };
-
-function validateMemoryValue(value: string): string | null {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return "Memory value is required.";
-  }
-  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-    return null;
-  }
-  try {
-    JSON.parse(trimmed);
-    return null;
-  } catch {
-    return "This looks like JSON, but it is not valid JSON.";
-  }
-}
 
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -194,20 +176,6 @@ function shortVersionId(value: string | null) {
 
 function formatStrategyStatus(value: string) {
   return value.replaceAll("_", " ");
-}
-
-function downloadJsonFile(filename: string, value: unknown) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }
 
 function StrategySnapshotPanel({
@@ -463,15 +431,12 @@ export function ProfileMemoryPanel({
     findLatestStrategyReview([...initialMemory, ...initialPendingMemory]),
   );
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<MemoryEditDraft | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReviewingStrategy, setIsReviewingStrategy] = useState(false);
   const [memoryReferenceTimeMs] = useState(() => Date.now());
-  const draftValueError = draft ? validateMemoryValue(draft.value) : null;
 
   const reload = useCallback(async () => {
     if (!proxyPrefix) return;
@@ -583,71 +548,6 @@ export function ProfileMemoryPanel({
     return entries;
   }, [confirmedReview]);
 
-  function startEdit(entry: UserMemoryEntry) {
-    setEditingId(entry.id);
-    setExpandedId(entry.id);
-    setDraft({
-      value: tryFormatMemoryJson(entry.value).pretty,
-      summary: entry.summary ?? "",
-      confidence: entry.confidence.toString(),
-      expiresAtUtc: "",
-    });
-    setError(null);
-    setNotice(null);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setDraft(null);
-  }
-
-  async function saveEdit(entryId: string) {
-    if (!proxyPrefix || !draft) return;
-    const valueError = validateMemoryValue(draft.value);
-    if (valueError) {
-      setError(valueError);
-      return;
-    }
-    const confidence = Number.parseFloat(draft.confidence);
-    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
-      setError("Confidence must be between 0 and 1.");
-      return;
-    }
-    const expiresAtUtc = draft.expiresAtUtc.trim();
-    if (expiresAtUtc.length > 0 && Number.isNaN(Date.parse(expiresAtUtc))) {
-      setError("Expiration must be a valid ISO date or empty.");
-      return;
-    }
-    setBusyId(entryId);
-    setError(null);
-    setNotice(null);
-    try {
-      const response = await fetch(`${proxyPrefix}/api/profile/memory/${entryId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          value: draft.value,
-          summary: draft.summary.trim().length > 0 ? draft.summary.trim() : null,
-          confidence,
-          expiresAtUtc: expiresAtUtc.length > 0 ? new Date(expiresAtUtc).toISOString() : null,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
-      }
-      const updated = (await response.json()) as UserMemoryEntry;
-      setConfirmed((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
-      setEditingId(null);
-      setDraft(null);
-      setNotice("Memory saved.");
-      router.refresh();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Couldn't save memory.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   async function deleteEntry(entryId: string) {
     if (!proxyPrefix) return;
     if (!window.confirm("Remove this memory entry?")) return;
@@ -664,10 +564,6 @@ export function ProfileMemoryPanel({
       setConfirmed((prev) => prev.filter((entry) => entry.id !== entryId));
       setPending((prev) => prev.filter((entry) => entry.id !== entryId));
       if (expandedId === entryId) setExpandedId(null);
-      if (editingId === entryId) {
-        setEditingId(null);
-        setDraft(null);
-      }
       setNotice("Memory removed.");
       router.refresh();
     } catch (deleteError) {
@@ -675,23 +571,6 @@ export function ProfileMemoryPanel({
     } finally {
       setBusyId(null);
     }
-  }
-
-  function exportMemory() {
-    const exportedAtUtc = new Date().toISOString();
-    downloadJsonFile("careeroc-memory-export.json", {
-      exportedAtUtc,
-      counts: {
-        pending: pendingReview.length,
-        confirmed: confirmedReview.length,
-        rejectedOrExpired: rejectedOrExpired.length,
-      },
-      strategyReview,
-      pending: pendingReview,
-      confirmed: confirmedReview,
-      rejectedOrExpired,
-    });
-    setNotice("Memory export downloaded.");
   }
 
   async function clearConfirmedMemory() {
@@ -724,8 +603,6 @@ export function ProfileMemoryPanel({
         ),
       );
       setExpandedId(null);
-      setEditingId(null);
-      setDraft(null);
       setNotice("Confirmed memory cleared.");
       router.refresh();
     } catch (clearError) {
@@ -842,19 +719,11 @@ export function ProfileMemoryPanel({
               Review queue
             </h2>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Agents can propose memory, but confirmed entries stay editable and removable here.
+              Agents can propose memory, and you can remove any confirmed entry here.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-[var(--text-tertiary)]">
             {isLoading ? <span>Refreshing...</span> : null}
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={exportMemory}
-              disabled={isLoading}
-            >
-              Export JSON
-            </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -947,20 +816,13 @@ export function ProfileMemoryPanel({
                       key={entry.id}
                       entry={entry}
                       expanded={expandedId === entry.id}
-                      editing={editingId === entry.id}
-                      draft={draft}
-                      draftValueError={draftValueError}
                       busy={busyId === entry.id}
                       onToggle={() =>
                         setExpandedId((current) =>
                           current === entry.id ? null : entry.id,
                         )
                       }
-                      onStartEdit={() => startEdit(entry)}
                       onDelete={() => deleteEntry(entry.id)}
-                      onDraftChange={setDraft}
-                      onSave={() => saveEdit(entry.id)}
-                      onCancel={cancelEdit}
                     />
                   ))}
                 </ul>

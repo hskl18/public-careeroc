@@ -23,7 +23,6 @@ public sealed class CareerocDbContext : DbContext, ICareerocDbContext
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<ModelCallEvent> ModelCallEvents => Set<ModelCallEvent>();
     public DbSet<UserMemoryEntry> UserMemoryEntries => Set<UserMemoryEntry>();
-    public DbSet<UserSoulProfile> UserSoulProfiles => Set<UserSoulProfile>();
     public DbSet<ResumeDocument> ResumeDocuments => Set<ResumeDocument>();
     public DbSet<ResumeVersion> ResumeVersions => Set<ResumeVersion>();
     public DbSet<ResumeEvaluation> ResumeEvaluations => Set<ResumeEvaluation>();

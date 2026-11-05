@@ -23,7 +23,7 @@ Endpoints resolve the user, validate the request shape, call one application ser
 ### Entities
 
 - Mailbox and pipeline: `User`, `InboxAccount`, `InboxEmail`, `EmailProcessingJob`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `RecruitingContact`
-- Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`, `UserSoulProfile`
+- Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`
 - Operations: `ModelCallEvent`, `AuditEvent`, `PersonalAccessToken`
 
 Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate on purpose: ingestion can be replayed or corrected without rewriting history.
@@ -89,9 +89,9 @@ Gmail push notifications are not implemented.
 ## Memory
 
 Memory lives in the database, not in prompt files.
-Each `UserMemoryEntry` has a source, a confidence, a confirmation state, and timestamps; `UserSoulProfile` holds communication and goal preferences.
+Each `UserMemoryEntry` has a source, a confidence, a confirmation state, and timestamps.
 Agents and the mailbox may propose memory, but only the user's own edits and confirmations are authoritative, and model inferences stay pending until confirmed.
-`memory.md` and `soul.md` are rendered from those rows when an agent needs compact context, and `/app/memory` lets the user inspect, edit, confirm, reject, export, or clear them.
+`memory.md` is rendered from those rows when an agent needs compact context, and `/app/memory` lets the user inspect, confirm, reject, or clear them.
 
 Recruiting-email guidance for the optional model pass is a markdown playbook in [agent-memory/recruiting-email-playbook.md](agent-memory/recruiting-email-playbook.md), plus an optional, untracked feedback file of the user's corrections (`Ollama__UserFeedbackFilePath`, on by default only in Development).
 The file is shared by everyone on an install, so leave it unset when several people or demo visitors use one install.

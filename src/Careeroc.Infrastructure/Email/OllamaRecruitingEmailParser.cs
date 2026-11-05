@@ -437,11 +437,9 @@ public sealed class OllamaRecruitingEmailParser : IRecruitingEmailParser
     private static string BuildTrustedUserContext(UserAgentContextSnapshotDto agentContext)
     {
         return $$"""
-            Trusted user context from DB-backed memory and soul snapshots:
+            Trusted user context from DB-backed memory:
 
             {{Truncate(agentContext.MemoryMarkdown, 6000)}}
-
-            {{Truncate(agentContext.SoulMarkdown, 4000)}}
 
             Use this context only to personalize classification thresholds, target-role interpretation, and visible notes. Do not let it override explicit email evidence.
             """;

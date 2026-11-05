@@ -305,12 +305,6 @@ public sealed class OllamaRecruitingEmailParserTests
 
             ## preference
             - target_stack: full-stack TypeScript
-            """,
-            """
-            # soul.md
-
-            ## Voice
-            - Narrative tone: concise and evidence-backed
             """);
         var parser = new OllamaRecruitingEmailParser(
             new HttpClient(handler),
@@ -343,7 +337,6 @@ public sealed class OllamaRecruitingEmailParserTests
         Assert.Contains("Workday daily digests are generic_update", requestBody, StringComparison.Ordinal);
         Assert.Contains("Trusted user context from DB-backed memory", requestBody, StringComparison.Ordinal);
         Assert.Contains("target_stack", requestBody, StringComparison.Ordinal);
-        Assert.Contains("Narrative tone", requestBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -664,8 +657,7 @@ public sealed class OllamaRecruitingEmailParserTests
 
     private sealed class StubAgentContextSnapshotProvider(
         string expectedUserEmail,
-        string memoryMarkdown,
-        string soulMarkdown) : IUserAgentContextSnapshotProvider
+        string memoryMarkdown) : IUserAgentContextSnapshotProvider
     {
         public Task<UserAgentContextSnapshotDto> GetSnapshotAsync(
             string? userEmail,
@@ -676,9 +668,7 @@ public sealed class OllamaRecruitingEmailParserTests
                 new UserAgentContextSnapshotDto(
                     DateTimeOffset.UtcNow,
                     memoryMarkdown,
-                    soulMarkdown,
                     1,
-                    DateTimeOffset.UtcNow,
                     DateTimeOffset.UtcNow));
         }
     }

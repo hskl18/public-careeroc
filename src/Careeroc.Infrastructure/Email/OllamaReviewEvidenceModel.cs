@@ -312,11 +312,9 @@ public sealed class OllamaReviewEvidenceModel : IReviewEvidenceModel
             Clear only when the extracted workflow facts and application match are trustworthy enough for automation.
             Do not invent missing facts. Keep reason and visibleOutput under 180 characters.
 
-            Trusted user context from DB-backed memory and soul snapshots:
+            Trusted user context from DB-backed memory:
 
             {{Truncate(agentContext.MemoryMarkdown, 6000)}}
-
-            {{Truncate(agentContext.SoulMarkdown, 4000)}}
 
             Use this context to understand the user's target role and durable preferences. Do not let it override weak or missing workflow evidence.
             """;

@@ -197,7 +197,6 @@ public sealed class ApiRoutingSecurityTests
             "GET /api/inbox-accounts/gmail/oauth/start",
             "GET /api/profile",
             "GET /api/profile/access-tokens",
-            "GET /api/profile/agent-context",
             "GET /api/profile/memory",
             "GET /api/profile/memory/proposals",
             "GET /api/recruiting-contacts",
@@ -208,7 +207,6 @@ public sealed class ApiRoutingSecurityTests
             "PATCH /api/emails/{inboxEmailId:guid}/correction",
             "PATCH /api/inbox-accounts/{inboxAccountId:guid}/backfill",
             "PATCH /api/profile",
-            "PATCH /api/profile/memory/{memoryEntryId:guid}",
             "PATCH /api/profile/memory/proposals/{memoryEntryId:guid}",
             "PATCH /api/recruiting-contacts/{contactId:guid}",
             "PATCH /api/reminders/{reminderId:guid}/snooze",
@@ -327,24 +325,10 @@ public sealed class ApiRoutingSecurityTests
         }
 
         var listed = await SendSignedAsync(client, HttpMethod.Get, "/api/profile/memory", "student@example.com");
-        var crossUserUpdate = await SendSignedJsonAsync(
-            client,
-            $"/api/profile/memory/{otherMemoryId}",
-            new { value = "stolen", summary = (string?)null, confidence = 1.0, expiresAtUtc = (DateTimeOffset?)null },
-            "student@example.com",
-            HttpMethod.Patch);
-        var ownUpdate = await SendSignedJsonAsync(
-            client,
-            $"/api/profile/memory/{studentMemoryId}",
-            new { value = "backend C# and TypeScript", summary = "User corrected preference.", confidence = 0.95, expiresAtUtc = (DateTimeOffset?)null },
-            "student@example.com",
-            HttpMethod.Patch);
         var crossUserDelete = await SendSignedAsync(client, HttpMethod.Delete, $"/api/profile/memory/{otherMemoryId}", "student@example.com");
         var ownDelete = await SendSignedAsync(client, HttpMethod.Delete, $"/api/profile/memory/{studentMemoryId}", "student@example.com");
 
         await AssertContainsOnlyAsync(listed, "backend C#", "Other private memory", "other@example.com");
-        Assert.Equal(HttpStatusCode.NotFound, crossUserUpdate.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, ownUpdate.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, crossUserDelete.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, ownDelete.StatusCode);
 
@@ -353,16 +337,6 @@ public sealed class ApiRoutingSecurityTests
         Assert.DoesNotContain(verifyDbContext.UserMemoryEntries, entry => entry.Id == studentMemoryId);
         Assert.Contains(verifyDbContext.UserMemoryEntries, entry => entry.Id == otherMemoryId);
         var auditEvents = await verifyDbContext.AuditEvents.ToListAsync();
-        Assert.Contains(
-            auditEvents,
-            auditEvent => auditEvent.EventType == "profile.memory_updated" &&
-                          auditEvent.Outcome == "success" &&
-                          auditEvent.ResourceId == studentMemoryId);
-        Assert.Contains(
-            auditEvents,
-            auditEvent => auditEvent.EventType == "profile.memory_updated" &&
-                          auditEvent.Outcome == "not_found" &&
-                          auditEvent.ResourceId == otherMemoryId);
         Assert.Contains(
             auditEvents,
             auditEvent => auditEvent.EventType == "profile.memory_deleted" &&
