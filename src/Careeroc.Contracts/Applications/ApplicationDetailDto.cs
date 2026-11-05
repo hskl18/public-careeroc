@@ -21,9 +21,7 @@ public sealed record ApplicationDetailDto(
     IReadOnlyList<ApplicationDetailActivityDto> RecentActivity,
     IReadOnlyList<ApplicationThreadDto> Threads,
     IReadOnlyList<ApplicationFeedbackNoteDto> FeedbackNotes,
-    IReadOnlyList<ApplicationArtifactEvidenceDto>? ArtifactEvidence = null,
     int RecentActivityTotalCount = 0,
-    int ArtifactEvidenceTotalCount = 0,
     IReadOnlyList<UserMemoryEntryDto>? MemoryProposals = null,
     ReviewAgentTraceDto? AgentTrace = null);
 
@@ -97,32 +95,3 @@ public sealed record ApplicationFeedbackNoteDto(
     string Note,
     string Source,
     DateTimeOffset OccurredAtUtc);
-
-public sealed record ApplicationArtifactInputDto(
-    string ArtifactKind,
-    string FileName,
-    string ContentType,
-    string Base64Content,
-    string? SourceLabel = null);
-
-public sealed record ReviewApplicationArtifactRequest(
-    string Outcome,
-    string? Notes = null);
-
-public sealed record ApplicationArtifactEvidenceDto(
-    Guid Id,
-    Guid JobApplicationId,
-    string ArtifactKind,
-    string FileName,
-    string ContentType,
-    string SafeTitle,
-    string ExtractedFactType,
-    string ExtractedFactText,
-    DateTimeOffset? NormalizedDateUtc,
-    decimal Confidence,
-    string SourceSnippet,
-    bool RequiresReview,
-    string? ReviewReason,
-    DateTimeOffset CreatedAtUtc,
-    AgentTraceSummaryDto TraceSummary,
-    ReviewAgentTraceDto? AgentTrace = null);

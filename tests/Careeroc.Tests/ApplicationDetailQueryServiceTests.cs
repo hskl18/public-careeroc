@@ -646,7 +646,7 @@ public sealed class ApplicationDetailQueryServiceTests
     }
 
     [Fact]
-    public async Task GetAsync_LimitsLinkedMessagesAndArtifactEvidence_ForLargeApplicationHistory()
+    public async Task GetAsync_LimitsLinkedMessages_ForLargeApplicationHistory()
     {
         var databaseName = Guid.NewGuid().ToString("N");
 
@@ -702,30 +702,6 @@ public sealed class ApplicationDetailQueryServiceTests
                 });
         }
 
-        for (var index = 0; index < 60; index++)
-        {
-            dbContext.ApplicationArtifactEvidence.Add(
-                new ApplicationArtifactEvidence
-                {
-                    UserId = user.Id,
-                    JobApplicationId = application.Id,
-                    ArtifactKind = "screenshot",
-                    FileName = $"artifact-{index:D2}.png",
-                    ContentType = "image/png",
-                    SafeTitle = $"Artifact {index:D2}",
-                    ExtractedFactType = "schedule",
-                    ExtractedFactText = $"Interview artifact {index:D2}",
-                    Confidence = 0.85m,
-                    SourceSnippet = "Sanitized snippet.",
-                    ContentHash = $"hash-{index:D2}",
-                    EvidenceSource = "artifact_upload",
-                    ModelPath = "model-router-fallback",
-                    Purpose = "artifact_evidence_extraction",
-                    ReviewGateResult = "evidence_recorded_no_mutation",
-                    CreatedAtUtc = new DateTimeOffset(2026, 4, 1, 10, 0, 0, TimeSpan.Zero).AddMinutes(index)
-                });
-        }
-
         await dbContext.SaveChangesAsync();
 
         var service = CreateService(dbContext);
@@ -736,12 +712,7 @@ public sealed class ApplicationDetailQueryServiceTests
         Assert.Equal(250, detail.Threads.Count);
         Assert.DoesNotContain(detail.Threads, thread => thread.ThreadId == "thread-anthropic-000");
         Assert.Contains(detail.Threads, thread => thread.ThreadId == "thread-anthropic-274");
-        Assert.Equal(60, detail.ArtifactEvidenceTotalCount);
         Assert.Equal(0, detail.RecentActivityTotalCount);
-        var artifactEvidence = detail.ArtifactEvidence ?? throw new InvalidOperationException("Artifact evidence should be present.");
-        Assert.Equal(50, artifactEvidence.Count);
-        Assert.DoesNotContain(artifactEvidence, evidence => evidence.FileName == "artifact-00.png");
-        Assert.Contains(artifactEvidence, evidence => evidence.FileName == "artifact-59.png");
     }
 
     private static ApplicationDetailQueryService CreateService(Careeroc.Infrastructure.Persistence.CareerocDbContext dbContext)

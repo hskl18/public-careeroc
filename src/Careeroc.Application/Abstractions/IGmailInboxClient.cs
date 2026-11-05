@@ -47,13 +47,4 @@ public interface IGmailInboxClient
         IReadOnlySet<string>? existingThreadIds = null,
         string? mailboxEmailAddress = null,
         CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<DownloadedInboxAttachment>> DownloadSupportedAttachmentsAsync(
-        string accessToken,
-        string messageId,
-        int maxBytes,
-        CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult<IReadOnlyList<DownloadedInboxAttachment>>([]);
-    }
 }

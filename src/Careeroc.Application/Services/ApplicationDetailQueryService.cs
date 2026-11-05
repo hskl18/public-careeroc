@@ -15,7 +15,6 @@ public sealed class ApplicationDetailQueryService
     private const int LinkedEmailFetchLimit = 250;
     private const int EventFetchLimit = 100;
     private const int ReminderFetchLimit = 50;
-    private const int ArtifactEvidenceFetchLimit = 50;
 
     private static readonly ApplicationStatus[] PipelineStatuses =
     [
@@ -141,14 +140,6 @@ public sealed class ApplicationDetailQueryService
                     @event.EventTimeUtc))
             .ToListAsync(cancellationToken);
 
-        var artifactEvidenceQuery = _dbContext.ApplicationArtifactEvidence
-            .AsNoTracking()
-            .Where(evidence => evidence.JobApplicationId == application.Id && evidence.UserId == user.Id);
-        var artifactEvidenceTotalCount = await artifactEvidenceQuery.CountAsync(cancellationToken);
-        var artifactEvidence = await artifactEvidenceQuery
-            .OrderByDescending(evidence => evidence.CreatedAtUtc)
-            .Take(ArtifactEvidenceFetchLimit)
-            .ToListAsync(cancellationToken);
         var memoryProposals = await _userMemoryProposalService.GetProposalsForApplicationAsync(
             application.Id,
             resolvedUserEmail,
@@ -204,9 +195,7 @@ public sealed class ApplicationDetailQueryService
             recentActivity,
             BuildThreads(emails, suppressActions: terminal),
             BuildFeedbackNotes(emails),
-            BuildArtifactEvidence(artifactEvidence),
             eventTotalCount,
-            artifactEvidenceTotalCount,
             memoryProposals,
             BuildApplicationAgentTrace(application, effectiveStatus, reminders, emails, recentActivity));
     }
@@ -519,73 +508,6 @@ public sealed class ApplicationDetailQueryService
                 })
             .OrderByDescending(thread => thread.LastMessageAtUtc)
             .ToList();
-    }
-
-    private static List<ApplicationArtifactEvidenceDto> BuildArtifactEvidence(
-        IReadOnlyList<ApplicationArtifactEvidence> artifacts)
-    {
-        return artifacts
-            .Select(
-                evidence => new ApplicationArtifactEvidenceDto(
-                    evidence.Id,
-                    evidence.JobApplicationId,
-                    evidence.ArtifactKind,
-                    evidence.FileName,
-                    evidence.ContentType,
-                    evidence.SafeTitle,
-                    evidence.ExtractedFactType,
-                    evidence.ExtractedFactText,
-                    evidence.NormalizedDateUtc,
-                    evidence.Confidence,
-                    evidence.SourceSnippet,
-                    evidence.RequiresReview,
-                    evidence.ReviewReason,
-                    evidence.CreatedAtUtc,
-                    AgentTraceSummaryBuilder.FromArtifactEvidence(evidence),
-                    BuildArtifactAgentTrace(evidence)))
-            .ToList();
-    }
-
-    private static ReviewAgentTraceDto BuildArtifactAgentTrace(ApplicationArtifactEvidence evidence)
-    {
-        var summary = AgentTraceSummaryBuilder.FromArtifactEvidence(evidence);
-
-        return new ReviewAgentTraceDto(
-            evidence.CreatedAtUtc,
-            [
-                new ReviewAgentTraceStepDto(
-                    "artifact_ingestion",
-                    "Artifact evidence importer",
-                    $"Accepted {evidence.ContentType} evidence as {ToLabel(evidence.ArtifactKind)}.",
-                    "The artifact path stores evidence metadata and does not keep raw uploaded or downloaded bytes.",
-                    [
-                        new ReviewAgentTraceFactDto("file", evidence.FileName),
-                        new ReviewAgentTraceFactDto("source", summary.EvidenceSource)
-                    ]),
-                new ReviewAgentTraceStepDto(
-                    "gemma_extraction",
-                    "Artifact extractor",
-                    evidence.ExtractedFactText,
-                    evidence.SourceSnippet,
-                    [
-                        new ReviewAgentTraceFactDto("model", summary.ModelPath ?? "not recorded"),
-                        new ReviewAgentTraceFactDto("purpose", summary.Purpose),
-                        new ReviewAgentTraceFactDto("confidence", $"{Math.Round(evidence.Confidence * 100)}%")
-                    ]),
-                new ReviewAgentTraceStepDto(
-                    "review_gate",
-                    "Artifact review gate",
-                    evidence.RequiresReview
-                        ? "Blocked this artifact from mutating application state."
-                        : "Recorded evidence without mutating application state.",
-                    evidence.ReviewReason ??
-                    "Artifact evidence remains an auditable card; application status and reminders require a separate review path.",
-                    [
-                        new ReviewAgentTraceFactDto("outcome", summary.ReviewGateResult),
-                        new ReviewAgentTraceFactDto("fallback", summary.FallbackPath)
-                    ])
-            ],
-            summary);
     }
 
     private static ReviewAgentTraceDto BuildApplicationAgentTrace(

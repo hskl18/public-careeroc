@@ -8,10 +8,3 @@ public sealed record ExternalInboxEmail(
     string Body,
     DateTimeOffset ReceivedAtUtc,
     bool IsOutbound = false);
-
-public sealed record DownloadedInboxAttachment(
-    string SourceId,
-    string FileName,
-    string ContentType,
-    int SizeBytes,
-    byte[] ContentBytes);

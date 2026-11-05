@@ -12,7 +12,6 @@ public interface ICareerocDbContext
     DbSet<RecruitingContact> RecruitingContacts { get; }
     DbSet<JobApplication> JobApplications { get; }
     DbSet<ApplicationResumeFit> ApplicationResumeFits { get; }
-    DbSet<ApplicationArtifactEvidence> ApplicationArtifactEvidence { get; }
     DbSet<JobApplicationEvent> JobApplicationEvents { get; }
     DbSet<Reminder> Reminders { get; }
     DbSet<EmailProcessingJob> EmailProcessingJobs { get; }
