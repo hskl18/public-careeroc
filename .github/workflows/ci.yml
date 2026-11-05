@@ -241,6 +241,26 @@ jobs:
       - name: Check frontend bundle budget
         run: pnpm --dir apps/web bundle:budget
 
+      - name: Install Playwright browser
+        run: pnpm --dir apps/web exec playwright install --with-deps chromium
+
+      - name: Test the hosted read-only demo
+        env:
+          DEMO_MODE: "true"
+          DEMO_SNAPSHOT: "true"
+          AUTH_SECRET: ci-build-only-auth-secret-do-not-use-in-production
+          AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          CAREEROC_HOSTED_DEMO_E2E: "1"
+          PLAYWRIGHT_SKIP_WEB_SERVER: "1"
+        run: |
+          pnpm --dir apps/web build
+          pnpm --dir apps/web exec next start -p 3000 > "$RUNNER_TEMP/web.log" 2>&1 &
+          web_pid="$!"
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS -o /dev/null --retry 30 --retry-delay 1 --retry-all-errors http://localhost:3000/
+          pnpm --dir apps/web exec playwright test e2e/hosted-demo.spec.ts --workers=1
+
   contract:
     name: API contract drift
     runs-on: ubuntu-latest
