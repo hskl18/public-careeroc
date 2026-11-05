@@ -188,6 +188,8 @@ export function AgentReviewPanel({
         method: "POST",
       });
       if (!response.ok) throw new Error(await readErrorMessage(response));
+      // An unread body holds the connection open; the stored review below is what gets shown.
+      await response.text();
       await reload();
       setNotice("Review updated.");
       router.refresh();
@@ -224,6 +226,7 @@ export function AgentReviewPanel({
         await reload();
         throw new Error(message);
       }
+      await response.text();
       await reload();
       setNotice(action === "confirm" ? "Review approved." : "Review rejected.");
       router.refresh();
