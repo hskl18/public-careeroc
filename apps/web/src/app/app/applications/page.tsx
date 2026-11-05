@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import { DashboardWorkflowExplorer } from "@/components/dashboard-workflow-explorer";
 import type { DashboardView } from "@/lib/dashboard";
 import { getDashboardWithFiltersForUser } from "@/lib/dashboard-server";
@@ -33,11 +33,7 @@ function normalizeDashboardView(value: string | string[] | undefined): Dashboard
 export default async function ApplicationsPage({
   searchParams,
 }: ApplicationsPageProps) {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedView = normalizeDashboardView(
     resolvedSearchParams.view ?? resolvedSearchParams.focus,

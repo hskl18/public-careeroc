@@ -253,7 +253,11 @@ public sealed class EmailIntelligenceService
                 FollowUpTaskPlan? followUpTaskPlan = null;
                 var outboundReplyDetected = match.Application is not null &&
                     await HasOutboundReplyAsync(inboxEmail, cancellationToken);
-                var effectiveParsed = outboundReplyDetected && parsed.ActionRequired
+                // A reply answers a request to reply; it does not finish an assessment or settle an offer.
+                var replyAnswersAction = outboundReplyDetected &&
+                                         parsed.ActionRequired &&
+                                         parsed.Category is not (EmailCategory.OaInvitation or EmailCategory.Offer);
+                var effectiveParsed = replyAnswersAction
                     ? parsed with
                     {
                         ActionRequired = false,
@@ -304,6 +308,14 @@ public sealed class EmailIntelligenceService
                     if (outboundReplyDetected)
                     {
                         await LinkOutboundRepliesAsync(inboxEmail, acceptedApplication.Id, cancellationToken);
+                    }
+
+                    if (match.BackfillIdentity)
+                    {
+                        ApplicationWorkflowService.BackfillApplicationIdentity(
+                            acceptedApplication,
+                            effectiveParsed.Company,
+                            effectiveParsed.Role);
                     }
 
                     resolvedStatus = _applicationWorkflowService.ApplyStatusAndPriority(

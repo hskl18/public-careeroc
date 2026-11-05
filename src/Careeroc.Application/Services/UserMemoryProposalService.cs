@@ -242,6 +242,13 @@ public sealed class UserMemoryProposalService
             throw new InvalidOperationException("Expired memory proposals cannot be resolved.");
         }
 
+        // A newer review overwrites the same pending entry, so a stale page could approve unseen content.
+        if (request.ExpectedUpdatedAtUtc is { } expected &&
+            (proposal.UpdatedAtUtc - expected).Duration() > TimeSpan.FromMilliseconds(1))
+        {
+            throw new InvalidOperationException("This proposal changed after you opened it. Reload and decide again.");
+        }
+
         if (action == "confirm")
         {
             var existingConfirmed = await _dbContext.UserMemoryEntries

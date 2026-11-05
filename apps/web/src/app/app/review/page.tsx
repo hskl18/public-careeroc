@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import { isDemoSnapshot } from "@/lib/demo";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
@@ -12,11 +12,7 @@ const ManualReviewWorkspace = dynamic(() =>
 );
 
 export default async function ReviewPage() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const [
     { review, source, proxyPrefix },
     { setup, source: inboxSetupSource },

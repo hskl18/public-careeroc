@@ -231,7 +231,7 @@ public sealed class DatabaseEmailProcessingQueue : IEmailProcessingQueue
                     AND (@user_email IS NULL OR owner.email = @user_email)
                     ORDER BY job.status, job.created_at_utc
                     LIMIT @max_batch_size
-                    FOR UPDATE SKIP LOCKED
+                    FOR UPDATE OF job SKIP LOCKED
                 )
                 UPDATE email_processing_jobs AS job
                 SET
@@ -288,6 +288,14 @@ public sealed class DatabaseEmailProcessingQueue : IEmailProcessingQueue
         if (claimedJobIds.Count == 0)
         {
             return [];
+        }
+
+        // The claim ran as raw SQL, so instances this context already tracks would come back stale.
+        foreach (var entry in _dbContext.ChangeTracker.Entries<EmailProcessingJob>()
+                     .Where(entry => claimedJobIds.Contains(entry.Entity.Id))
+                     .ToList())
+        {
+            entry.State = EntityState.Detached;
         }
 
         var jobs = await _dbContext.EmailProcessingJobs

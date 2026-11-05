@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import { getDashboardForUser } from "@/lib/dashboard-server";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
@@ -21,11 +21,7 @@ export default async function DashboardPage() {
 }
 
 async function DashboardPageContent() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const [
     { dashboard, source: dashboardSource, proxyPrefix: dashboardProxyPrefix },
     { setup, source: inboxSetupSource, proxyPrefix: inboxProxyPrefix },

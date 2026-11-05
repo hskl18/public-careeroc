@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import { DataControlsPanel } from "@/components/data-controls-panel";
 import { getDashboardForUser } from "@/lib/dashboard-server";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
 import { getProfileForUser } from "@/lib/profile-server";
 
 export default async function DataSettingsPage() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const [
     { dashboard },
     { setup, source: inboxSetupSource, proxyPrefix },

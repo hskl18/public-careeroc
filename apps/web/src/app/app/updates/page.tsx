@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import { RecentChangesSection } from "@/components/recent-changes-section";
 import type { RecentActivity } from "@/lib/dashboard";
 import { getDashboardWithFiltersForUser } from "@/lib/dashboard-server";
@@ -23,11 +23,7 @@ const activityFilters = [
 type ActivityFilter = (typeof activityFilters)[number]["value"];
 
 export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedType = normalizeActivityFilter(firstParam(resolvedSearchParams.type));
   const cursor = firstParam(resolvedSearchParams.cursor);

@@ -526,6 +526,10 @@ public sealed class CareerOrchestratorService
     {
         var nowUtc = _clock.UtcNow;
         var value = SerializeReview(review);
+        // The runtime allows a longer summary than this column; the full text stays in the value.
+        var storedSummary = review.Summary.Length > UserMemoryEntry.MaxSummaryLength
+            ? review.Summary[..UserMemoryEntry.MaxSummaryLength]
+            : review.Summary;
         var usesLangGraph = review.RuntimePath.StartsWith("langgraph.", StringComparison.Ordinal);
         var sourceType = usesLangGraph ? "career_orchestrator_langgraph" : "career_orchestrator";
         var confidence = review.Confidence ?? 0.86m;
@@ -551,7 +555,7 @@ public sealed class CareerOrchestratorService
                     Kind = ReviewMemoryKind,
                     Key = ReviewMemoryKey,
                     Value = value,
-                    Summary = review.Summary,
+                    Summary = storedSummary,
                     SourceType = sourceType,
                     Confidence = (double)confidence,
                     ConfirmationStatus = confirmationStatus,
@@ -562,7 +566,7 @@ public sealed class CareerOrchestratorService
         }
 
         entry.Value = value;
-        entry.Summary = review.Summary;
+        entry.Summary = storedSummary;
         entry.SourceType = sourceType;
         entry.Confidence = (double)confidence;
         entry.UpdatedAtUtc = nowUtc;

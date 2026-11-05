@@ -71,8 +71,7 @@ public sealed class ApplicationWorkflowService
         var companyOnlyMatch = FindCompanyOnlyMatch(sameCompanyApplications, role);
         if (companyOnlyMatch.Application is not null)
         {
-            BackfillApplicationIdentity(companyOnlyMatch.Application, company, role);
-            return companyOnlyMatch;
+            return companyOnlyMatch with { BackfillIdentity = true };
         }
 
         if (!allowAutoCreate)
@@ -112,9 +111,18 @@ public sealed class ApplicationWorkflowService
         DateTimeOffset activityAtUtc)
     {
         var resolvedStatus = ResolveStatus(application, recommendedStatus, category, activityAtUtc);
+        // Gmail backfills newest first, so activity and priority must keep following the newest email.
+        if (resolvedStatus != application.Status || activityAtUtc >= application.LastActivityAtUtc)
+        {
+            application.Priority = ResolvePriority(category);
+        }
+
         application.Status = resolvedStatus;
-        application.Priority = ResolvePriority(category);
-        application.LastActivityAtUtc = activityAtUtc;
+        if (activityAtUtc > application.LastActivityAtUtc)
+        {
+            application.LastActivityAtUtc = activityAtUtc;
+        }
+
         return resolvedStatus;
     }
 
@@ -346,7 +354,10 @@ public sealed class ApplicationWorkflowService
     {
         if (recommendedStatus is ApplicationStatus.Rejected or ApplicationStatus.Offer or ApplicationStatus.Closed)
         {
-            return recommendedStatus;
+            // An old rejection must not undo an interview a newer email established.
+            var isOlderThanProgress = activityAtUtc < application.LastActivityAtUtc &&
+                                      application.Status != ApplicationStatus.Applied;
+            return isOlderThanProgress ? application.Status : recommendedStatus;
         }
 
         if (category == EmailCategory.GenericUpdate)
@@ -561,7 +572,8 @@ public sealed class ApplicationWorkflowService
         return new ApplicationMatchResult(null, false, 0.35m, null);
     }
 
-    private static void BackfillApplicationIdentity(
+    // Called after review accepts the email, so a blocked email never changes the application.
+    public static void BackfillApplicationIdentity(
         JobApplication application,
         string parsedCompany,
         string parsedRole)

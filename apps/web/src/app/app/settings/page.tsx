@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import { AssistantAccessPanel } from "@/components/assistant-access-panel";
 import { ProfileSettingsPanel } from "@/components/profile-settings-panel";
 import { getAccessTokensForUser } from "@/lib/access-tokens-server";
@@ -7,11 +7,7 @@ import { isDemoSnapshot } from "@/lib/demo";
 import { getProfileForUser } from "@/lib/profile-server";
 
 export default async function SettingsPage() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const [{ profile, source: profileSource, proxyPrefix }, accessTokens] = await Promise.all([
     getProfileForUser(user),
     getAccessTokensForUser(user),

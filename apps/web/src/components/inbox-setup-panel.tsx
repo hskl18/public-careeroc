@@ -152,7 +152,7 @@ function getActionLabel(account: InboxAccountSetup) {
 function canUseSignedInEmail(emailAddress: string) {
   const trimmed = emailAddress.trim().toLowerCase();
 
-  return Boolean(trimmed) && trimmed.includes("@") && trimmed !== "local@careeroc.dev";
+  return Boolean(trimmed) && trimmed.includes("@");
 }
 
 function GmailTrustList() {
