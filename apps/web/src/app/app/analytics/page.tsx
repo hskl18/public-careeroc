@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import { getAnalyticsWithFiltersForUser } from "@/lib/analytics-server";
 import {
@@ -20,11 +20,7 @@ type AnalyticsPageProps = {
 export default async function AnalyticsPage({
   searchParams,
 }: AnalyticsPageProps) {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedRange = normalizeAnalyticsRange(resolvedSearchParams.range);
   const selectedProvider = normalizeAnalyticsProvider(

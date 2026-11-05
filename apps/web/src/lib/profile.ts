@@ -122,7 +122,7 @@ export type UpdateUserProfileRequest = {
 };
 
 export function buildFallbackProfile(user: CareerocApiUser): UserProfile {
-  const email = user.email.trim() || "local@careeroc.dev";
+  const email = user.email.trim();
   return {
     email,
     name: user.name?.trim() || email.split("@")[0] || "careeroc user",

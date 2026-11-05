@@ -357,6 +357,10 @@ public sealed class ManualReviewService
 
         inboxEmail.JobApplicationId = match.Application?.Id;
         inboxEmail.MatchingConfidence = match.MatchingConfidence;
+        if (match is { BackfillIdentity: true, Application: not null })
+        {
+            ApplicationWorkflowService.BackfillApplicationIdentity(match.Application, company, role);
+        }
 
         if (match.Application is null)
         {

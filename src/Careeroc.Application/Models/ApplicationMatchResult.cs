@@ -6,4 +6,5 @@ public sealed record ApplicationMatchResult(
     JobApplication? Application,
     bool Created,
     decimal MatchingConfidence,
-    string? ReviewReason);
+    string? ReviewReason,
+    bool BackfillIdentity = false);

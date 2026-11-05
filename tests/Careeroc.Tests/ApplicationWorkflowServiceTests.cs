@@ -78,6 +78,81 @@ public sealed class ApplicationWorkflowServiceTests
     }
 
     [Fact]
+    public void ApplyStatusAndPriority_AnOlderRejectionDoesNotUndoANewerInterview()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 20, 20, 0, 0, TimeSpan.Zero));
+        using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var service = new ApplicationWorkflowService(dbContext, clock);
+        var newestActivity = clock.UtcNow;
+        var application = new JobApplication
+        {
+            Company = "Kestrel AI",
+            Role = "Backend Engineer",
+            Source = "Email",
+            Status = ApplicationStatus.Interviewing,
+            Priority = 1,
+            CreatedAtUtc = clock.UtcNow.AddDays(-30),
+            LastActivityAtUtc = newestActivity
+        };
+
+        var resolvedStatus = service.ApplyStatusAndPriority(
+            application,
+            EmailCategory.Rejection,
+            ApplicationStatus.Rejected,
+            clock.UtcNow.AddDays(-10));
+
+        Assert.Equal(ApplicationStatus.Interviewing, resolvedStatus);
+        Assert.Equal(newestActivity, application.LastActivityAtUtc);
+        Assert.Equal(1, application.Priority);
+    }
+
+    [Fact]
+    public void ApplyStatusAndPriority_AnOlderOfferAppliesWhenNothingNewerShowedProgress()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 20, 20, 0, 0, TimeSpan.Zero));
+        using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var service = new ApplicationWorkflowService(dbContext, clock);
+        var application = new JobApplication
+        {
+            Company = "Kestrel AI",
+            Role = "Backend Engineer",
+            Source = "Email",
+            Status = ApplicationStatus.Applied,
+            CreatedAtUtc = clock.UtcNow.AddDays(-30),
+            LastActivityAtUtc = clock.UtcNow
+        };
+
+        var resolvedStatus = service.ApplyStatusAndPriority(
+            application,
+            EmailCategory.Offer,
+            ApplicationStatus.Offer,
+            clock.UtcNow.AddDays(-2));
+
+        Assert.Equal(ApplicationStatus.Offer, resolvedStatus);
+    }
+
+    [Fact]
+    public void ResumeMailboxContext_CreditsNoResumeForAnOutcomeThatCameBeforeIt()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 20, 20, 0, 0, TimeSpan.Zero));
+        using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var builder = new ResumeMailboxContextBuilder(dbContext, clock);
+        var application = new JobApplication
+        {
+            Company = "Kestrel AI",
+            Role = "Backend Engineer",
+            Source = "Email",
+            Status = ApplicationStatus.Interviewing,
+            LastActivityAtUtc = clock.UtcNow.AddDays(-10)
+        };
+        var uploadedLater = new ResumeVersion { CreatedAtUtc = clock.UtcNow.AddDays(-1) };
+
+        var context = builder.Build([application], [uploadedLater], []);
+
+        Assert.Null(context.ResumeVersionLikelyUsedBeforePositiveOutcomes);
+    }
+
+    [Fact]
     public async Task MatchOrCreateApplicationAsync_MatchesCompanyLegalSuffixVariants()
     {
         var databaseName = Guid.NewGuid().ToString("N");

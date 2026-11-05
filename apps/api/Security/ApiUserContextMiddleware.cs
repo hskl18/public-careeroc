@@ -25,11 +25,17 @@ internal sealed class ApiUserContextMiddleware
 
     public async Task InvokeAsync(
         HttpContext context,
-        ConfiguredUserAccess configuredUserAccess)
+        ConfiguredUserAccess configuredUserAccess,
+        FailedAuthThrottle failedAuthThrottle)
     {
         if (!RequiresAuthenticatedUserContext(context.Request))
         {
             await _next(context);
+            return;
+        }
+
+        if (await failedAuthThrottle.RejectIfExhaustedAsync(context))
+        {
             return;
         }
 
@@ -41,6 +47,7 @@ internal sealed class ApiUserContextMiddleware
         if (!validation.IsValid)
         {
             _securityEventLogger.LogRequestSignatureRejected(context, validation.Error);
+            failedAuthThrottle.RecordFailure(context);
 
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsJsonAsync(new { error = validation.Error });

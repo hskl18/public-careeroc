@@ -488,6 +488,29 @@ public sealed class ApiRoutingSecurityTests
     }
 
     [Fact]
+    public async Task RepeatedInvalidCredentialsAreThrottledBeforeAnyLookup()
+    {
+        await using var factory = new CareerocApiFactory();
+        using var client = factory.CreateClient();
+
+        async Task<HttpStatusCode> SendBadTokenAsync()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "coc_not-a-real-token");
+            return (await client.SendAsync(request)).StatusCode;
+        }
+
+        // The options are read before the test host applies its overrides, so this is the default limit.
+        const int limit = 30;
+        for (var attempt = 0; attempt < limit; attempt++)
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, await SendBadTokenAsync());
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await SendBadTokenAsync());
+    }
+
+    [Fact]
     public async Task AgentRoutesRejectRequestsWithoutAValidAccessToken()
     {
         await using var factory = new CareerocApiFactory();

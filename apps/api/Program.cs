@@ -52,6 +52,7 @@ if (useForwardedHeaders)
 var apiRateLimitOptions =
     (builder.Configuration.GetSection(ApiRateLimitOptions.SectionName).Get<ApiRateLimitOptions>() ?? new ApiRateLimitOptions())
     .Normalize();
+builder.Services.AddSingleton(new FailedAuthThrottle(apiRateLimitOptions));
 builder.Services.AddRateLimiter(
     options =>
     {

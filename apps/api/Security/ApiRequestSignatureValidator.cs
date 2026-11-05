@@ -70,12 +70,8 @@ internal static class ApiRequestSignatureValidator
         }
 
         var normalizedName = NormalizeName(request.Headers[UserNameHeader]);
-        var actualBodyHash = await ComputeRequestBodyHashAsync(request, cancellationToken);
-        if (!HasMatchingBodyHash(actualBodyHash, bodyHash))
-        {
-            return ApiRequestSignatureValidationResult.Invalid("The API request body hash is invalid.");
-        }
-
+        // Check the signature over the claimed hash first, so an unsigned caller cannot make the
+        // API buffer a large body.
         var expectedSignature = ComputeSignature(
             secret,
             request.Method,
@@ -88,6 +84,12 @@ internal static class ApiRequestSignatureValidator
         if (!HasMatchingSignature(expectedSignature, signature))
         {
             return ApiRequestSignatureValidationResult.Invalid("The API request signature is invalid.");
+        }
+
+        var actualBodyHash = await ComputeRequestBodyHashAsync(request, cancellationToken);
+        if (!HasMatchingBodyHash(actualBodyHash, bodyHash))
+        {
+            return ApiRequestSignatureValidationResult.Invalid("The API request body hash is invalid.");
         }
 
         return ApiRequestSignatureValidationResult.Valid(

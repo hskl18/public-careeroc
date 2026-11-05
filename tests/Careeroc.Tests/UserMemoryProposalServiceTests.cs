@@ -131,6 +131,41 @@ public sealed class UserMemoryProposalServiceTests
     }
 
     [Fact]
+    public async Task ResolveProposalAsync_RefusesADecisionOnContentChangedSinceItWasRead()
+    {
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        dbContext.Users.Add(
+            new User
+            {
+                Email = ApplicationDefaults.DefaultUserEmail,
+                Name = ApplicationDefaults.DefaultUserName
+            });
+        await dbContext.SaveChangesAsync();
+        var firstReviewAt = new DateTimeOffset(2026, 7, 13, 12, 0, 0, TimeSpan.Zero);
+        var source = Guid.NewGuid();
+        var read = await new UserMemoryProposalService(dbContext, new TestClock(firstReviewAt)).ProposeMemoryAsync(
+            new ProposeUserMemoryRequest("preference", "target_stack", "first", "first", "resume_agent", source, 0.72, null),
+            ApplicationDefaults.DefaultUserEmail);
+        var service = new UserMemoryProposalService(dbContext, new TestClock(firstReviewAt.AddMinutes(5)));
+        var changed = await service.ProposeMemoryAsync(
+            new ProposeUserMemoryRequest("preference", "target_stack", "second", "second", "resume_agent", source, 0.72, null),
+            ApplicationDefaults.DefaultUserEmail);
+        Assert.Equal(read.Id, changed.Id);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.ResolveProposalAsync(
+                read.Id,
+                new ResolveUserMemoryProposalRequest("confirm", read.UpdatedAtUtc),
+                ApplicationDefaults.DefaultUserEmail));
+
+        var resolved = await service.ResolveProposalAsync(
+            read.Id,
+            new ResolveUserMemoryProposalRequest("confirm", changed.UpdatedAtUtc),
+            ApplicationDefaults.DefaultUserEmail);
+        Assert.Equal("second", resolved!.Value);
+    }
+
+    [Fact]
     public async Task ResolveProposalAsync_ConfirmPromotesProposalIntoAgentContext()
     {
         var databaseName = Guid.NewGuid().ToString("N");

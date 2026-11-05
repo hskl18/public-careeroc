@@ -21,7 +21,8 @@ internal sealed class PersonalAccessTokenMiddleware
     public async Task InvokeAsync(
         HttpContext context,
         PersonalAccessTokenService tokenService,
-        ConfiguredUserAccess configuredUserAccess)
+        ConfiguredUserAccess configuredUserAccess,
+        FailedAuthThrottle failedAuthThrottle)
     {
         // Assistants call these routes directly, never from a web page, so any browser Origin is
         // rejected; MCP requires servers to validate Origin against DNS rebinding.
@@ -32,12 +33,18 @@ internal sealed class PersonalAccessTokenMiddleware
             return;
         }
 
+        if (await failedAuthThrottle.RejectIfExhaustedAsync(context))
+        {
+            return;
+        }
+
         var header = context.Request.Headers.Authorization.ToString();
         var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : null;
         var identity = await tokenService.AuthenticateAsync(token, context.RequestAborted);
         // A token outlives allowlist changes, so access is rechecked on every call.
         if (identity is null || !configuredUserAccess.IsAllowed(identity.Email))
         {
+            failedAuthThrottle.RecordFailure(context);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.Headers.WWWAuthenticate = "Bearer realm=\"careeroc\"";
             await context.Response.WriteAsJsonAsync(new { error = "A valid careeroc personal access token is required." });

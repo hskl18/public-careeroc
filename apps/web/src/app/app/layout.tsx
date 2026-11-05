@@ -12,6 +12,7 @@ import { UserMenu } from "@/components/user-menu";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { getDashboardForUser } from "@/lib/dashboard-server";
 import { isDemoSnapshot } from "@/lib/demo";
+import { requireUser } from "@/lib/require-user";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
 import { getProfileForUser } from "@/lib/profile-server";
 
@@ -46,10 +47,7 @@ export default async function AppLayout({
     redirect("/?next=/app");
   }
 
-  const user = {
-    email: session.user.email?.trim() || "local@careeroc.dev",
-    name: session.user.name?.trim() || null,
-  };
+  const user = await requireUser();
   const displayName = user.name || "careeroc user";
   const displayEmail = user.email || "Google account";
   const [

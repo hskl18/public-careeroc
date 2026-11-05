@@ -13,7 +13,7 @@ public sealed class UserMemoryEntryConfiguration : IEntityTypeConfiguration<User
         builder.Property(entry => entry.Kind).HasMaxLength(80).IsRequired();
         builder.Property(entry => entry.Key).HasMaxLength(160).IsRequired();
         builder.Property(entry => entry.Value).HasMaxLength(UserMemoryEntry.MaxStoredValueLength).IsRequired();
-        builder.Property(entry => entry.Summary).HasMaxLength(1000);
+        builder.Property(entry => entry.Summary).HasMaxLength(UserMemoryEntry.MaxSummaryLength);
         builder.Property(entry => entry.SourceType).HasMaxLength(80).IsRequired();
         builder.Property(entry => entry.ConfirmationStatus).HasMaxLength(40).IsRequired();
         builder.Property(entry => entry.Confidence).IsRequired();

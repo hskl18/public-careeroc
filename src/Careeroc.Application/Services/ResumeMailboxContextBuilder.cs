@@ -124,9 +124,12 @@ public sealed class ResumeMailboxContextBuilder
         foreach (var outcome in positiveOutcomeApplications)
         {
             var candidate = resumeVersions
-                .LastOrDefault(version => version.CreatedAtUtc <= outcome.LastActivityAtUtc) ??
-                            resumeVersions.First();
-            candidateCounts[candidate.Id] = candidateCounts.GetValueOrDefault(candidate.Id) + 1;
+                .LastOrDefault(version => version.CreatedAtUtc <= outcome.LastActivityAtUtc);
+            // A resume uploaded after the outcome cannot have earned it.
+            if (candidate is not null)
+            {
+                candidateCounts[candidate.Id] = candidateCounts.GetValueOrDefault(candidate.Id) + 1;
+            }
         }
 
         return candidateCounts

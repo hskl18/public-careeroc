@@ -1,4 +1,5 @@
-import { auth, isDemoMode } from "@/auth";
+import { isDemoMode } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { getDashboardForUser } from "@/lib/dashboard-server";
@@ -21,11 +22,7 @@ const RecruitingContactHistoryPanel = dynamic(() =>
 );
 
 export default async function InboxPage() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const [
     { dashboard, source: dashboardSource },
     { setup, source: inboxSetupSource, proxyPrefix },

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import { getApplicationDetailForUser } from "@/lib/application-detail-server";
 import { getProfileForUser } from "@/lib/profile-server";
@@ -18,11 +18,7 @@ type ApplicationDetailPageProps = {
 export default async function ApplicationDetailPage({
   params,
 }: ApplicationDetailPageProps) {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const { applicationId } = await params;
   const [{ detail, source, proxyPrefix }, { profile }] = await Promise.all([
     getApplicationDetailForUser(user, applicationId),

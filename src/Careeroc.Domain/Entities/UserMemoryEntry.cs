@@ -4,6 +4,7 @@ public sealed class UserMemoryEntry
 {
     // User-entered values are capped at 2000 characters by the application; system reviews with traces need more room.
     public const int MaxStoredValueLength = 32000;
+    public const int MaxSummaryLength = 1000;
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }

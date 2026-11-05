@@ -1198,6 +1198,8 @@ export interface components {
         };
         ResolveUserMemoryProposalRequest: {
             action?: string | null;
+            /** Format: date-time */
+            expectedUpdatedAtUtc?: string | null;
         };
         ResumeContactDto: {
             name?: string | null;

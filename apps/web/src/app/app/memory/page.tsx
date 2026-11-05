@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
 import { getMemoryReviewForUser } from "@/lib/profile-server";
 
@@ -10,11 +10,7 @@ const ProfileMemoryPanel = dynamic(() =>
 );
 
 export default async function MemoryPage() {
-  const session = await auth();
-  const user = {
-    email: session?.user?.email?.trim() || "local@careeroc.dev",
-    name: session?.user?.name?.trim() || null,
-  };
+  const user = await requireUser();
   const { profile, pendingMemory, source: profileSource, proxyPrefix } =
     await getMemoryReviewForUser(user);
   const displayName = profile.name || user.name || "careeroc user";

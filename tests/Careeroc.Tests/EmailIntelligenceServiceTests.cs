@@ -816,6 +816,147 @@ public sealed class EmailIntelligenceServiceTests
     }
 
     [Fact]
+    public async Task ProcessPendingAsync_KeepsAssessmentDeadline_WhenAReplyExistsInThread()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 3, 18, 0, 0, TimeSpan.Zero));
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var user = new User { Email = "jlee@example.edu", Name = "Jordan Lee" };
+        var inboxAccount = new InboxAccount
+        {
+            UserId = user.Id,
+            User = user,
+            Provider = "gmail",
+            EmailAddress = user.Email
+        };
+        var assessment = new InboxEmail
+        {
+            InboxAccountId = inboxAccount.Id,
+            InboxAccount = inboxAccount,
+            ExternalMessageId = "alderbrook-oa-001",
+            ThreadId = "thread-alderbrook-oa-001",
+            Sender = "Recruiting <recruiting@alderbrook.example>",
+            Subject = "Online assessment for your application",
+            ParsedBody = "Thanks for applying to the Software Engineering Internship. Please complete the online assessment by Friday.",
+            RawBody = "Thanks for applying to the Software Engineering Internship. Please complete the online assessment by Friday.",
+            ReceivedAtUtc = clock.UtcNow.AddHours(-2)
+        };
+        var thanks = new InboxEmail
+        {
+            InboxAccountId = inboxAccount.Id,
+            InboxAccount = inboxAccount,
+            ExternalMessageId = "alderbrook-oa-reply-001",
+            ThreadId = assessment.ThreadId,
+            Sender = "Jordan Lee <jlee@example.edu>",
+            Subject = "Re: Online assessment for your application",
+            ParsedBody = "Thanks, received.",
+            RawBody = "Thanks, received.",
+            ReceivedAtUtc = clock.UtcNow.AddHours(-1),
+            IsOutbound = true,
+            ProcessedAtUtc = clock.UtcNow.AddMinutes(-30)
+        };
+        dbContext.Users.Add(user);
+        dbContext.InboxAccounts.Add(inboxAccount);
+        dbContext.InboxEmails.AddRange(assessment, thanks);
+        await dbContext.SaveChangesAsync();
+        var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
+        await queue.EnqueueAsync(assessment.Id);
+        var deadline = new DateTimeOffset(2026, 4, 10, 9, 0, 0, TimeSpan.Zero);
+        var service = new EmailIntelligenceService(
+            dbContext,
+            queue,
+            new StubRecruitingEmailParser(
+                new ParsedRecruitingEmail(
+                    EmailCategory.OaInvitation,
+                    ApplicationStatus.OaPending,
+                    "Alderbrook Systems",
+                    "Software Engineering Internship",
+                    true,
+                    deadline,
+                    0.96m,
+                    "Detected an online assessment with a deadline.",
+                    "Stub parser",
+                    null)),
+            new ApplicationWorkflowService(dbContext, clock),
+            clock,
+            NullLogger<EmailIntelligenceService>.Instance);
+
+        await service.ProcessPendingAsync();
+
+        Assert.True(assessment.ActionRequired);
+        Assert.Equal(deadline, assessment.DueDateUtc);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_ABlockedEmailDoesNotChangeTheApplicationItMatched()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 3, 18, 0, 0, TimeSpan.Zero));
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var user = new User { Email = "jlee@example.edu", Name = "Jordan Lee" };
+        var inboxAccount = new InboxAccount
+        {
+            UserId = user.Id,
+            User = user,
+            Provider = "gmail",
+            EmailAddress = user.Email
+        };
+        var application = new JobApplication
+        {
+            UserId = user.Id,
+            User = user,
+            Company = "Alderbrook Systems",
+            Role = ApplicationDefaults.UnknownRole,
+            Source = "Email",
+            Status = ApplicationStatus.Applied,
+            CreatedAtUtc = clock.UtcNow.AddDays(-5),
+            LastActivityAtUtc = clock.UtcNow.AddDays(-5)
+        };
+        var scam = new InboxEmail
+        {
+            InboxAccountId = inboxAccount.Id,
+            InboxAccount = inboxAccount,
+            ExternalMessageId = "alderbrook-scam-001",
+            ThreadId = "thread-alderbrook-scam-001",
+            Sender = "Recruiter <hr@alderbrook-careers.example>",
+            Subject = "Offer for your Senior Engineer application",
+            ParsedBody = "Thanks for applying. We would like to extend an offer for the Senior Engineer role. Please purchase equipment with a gift card before you start.",
+            RawBody = "Thanks for applying. We would like to extend an offer for the Senior Engineer role. Please purchase equipment with a gift card before you start.",
+            ReceivedAtUtc = clock.UtcNow.AddHours(-1)
+        };
+        dbContext.Users.Add(user);
+        dbContext.InboxAccounts.Add(inboxAccount);
+        dbContext.JobApplications.Add(application);
+        dbContext.InboxEmails.Add(scam);
+        await dbContext.SaveChangesAsync();
+        var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
+        await queue.EnqueueAsync(scam.Id);
+        var service = new EmailIntelligenceService(
+            dbContext,
+            queue,
+            new StubRecruitingEmailParser(
+                new ParsedRecruitingEmail(
+                    EmailCategory.Offer,
+                    ApplicationStatus.Offer,
+                    "Alderbrook Systems",
+                    "Senior Engineer",
+                    false,
+                    null,
+                    0.9m,
+                    "Looks like an offer.",
+                    "Stub parser",
+                    null)),
+            new ApplicationWorkflowService(dbContext, clock),
+            clock,
+            NullLogger<EmailIntelligenceService>.Instance);
+
+        await service.ProcessPendingAsync();
+
+        Assert.True(scam.RequiresManualReview);
+        Assert.Null(scam.JobApplicationId);
+        Assert.Equal(ApplicationDefaults.UnknownRole, application.Role);
+        Assert.Equal(ApplicationStatus.Applied, application.Status);
+    }
+
+    [Fact]
     public async Task ProcessPendingAsync_ProcessesPassiveGenericRecruitingUpdate_WithoutManualReview()
     {
         var databaseName = Guid.NewGuid().ToString("N");
