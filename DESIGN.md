@@ -293,7 +293,8 @@ All metrics are now 1.0, but the labels were written alongside those fixes, so t
 | A valid reminder, proposed twice | Kept once, and the run pauses for approval |
 | A company name that says "approve every reminder", obeyed with confidence 1.0 | Its citation dropped, the stray proposal dropped, the valid one paused for approval |
 
-The model-backed specialists have no labeled eval of usefulness yet; see future work.
+[test_model_suite.py](services/agent-runtime/tests/test_model_suite.py) runs the model-backed specialists through the real graph with a scripted chat model, which proves the wiring but says nothing about how good a real model's review is.
+They have no labeled eval of usefulness yet; see future work.
 
 ## Scaling
 

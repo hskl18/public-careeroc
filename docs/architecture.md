@@ -54,11 +54,9 @@ Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate
    - follow-up planning: the reminder, if action is required
 6. The workflow service writes the status transition, an event, reminders, and contact links.
    An offer closes open interview and assessment reminders and asks the user to review the offer; a rejection or closure closes every open reminder.
-7. Supported attachments (PDF, PNG, JPEG, WebP) are imported as evidence cards only after the email is linked to an application; raw bytes are never stored.
-8. Query services shape the result for each page.
+7. Query services shape the result for each page.
 
 Every step is a narrow, typed decision, not a free-form agent, so a wrong result can be traced to one stage.
-The specs for each agent are in [agents/](agents/README.md).
 
 ### Rules that protect the pipeline
 
