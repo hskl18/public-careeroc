@@ -27,7 +27,6 @@ public sealed class CareerocDbContext : DbContext, ICareerocDbContext
     public DbSet<ResumeDocument> ResumeDocuments => Set<ResumeDocument>();
     public DbSet<ResumeVersion> ResumeVersions => Set<ResumeVersion>();
     public DbSet<ResumeEvaluation> ResumeEvaluations => Set<ResumeEvaluation>();
-    public DbSet<ResumeCorrection> ResumeCorrections => Set<ResumeCorrection>();
     public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

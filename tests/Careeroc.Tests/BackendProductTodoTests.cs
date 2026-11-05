@@ -172,27 +172,6 @@ public sealed class BackendProductTodoTests
         Assert.Contains(fit.Strengths, strength => strength.Contains("typescript", StringComparison.OrdinalIgnoreCase));
     }
 
-    [Fact]
-    public async Task ResumeSuggestionService_AcceptCreatesNewVersionAndCorrection()
-    {
-        var databaseName = Guid.NewGuid().ToString("N");
-        await using var dbContext = TestDbContextFactory.Create(databaseName);
-        var user = SeedUser(dbContext);
-        var document = SeedResume(user, "Contact: Not detected");
-        dbContext.ResumeDocuments.Add(document);
-        await dbContext.SaveChangesAsync();
-
-        var service = new ResumeSuggestionService(dbContext, Clock);
-        var suggestions = await service.GetSuggestionsAsync(document.Id, user.Email);
-        var suggestion = Assert.Single(suggestions!);
-
-        var accepted = await service.AcceptSuggestionAsync(document.Id, suggestion.Id, user.Email);
-
-        Assert.True(accepted);
-        Assert.Equal(2, dbContext.ResumeVersions.Count(version => version.ResumeDocumentId == document.Id));
-        Assert.Single(dbContext.ResumeCorrections);
-    }
-
     private static User SeedUser(Careeroc.Infrastructure.Persistence.CareerocDbContext dbContext)
     {
         var user = new User

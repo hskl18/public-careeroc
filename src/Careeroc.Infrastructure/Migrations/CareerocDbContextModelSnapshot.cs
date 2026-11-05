@@ -886,52 +886,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.ToTable("reminders", (string)null);
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.ResumeCorrection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CorrectedValue")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("corrected_value");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("FieldPath")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)")
-                        .HasColumnName("field_path");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("note");
-
-                    b.Property<string>("PreviousValue")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("previous_value");
-
-                    b.Property<Guid>("ResumeVersionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("resume_version_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_resume_corrections");
-
-                    b.HasIndex("ResumeVersionId", "CreatedAtUtc")
-                        .HasDatabaseName("ix_resume_corrections_resume_version_id_created_at_utc");
-
-                    b.ToTable("resume_corrections", (string)null);
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1062,11 +1016,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
-
-                    b.Property<string>("EvaluationRunId")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("evaluation_run_id");
 
                     b.Property<int>("ExperienceCount")
                         .HasColumnType("integer")
@@ -1462,18 +1411,6 @@ namespace Careeroc.Infrastructure.Migrations
                     b.Navigation("JobApplication");
                 });
 
-            modelBuilder.Entity("Careeroc.Domain.Entities.ResumeCorrection", b =>
-                {
-                    b.HasOne("Careeroc.Domain.Entities.ResumeVersion", "ResumeVersion")
-                        .WithMany("Corrections")
-                        .HasForeignKey("ResumeVersionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_resume_corrections_resume_versions_resume_version_id");
-
-                    b.Navigation("ResumeVersion");
-                });
-
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeDocument", b =>
                 {
                     b.HasOne("Careeroc.Domain.Entities.User", "User")
@@ -1565,8 +1502,6 @@ namespace Careeroc.Infrastructure.Migrations
 
             modelBuilder.Entity("Careeroc.Domain.Entities.ResumeVersion", b =>
                 {
-                    b.Navigation("Corrections");
-
                     b.Navigation("Evaluation");
                 });
 

@@ -336,7 +336,7 @@ public sealed class UserProfileService
         else
         {
             gaps.Add("No resume has been imported yet.");
-            nextActions.Add("Upload or paste a resume so evaluation can compare it with mailbox outcomes.");
+            nextActions.Add("Paste a resume so evaluation can compare it with mailbox outcomes.");
         }
 
         if (interviewingApplications > 0 || offers > 0)

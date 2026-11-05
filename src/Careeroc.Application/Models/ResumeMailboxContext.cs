@@ -1,26 +1,5 @@
 namespace Careeroc.Application.Models;
 
-public sealed record ResumeModelEvaluationRequest(
-    string SourceText,
-    string Summary,
-    IReadOnlyList<string> Skills,
-    IReadOnlyList<string> ProjectHighlights,
-    int ExperienceCount,
-    int ProjectCount,
-    bool HasEducation,
-    bool HasContact,
-    bool HasLinks,
-    string? TargetRole,
-    int ApplicationCount,
-    int InterviewOrOfferCount,
-    IReadOnlyList<ResumeModelCorrection> Corrections,
-    ResumeMailboxContext? MailboxContext = null);
-
-public sealed record ResumeModelCorrection(
-    string FieldPath,
-    string CorrectedValue,
-    string? Note);
-
 public sealed record ResumeMailboxContext(
     IReadOnlyList<string> TopTargetRoles,
     IReadOnlyList<string> CompaniesWithPositiveOutcomes,

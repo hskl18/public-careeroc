@@ -9,75 +9,18 @@ using Careeroc.Contracts.Resumes;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using UglyToad.PdfPig;
 
 namespace Careeroc.Application.Services;
 
 public sealed partial class ResumeIntelligenceService
 {
-    private async Task<Dictionary<string, ResumeModelRunDto>> LoadLatestResumeModelRunsAsync(
-        IReadOnlyList<ResumeDocument> documents,
-        CancellationToken cancellationToken)
-    {
-        var runIds = documents
-            .Select(document => document.Versions.OrderByDescending(version => version.CreatedAtUtc).FirstOrDefault()?.EvaluationRunId)
-            .Where(runId => !string.IsNullOrWhiteSpace(runId))
-            .Cast<string>()
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        if (runIds.Count == 0)
-        {
-            return [];
-        }
-
-        var modelCalls = await _dbContext.ModelCallEvents
-            .AsNoTracking()
-            .Where(candidate => candidate.RunId != null &&
-                                runIds.Contains(candidate.RunId) &&
-                                candidate.Purpose == "resume_evaluation")
-            .OrderByDescending(candidate => candidate.OccurredAtUtc)
-            .ToListAsync(cancellationToken);
-
-        return modelCalls
-            .GroupBy(modelCall => modelCall.RunId!, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                group => group.Key,
-                group =>
-                {
-                    var modelCall = group.First();
-                    return new ResumeModelRunDto(
-                        group.Key,
-                        modelCall.Purpose,
-                        modelCall.Provider,
-                        modelCall.Model,
-                        modelCall.Outcome,
-                        modelCall.PromptTokens,
-                        modelCall.CompletionTokens,
-                        modelCall.TotalTokens,
-                        modelCall.EstimatedCostUsd,
-                        modelCall.LatencyMs,
-                        modelCall.OccurredAtUtc,
-                        modelCall.ErrorType,
-                        modelCall.StatusCode);
-                },
-                StringComparer.OrdinalIgnoreCase);
-    }
-
     private static ResumeDocumentDto MapDocument(
         ResumeDocument document,
-        IReadOnlyDictionary<string, ResumeModelRunDto> modelRuns,
         IReadOnlyList<UserMemoryEntryDto>? memoryProposals = null)
     {
         var latestVersion = document.Versions
             .OrderByDescending(version => version.CreatedAtUtc)
             .FirstOrDefault();
-        var modelRun = latestVersion?.EvaluationRunId is { Length: > 0 } runId &&
-                       modelRuns.TryGetValue(runId, out var matchedModelRun)
-            ? matchedModelRun
-            : latestVersion?.EvaluationRunId is { Length: > 0 } missingRunId
-                ? new ResumeModelRunDto(missingRunId, "resume_evaluation", null, null, "not_recorded", null, null, null, null, null, null, null, null)
-                : null;
-
         return new ResumeDocumentDto(
             document.Id,
             document.Title,
@@ -87,7 +30,7 @@ public sealed partial class ResumeIntelligenceService
             document.CreatedAtUtc,
             document.UpdatedAtUtc,
             latestVersion is null ? null : MapVersion(document, latestVersion),
-            latestVersion?.Evaluation is null ? null : MapEvaluation(latestVersion.Evaluation, modelRun),
+            latestVersion?.Evaluation is null ? null : MapEvaluation(latestVersion.Evaluation),
             memoryProposals);
     }
 
@@ -174,28 +117,10 @@ public sealed partial class ResumeIntelligenceService
             DeserializeExtractionMetadata(version.ExtractionMetadataJson),
             Math.Max(version.ExperienceCount, structuredData.Experience.Count),
             Math.Max(version.ProjectCount, structuredData.Projects.Count),
-            version.CreatedAtUtc,
-            version.Corrections
-                .OrderByDescending(correction => correction.CreatedAtUtc)
-                .Select(MapCorrection)
-                .ToList());
+            version.CreatedAtUtc);
     }
 
-    private static ResumeCorrectionDto MapCorrection(ResumeCorrection correction)
-    {
-        return new ResumeCorrectionDto(
-            correction.Id,
-            correction.ResumeVersionId,
-            correction.FieldPath,
-            correction.PreviousValue,
-            correction.CorrectedValue,
-            correction.Note,
-            correction.CreatedAtUtc);
-    }
-
-    private static ResumeEvaluationDto MapEvaluation(
-        ResumeEvaluation evaluation,
-        ResumeModelRunDto? modelRun)
+    private static ResumeEvaluationDto MapEvaluation(ResumeEvaluation evaluation)
     {
         var evidence = JsonSerializer.Deserialize<ResumeEvaluationEvidenceDto>(
             evaluation.EvidenceJson,
@@ -214,7 +139,6 @@ public sealed partial class ResumeIntelligenceService
             DeserializeList(evaluation.NextActionsJson),
             DeserializeSectionReviews(evaluation.SectionReviewsJson),
             evidence,
-            modelRun,
             evaluation.CreatedAtUtc);
     }
 

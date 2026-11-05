@@ -8,95 +8,11 @@ using Careeroc.Contracts.Resumes;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using UglyToad.PdfPig;
 
 namespace Careeroc.Application.Services;
 
 public sealed partial class ResumeIntelligenceService
 {
-    private async Task<ResumeVersion?> LoadOwnedVersionAsync(
-        Guid resumeVersionId,
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        return await _dbContext.ResumeVersions
-            .Include(candidate => candidate.ResumeDocument)
-            .Include(candidate => candidate.Corrections)
-            .Include(candidate => candidate.Evaluation)
-            .Where(candidate =>
-                candidate.Id == resumeVersionId &&
-                candidate.ResumeDocument.UserId == userId)
-            .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    private async Task ReevaluateVersionAsync(
-        ResumeVersion version,
-        User user,
-        DateTimeOffset nowUtc,
-        string extractionMethod,
-        CancellationToken cancellationToken)
-    {
-        var structuredData = DeserializeStructuredData(version.StructuredDataJson);
-        var extraction = BuildExtractionFromVersion(version, structuredData);
-        var context = await LoadEvaluationContextAsync(user.Id, cancellationToken);
-        var runId = Guid.NewGuid();
-        var modelEnhanced = await EvaluateResumeWithModelAsync(
-            version.ResumeDocument.SourceText,
-            extraction,
-            context,
-            version.Corrections,
-            user.Email,
-            runId,
-            cancellationToken);
-        extraction = modelEnhanced.Extraction;
-        var evaluationResult = modelEnhanced.Evaluation;
-        var nextStructuredData = modelEnhanced.StructuredData ??
-                                 BuildStructuredData(
-                                     version.ResumeDocument.SourceText,
-                                     extraction.Skills,
-                                     extraction.ProjectHighlights);
-        nextStructuredData = MergeStructuredSnapshot(structuredData, nextStructuredData);
-        ApplyStructuredSnapshotToVersion(
-            version,
-            nextStructuredData,
-            nowUtc,
-            extractionMethod,
-            modelEnhanced.StructuredData is null
-                ? ResumePromptVersions.DeterministicExtraction
-                : modelEnhanced.PromptVersion);
-        version.Summary = extraction.Summary;
-        version.EvaluationRunId = runId.ToString("N");
-        version.ResumeDocument.UpdatedAtUtc = nowUtc;
-
-        if (version.Evaluation is null)
-        {
-            version.Evaluation = new ResumeEvaluation
-            {
-                ResumeVersionId = version.Id,
-                ResumeVersion = version
-            };
-            _dbContext.ResumeEvaluations.Add(version.Evaluation);
-        }
-
-        version.Evaluation.Score = evaluationResult.Score;
-        version.Evaluation.Headline = evaluationResult.Headline;
-        version.Evaluation.Verdict = evaluationResult.Verdict;
-        version.Evaluation.StrengthsJson = SerializeList(evaluationResult.Strengths);
-        version.Evaluation.GapsJson = SerializeList(evaluationResult.Gaps);
-        version.Evaluation.NextActionsJson = SerializeList(evaluationResult.NextActions);
-        version.Evaluation.SectionReviewsJson = JsonSerializer.Serialize(evaluationResult.SectionReviews, JsonOptions);
-        version.Evaluation.EvidenceJson = JsonSerializer.Serialize(evaluationResult.Evidence, JsonOptions);
-        version.Evaluation.CreatedAtUtc = nowUtc;
-        await UpsertResumeEvaluationMemoryAsync(
-            user.Id,
-            version.ResumeDocument.Title,
-            version.Evaluation.Id,
-            extraction,
-            evaluationResult,
-            nowUtc,
-            cancellationToken);
-    }
-
     private async Task UpsertResumeEvaluationMemoryAsync(
         Guid userId,
         string resumeTitle,
@@ -206,8 +122,7 @@ public sealed partial class ResumeIntelligenceService
             userContext.TargetRole,
             userContext.Location,
             applicationStats?.Total ?? 0,
-            applicationStats?.InterviewOrOffer ?? 0,
-            mailboxSnapshot.Context);
+            applicationStats?.InterviewOrOffer ?? 0);
     }
 
     private static string ResolveUserName(string userEmail)

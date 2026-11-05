@@ -202,7 +202,6 @@ public sealed class ApiRoutingSecurityTests
             "GET /api/profile/memory/proposals",
             "GET /api/recruiting-contacts",
             "GET /api/resumes",
-            "GET /api/resumes/{resumeDocumentId:guid}/suggestions",
             "GET /api/review",
             "PATCH /api/applications/{jobApplicationId:guid}/correction",
             "PATCH /api/applications/{jobApplicationId:guid}/status",
@@ -214,7 +213,6 @@ public sealed class ApiRoutingSecurityTests
             "PATCH /api/recruiting-contacts/{contactId:guid}",
             "PATCH /api/reminders/{reminderId:guid}/snooze",
             "PATCH /api/reminders/{reminderId:guid}/status",
-            "PATCH /api/resumes/versions/{resumeVersionId:guid}/structured-data",
             "POST /api/dashboard/inbox-check",
             "POST /api/inbox-accounts/sync-now",
             "POST /api/inbox-accounts/gmail",
@@ -222,13 +220,7 @@ public sealed class ApiRoutingSecurityTests
             "POST /api/profile/access-tokens",
             "POST /api/profile/welcome-dismissed",
             "POST /api/reminders/{reminderId:guid}/evidence-refresh",
-            "POST /api/resumes/import",
-            "POST /api/resumes",
-            "POST /api/resumes/{resumeDocumentId:guid}/reextract",
-            "POST /api/resumes/{resumeDocumentId:guid}/suggestions/{suggestionId:guid}/accept",
-            "POST /api/resumes/{resumeDocumentId:guid}/suggestions/{suggestionId:guid}/decline",
-            "POST /api/resumes/versions/{resumeVersionId:guid}/analyze",
-            "POST /api/resumes/versions/{resumeVersionId:guid}/corrections"
+            "POST /api/resumes"
         };
 
         Assert.Empty(apiRoutes.Except(coveredRoutes));

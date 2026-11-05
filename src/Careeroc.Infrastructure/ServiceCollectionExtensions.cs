@@ -5,7 +5,6 @@ using Careeroc.Infrastructure.Demo;
 using Careeroc.Infrastructure.Email;
 using Careeroc.Infrastructure.Google;
 using Careeroc.Infrastructure.Persistence;
-using Careeroc.Infrastructure.Resume;
 using Careeroc.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -111,10 +110,6 @@ public static class ServiceCollectionExtensions
             .AddHttpMessageHandler<OllamaHttpResilienceHandler>();
         services.AddHttpClient<OllamaReviewEvidenceModel>(ConfigureOllamaHttpClient)
             .AddHttpMessageHandler<OllamaHttpResilienceHandler>();
-        services.AddHttpClient<OllamaResumeEvaluationModel>(ConfigureOllamaHttpClient)
-            .AddHttpMessageHandler<OllamaHttpResilienceHandler>();
-        services.AddHttpClient<OllamaResumeVisionTextExtractor>(ConfigureOllamaHttpClient)
-            .AddHttpMessageHandler<OllamaHttpResilienceHandler>();
         services.AddScoped<DemoInboxEmailSource>();
         services.AddScoped<IInboxEmailSource, ConfiguredInboxEmailSource>();
         services.AddSingleton<IInboxAccountTokenProtector, ConfiguredInboxAccountTokenProtector>();
@@ -126,8 +121,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IExplicitDueDateExtractor, HeuristicDueDateExtractor>();
         services.AddScoped<IRecruitingEmailParser, OllamaRecruitingEmailParser>();
         services.AddScoped<IReviewEvidenceModel>(serviceProvider => serviceProvider.GetRequiredService<OllamaReviewEvidenceModel>());
-        services.AddScoped<IResumeEvaluationModel>(serviceProvider => serviceProvider.GetRequiredService<OllamaResumeEvaluationModel>());
-        services.AddScoped<IResumeVisionTextExtractor>(serviceProvider => serviceProvider.GetRequiredService<OllamaResumeVisionTextExtractor>());
 
         return services;
     }

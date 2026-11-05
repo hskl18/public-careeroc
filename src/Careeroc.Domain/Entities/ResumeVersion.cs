@@ -10,10 +10,8 @@ public sealed class ResumeVersion
     public string ProjectHighlightsJson { get; set; } = "[]";
     public string StructuredDataJson { get; set; } = "{}";
     public string ExtractionMetadataJson { get; set; } = "{}";
-    public string? EvaluationRunId { get; set; }
     public int ExperienceCount { get; set; }
     public int ProjectCount { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
     public ResumeEvaluation? Evaluation { get; set; }
-    public ICollection<ResumeCorrection> Corrections { get; set; } = new List<ResumeCorrection>();
 }

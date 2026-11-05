@@ -8,7 +8,6 @@ using Careeroc.Contracts.Resumes;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using UglyToad.PdfPig;
 
 namespace Careeroc.Application.Services;
 
@@ -62,9 +61,6 @@ public sealed partial class ResumeIntelligenceService
     [GeneratedRegex(@"\b(?:Software Engineer(?:ing)?(?: Intern)?|Data Engineer(?: Intern)?|Cloud Engineer(?: Intern)?|Research Assistant|Teaching Assistant|Developer|Backend Engineer|Frontend Engineer|Full Stack Engineer|Machine Learning Engineer|Product Engineer)\b", RegexOptions.IgnoreCase)]
     private static partial Regex ExperienceTitleRegex();
 
-    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_.\[\]-]{0,239}$")]
-    private static partial Regex FieldPathRegex();
-
     private sealed record ResumeExtraction(
         string Summary,
         IReadOnlyList<string> Skills,
@@ -80,8 +76,7 @@ public sealed partial class ResumeIntelligenceService
         string? TargetRole,
         string? Location,
         int ApplicationCount,
-        int InterviewOrOfferCount,
-        ResumeMailboxContext MailboxContext);
+        int InterviewOrOfferCount);
 
     private sealed record ResumeEvaluationResult(
         int Score,
@@ -92,41 +87,6 @@ public sealed partial class ResumeIntelligenceService
         IReadOnlyList<string> NextActions,
         IReadOnlyList<ResumeSectionReviewDto> SectionReviews,
         ResumeEvaluationEvidenceDto Evidence);
-
-    private sealed record ModelEnhancedResumeEvaluation(
-        ResumeExtraction Extraction,
-        ResumeEvaluationResult Evaluation,
-        ResumeStructuredDataDto? StructuredData,
-        string? PromptVersion);
-
-    private sealed record NormalizedCorrection(
-        string FieldPath,
-        string? PreviousValue,
-        string CorrectedValue,
-        string? Note);
-
-    private sealed record NormalizedPatchRequest(
-        IReadOnlyList<NormalizedPatchOperation> Operations,
-        string? Note);
-
-    private sealed record NormalizedPatchOperation(
-        string Op,
-        string Path,
-        JsonElement Value);
-
-    private sealed record PdfPageImage(
-        byte[] Bytes,
-        string ContentType,
-        int PixelCount);
-
-    private sealed record ResumeSourceImportResult(
-        string SourceText,
-        ResumeOcrImportMetadata OcrMetadata);
-
-    private sealed record ResumeOcrImportMetadata(
-        string Status,
-        decimal? Confidence = null,
-        string? Error = null);
 
     private sealed record ResumeEvaluationMemory(
         string ResumeTitle,

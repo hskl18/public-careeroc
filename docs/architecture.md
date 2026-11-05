@@ -23,7 +23,7 @@ Endpoints resolve the user, validate the request shape, call one application ser
 ### Entities
 
 - Mailbox and pipeline: `User`, `InboxAccount`, `InboxEmail`, `EmailProcessingJob`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `RecruitingContact`
-- Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeCorrection`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`, `UserSoulProfile`
+- Resume and memory: `ResumeDocument`, `ResumeVersion`, `ResumeEvaluation`, `ApplicationResumeFit`, `UserMemoryEntry`, `UserSoulProfile`
 - Operations: `ModelCallEvent`, `AuditEvent`, `PersonalAccessToken`
 
 Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate on purpose: ingestion can be replayed or corrected without rewriting history.
@@ -78,15 +78,13 @@ The sync worker, recovery of jobs whose worker died, demo cleanup, and queue dra
 In Development the sync worker runs every 300 seconds; hosted deployments should use 900 seconds or more and `SyncWorker__RunOnStartup=false`.
 The web app can ask for a bounded inbox check, but it never owns the pipeline.
 Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`, and a refresh after a change reloads the whole dashboard once.
-Gmail push notifications are not implemented; [backend/gmail-push-plan.md](backend/gmail-push-plan.md) describes the design.
+Gmail push notifications are not implemented.
 
 ## Resume intelligence
 
-1. The user uploads a PDF or image, or pastes text, on `/app/resume`.
-2. The API stores a `ResumeDocument`; PDF extraction keeps link annotations as an allow-list, so a model cannot invent GitHub or LinkedIn URLs.
-3. `ResumeIntelligenceService` runs schema-locked extraction into a `ResumeVersion`.
-4. User edits become `ResumeCorrection` rows or structured patches, both user-scoped and audited.
-5. Evaluation reviews the version against target roles and the mailbox evidence from `ResumeMailboxContextBuilder`, without writing to applications.
+1. The user pastes resume text on `/app/resume`, and the demo workspace seeds one for its fictional persona.
+2. `ResumeIntelligenceService` runs rule-based extraction into a `ResumeVersion`.
+3. Evaluation reviews the version against target roles and the mailbox evidence from `ResumeMailboxContextBuilder`, without writing to applications.
 
 ## Memory
 

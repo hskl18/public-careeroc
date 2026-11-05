@@ -16,7 +16,6 @@ public static class DependencyInjection
         services.AddScoped<RecruiterIdentityAgentService>();
         services.AddScoped<ScamCheckerAgentService>();
         services.AddSingleton<IReviewEvidenceModel>(NullReviewEvidenceModel.Instance);
-        services.AddSingleton<IResumeEvaluationModel>(NullResumeEvaluationModel.Instance);
         services.AddSingleton<ICareerAgentGraphClient>(NullCareerAgentGraphClient.Instance);
         services.AddSingleton<IUserAgentContextSnapshotProvider>(NullUserAgentContextSnapshotProvider.Instance);
         services.AddSingleton<IModelCallEventRecorder>(NullModelCallEventRecorder.Instance);
@@ -44,7 +43,6 @@ public static class DependencyInjection
         services.AddScoped<ResumeMailboxContextBuilder>();
         services.AddScoped<ResumeIntelligenceService>();
         services.AddScoped<ResumeFitService>();
-        services.AddScoped<ResumeSuggestionService>();
         services.AddScoped<CareerOrchestratorService>();
         services.AddScoped<ManualReviewQueryService>();
         services.AddScoped<ManualReviewService>();

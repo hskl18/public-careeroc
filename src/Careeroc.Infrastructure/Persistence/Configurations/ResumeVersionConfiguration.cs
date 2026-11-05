@@ -15,7 +15,6 @@ public sealed class ResumeVersionConfiguration : IEntityTypeConfiguration<Resume
         builder.Property(version => version.ProjectHighlightsJson).HasColumnType("jsonb").IsRequired();
         builder.Property(version => version.StructuredDataJson).HasColumnType("jsonb").IsRequired();
         builder.Property(version => version.ExtractionMetadataJson).HasColumnType("jsonb").IsRequired();
-        builder.Property(version => version.EvaluationRunId).HasMaxLength(120);
         builder.Property(version => version.CreatedAtUtc).IsRequired();
         builder
             .HasOne(version => version.ResumeDocument)

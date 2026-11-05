@@ -287,35 +287,6 @@ a {
   box-shadow: none;
 }
 
-.resume-dossier-panel {
-  --border: rgba(15, 23, 42, 0.2);
-  --border-hover: rgba(15, 23, 42, 0.34);
-  --surface-elevated: rgba(255, 255, 255, 0.98);
-  --text-secondary: #334155;
-  --text-tertiary: #64748b;
-  background: rgba(255, 255, 255, 0.98);
-}
-
-.resume-dossier-panel::before {
-  display: none;
-}
-
-.resume-dossier-panel .eyebrow {
-  color: #6b7280;
-  font-weight: 700;
-}
-
-.resume-dossier-panel .badge {
-  border-color: rgba(15, 23, 42, 0.18);
-  color: #475569;
-}
-
-.resume-dossier-panel .btn-secondary {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(15, 23, 42, 0.36);
-  color: #334155;
-}
-
 .analytics-shell {
   min-height: 100%;
 }
