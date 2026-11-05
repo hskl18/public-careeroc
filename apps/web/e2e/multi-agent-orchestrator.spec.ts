@@ -28,9 +28,9 @@ test.describe("multi-agent resume and mailbox review", () => {
         response.url().endsWith("/api/orchestrator/resume-mailbox-review"),
     );
 
-    await page.goto("/app/memory");
-    await expect(page).toHaveURL(/\/app\/memory$/);
-    await expect(page.getByRole("heading", { name: "Resume + mailbox orchestrator" })).toBeVisible();
+    await page.goto("/app");
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.getByText("Multi-agent review", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Run review" }).click();
 
@@ -60,7 +60,7 @@ test.describe("multi-agent resume and mailbox review", () => {
       "career_supervisor",
     ]);
 
-    await expect(page.getByText("Strategy snapshot updated.")).toBeVisible();
+    await expect(page.getByText("Review updated.")).toBeVisible();
     await expect(page.getByText("langgraph.resume_mailbox_review.v1")).toBeVisible();
     await expect(page.getByText("fixture/e2e-structured-output", { exact: true })).toBeVisible();
     await expect(page.getByText("88%", { exact: true })).toBeVisible();

@@ -43,14 +43,14 @@ Routine evidence checks belong to the review agent; review UI appears only when 
 | Surface | Owns |
 |---|---|
 | Header | Brand, primary nav, a compact sync pill, the user menu, and in demo mode a short notice that the data is fictional, which also says read-only in the hosted demo; never full workflow controls |
-| Dashboard `/app` | The current operating picture: ranked recent changes, near-term actions, sync health, a capped application summary |
+| Dashboard `/app` | The multi-agent review with its trace and Approve or Reject, then the current operating picture: ranked recent changes, near-term actions, sync health, a capped application summary |
 | Applications `/app/applications` | Browsing every record: search, status filters, aligned rows with status and priority, a selected preview, links to detail and Gmail |
 | Application detail | Why the record has its status: pipeline stage, agent brief and next move, open actions or terminal outcome, contacts, evidence grouped by thread, original Gmail links, correction buttons |
 | Review `/app/review` | Only ambiguous items: uncertain company, role, or match, agencies, likely scams |
 | Updates `/app/updates` | The full activity timeline |
 | Analytics `/app/analytics` | Funnel health: counts, stage distribution, company and role tables, drill-downs; never next actions |
 | Resume `/app/resume` | The latest resume, what careeroc read from it, and a rule-based evaluation |
-| Memory `/app/memory` | Confirmed and pending memory, the multi-agent review with its trace, and Approve or Reject for a review that proposes reminders or needs a person |
+| Memory `/app/memory` | Confirmed and pending facts and preferences that agents can reuse |
 | Inbox `/app/inbox` | Gmail connection, backfill window, sync health and diagnostics, contact history, disconnect and imported-data deletion |
 | Settings `/app/settings` | Candidate context, timezone, assistant access tokens, data controls |
 

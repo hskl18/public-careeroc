@@ -9,14 +9,14 @@ New workspace pages go under `/app/*`; top-level aliases such as `/analytics` an
 |---|---|
 | `/` | Overview and the entry to the demo or Google sign-in |
 | `/tech` | Architecture (`/technology` redirects here) |
-| `/app` | Dashboard |
+| `/app` | Dashboard, led by the multi-agent review and its approval |
 | `/app/applications` | Application explorer |
 | `/app/applications/[applicationId]` | Evidence-first application detail |
 | `/app/review` | Review queue for blocked automation |
 | `/app/updates` | Activity timeline |
 | `/app/analytics` | Funnel and outcome analytics |
 | `/app/resume` | Pasted resume text, what careeroc read from it, and its evaluation |
-| `/app/memory` | Memory, the multi-agent review, and approving or rejecting what it proposes |
+| `/app/memory` | Reusable facts and preferences |
 | `/app/inbox` | Gmail connection, backfill, sync health, contacts, and mailbox controls |
 | `/app/settings` | Candidate context, preferences, and assistant access tokens |
 | `/app/settings/data` | Imported-data deletion and inbox purge |

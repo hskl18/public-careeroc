@@ -942,7 +942,7 @@ export function ApplicationDetailWorkspace({
               <div className="mt-3">
                 <AgentTraceStepsPanel
                   steps={detail.agentTrace?.steps ?? []}
-                  title="Orchestrator step trace"
+                  title="Evidence summary"
                 />
               </div>
             </section>

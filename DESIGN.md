@@ -7,7 +7,7 @@ For the interface, read [UI.md](UI.md); for code layout and data flow, read [doc
 
 - Turn a noisy recruiting inbox into a correct application pipeline.
   A wrong write costs more than a missed one, so uncertain evidence waits for a person.
-- Make agent decisions inspectable: the summary, reason, and confidence of each step are visible in the app, and evidence travels in the stored trace.
+- Make agent decisions inspectable: the summary, reason, confidence, and evidence of each step are visible in the app.
 - Let agents propose work, never perform it: a person approves, and the API writes.
 - Let people use their own assistant with the data, without giving any assistant write access.
 - Run anywhere from one compose file, and run without a model or API key.
@@ -141,6 +141,7 @@ So the demo exercises the real pipeline rather than seeded rows.
 
 The hosted demo at [careeroc.vercel.app](https://careeroc.vercel.app) keeps that product UI without paying for a backend.
 With `DEMO_SNAPSHOT=true`, everyone signs in as one fictional account and the web app answers API calls from responses recorded from that same pipeline, refusing writes.
+The review it shows is a recorded run of the deterministic suite and is labeled that way; approving it replays the graph's last step in the browser and saves nothing.
 Hosting the API, Postgres, and the agent runtime for a showcase was rejected because of its recurring cost and upkeep, and a marketing-style sample page because it would not be the real product.
 
 ## Decisions

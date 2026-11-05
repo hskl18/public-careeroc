@@ -5,6 +5,7 @@ careeroc reads recruiting email and keeps an evidence-backed pipeline of applica
 Specialist agents review the search, a person approves what they propose, and your own assistant can read the pipeline over MCP or A2A.
 
 **Live demo: [careeroc.vercel.app](https://careeroc.vercel.app).** It needs no sign-up and opens a read-only workspace recorded from the real pipeline on a fictional inbox.
+The recorded multi-agent review is the first thing on the dashboard, and approving it there replays the end of the graph in your browser.
 
 Run the whole system with one command, no accounts or API keys: `docker compose --profile full up -d`, then open http://localhost:3000.
 There, **Open the demo** gives each visitor a private workspace, run through the real pipeline and removed from the product database after 24 hours, including the multi-agent review, approvals, MCP, and A2A that the hosted demo cannot offer.
@@ -63,7 +64,7 @@ flowchart LR
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
   The agent runtime ships a deterministic suite, so the demo and CI need no model or API key.
   The hosted demo, the screenshots, the trace above, and the evals all come from that suite, not from a model.
-- **Agent output is visible.** Each step's summary, reason, and confidence are shown in the app, and low-confidence results and proposed writes stay pending until a person decides.
+- **Agent output is visible.** Each step's summary, reason, confidence, and evidence are shown on the dashboard, and low-confidence results and proposed writes stay pending until a person decides.
 
 [DESIGN.md](DESIGN.md) explains the decisions, the rejected alternatives, trust boundaries, and failure modes.
 
