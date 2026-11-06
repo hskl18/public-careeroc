@@ -25,6 +25,7 @@ helm install careeroc deploy/helm/careeroc -n careeroc --set host=careeroc.examp
   Use `allowedEmails` for personal addresses, because `allowedEmailDomains=gmail.com` admits every Gmail account.
 - `ingress.className` defaults to `nginx`, with read and send timeouts of 130 seconds, because a review runs up to 100 seconds behind one request; on another controller, set its own timeout.
 - `web.extraEnv`, `api.extraEnv`, and `agentRuntime.extraEnv` add environment variables, such as `OTEL_EXPORTER_OTLP_ENDPOINT` or `Ollama__*` for the optional model pass on the API.
+  They only add names: the install fails if one repeats a variable the chart sets, which server-side apply would reject.
 - Pods read the secret only when they start, so after changing it run `kubectl rollout restart deployment/web deployment/api deployment/agent-runtime`.
 - `networkPolicy.enabled=true` lets each service accept traffic only from the ingress controller's namespace and the release's own callers; set `networkPolicy.ingressControllerNamespaceLabels` to match your controller's namespace.
   It restricts ingress only, and needs a CNI that enforces NetworkPolicy; the kind smoke test installs with it on.

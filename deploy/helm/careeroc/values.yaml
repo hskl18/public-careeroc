@@ -18,7 +18,8 @@ existingSecret: careeroc
 
 demoMode: true
 # Google accounts allowed to sign in when demoMode is false; set at least one. Use allowedEmails for
-# personal addresses: allowedEmailDomains=gmail.com would admit every Gmail account.
+# personal addresses: allowedEmailDomains=gmail.com would admit every Gmail account. Separate several
+# with ";", which --set accepts as is ("a@x.com;b@y.com").
 allowedEmails: ""
 allowedEmailDomains: ""
 # deterministic needs no model. For ollama or openai, set the model and the server's URL too.

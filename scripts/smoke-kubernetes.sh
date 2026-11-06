@@ -15,9 +15,17 @@ if [[ "$context" != kind-* && "${SMOKE_ALLOW_ANY_CONTEXT:-}" != "true" ]]; then
   echo "Refusing to install into kube context '$context'; use a kind cluster or set SMOKE_ALLOW_ANY_CONTEXT=true." >&2
   exit 1
 fi
-if [[ "${CI:-}" != "true" ]]; then
-  trap 'kubectl delete namespace "$NAMESPACE" --wait=false >/dev/null 2>&1 || true' EXIT
-fi
+pids=()
+# Outside CI, a passing run removes its namespace; a failing one keeps it to inspect.
+cleanup() {
+  local status=$?
+  # This form expands to nothing for an empty array under set -u, even in macOS's bash 3.2.
+  kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true
+  if [[ "${CI:-}" != "true" && $status -eq 0 ]]; then
+    kubectl delete namespace "$NAMESPACE" --wait=false >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
 
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n "$NAMESPACE" apply -f - <<'EOF'
@@ -64,14 +72,6 @@ if ! helm upgrade --install careeroc deploy/helm/careeroc -n "$NAMESPACE" --wait
   exit 1
 fi
 
-pids=()
-cleanup() {
-  kill "${pids[@]}" 2>/dev/null || true
-  if [[ "${CI:-}" != "true" ]]; then
-    kubectl delete namespace "$NAMESPACE" --wait=false >/dev/null 2>&1 || true
-  fi
-}
-trap cleanup EXIT
 for forward in web:13000:3000 api:15114:8080 agent-runtime:18123:8123; do
   IFS=: read -r service local_port remote_port <<<"$forward"
   kubectl -n "$NAMESPACE" port-forward "service/$service" "$local_port:$remote_port" >/dev/null &
