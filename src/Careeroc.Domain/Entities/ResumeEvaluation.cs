@@ -13,5 +13,5 @@ public sealed class ResumeEvaluation
     public string NextActionsJson { get; set; } = "[]";
     public string SectionReviewsJson { get; set; } = "[]";
     public string EvidenceJson { get; set; } = "{}";
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
 }

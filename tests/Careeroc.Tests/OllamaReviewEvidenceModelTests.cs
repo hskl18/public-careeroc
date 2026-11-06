@@ -40,7 +40,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         "application/json")
                 };
             });
-        var model = new OllamaReviewEvidenceModel(
+        var model = TestServices.OllamaReviewEvidenceModel(
             new HttpClient(handler),
             Options.Create(
                 new OllamaEmailExtractionOptions
@@ -104,7 +104,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         Encoding.UTF8,
                         "application/json")
                 }));
-        var model = new OllamaReviewEvidenceModel(
+        var model = TestServices.OllamaReviewEvidenceModel(
             new HttpClient(handler),
             Options.Create(
                 new OllamaEmailExtractionOptions
@@ -176,7 +176,7 @@ public sealed class OllamaReviewEvidenceModelTests
                         "application/json")
                 };
             });
-        var model = new OllamaReviewEvidenceModel(
+        var model = TestServices.OllamaReviewEvidenceModel(
             new HttpClient(handler),
             Options.Create(
                 new OllamaEmailExtractionOptions

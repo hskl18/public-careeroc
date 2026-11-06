@@ -78,7 +78,7 @@ public sealed class CareerOrchestratorServiceTests
         await dbContext.SaveChangesAsync();
 
         var clock = new TestClock(new DateTimeOffset(2026, 4, 26, 12, 0, 0, TimeSpan.Zero));
-        var service = new CareerOrchestratorService(
+        var service = TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             clock);
@@ -136,7 +136,7 @@ public sealed class CareerOrchestratorServiceTests
                             "resumePresent=false",
                             [])
                     ])));
-        var service = new CareerOrchestratorService(
+        var service = TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             new ResumeMailboxContextBuilder(dbContext, clock),
@@ -184,7 +184,7 @@ public sealed class CareerOrchestratorServiceTests
                     false,
                     0.9m,
                     [])));
-        var service = new CareerOrchestratorService(
+        var service = TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             new ResumeMailboxContextBuilder(dbContext, clock),
@@ -206,7 +206,7 @@ public sealed class CareerOrchestratorServiceTests
         var clock = new TestClock(new DateTimeOffset(2026, 7, 13, 12, 0, 0, TimeSpan.Zero));
         var graphClient = new StubCareerAgentGraphClient(
             _ => CareerAgentGraphRunOutcome.Failed("Agent runtime returned HTTP 503."));
-        var service = new CareerOrchestratorService(
+        var service = TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             new ResumeMailboxContextBuilder(dbContext, clock),
@@ -252,7 +252,7 @@ public sealed class CareerOrchestratorServiceTests
                     false,
                     0.8m,
                     steps)));
-        var service = new CareerOrchestratorService(
+        var service = TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             new ResumeMailboxContextBuilder(dbContext, clock),
@@ -392,7 +392,7 @@ public sealed class CareerOrchestratorServiceTests
         ICareerAgentGraphClient graphClient,
         TestClock clock)
     {
-        return new CareerOrchestratorService(
+        return TestServices.CareerOrchestratorService(
             dbContext,
             new UserAgentContextSnapshotService(dbContext, clock),
             new ResumeMailboxContextBuilder(dbContext, clock),

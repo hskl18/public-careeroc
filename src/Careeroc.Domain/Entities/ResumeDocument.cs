@@ -10,7 +10,7 @@ public sealed class ResumeDocument
     public string? SourceFileName { get; set; }
     public string SourceText { get; set; } = string.Empty;
     public string? SourceLinksJson { get; set; }
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
     public ICollection<ResumeVersion> Versions { get; set; } = new List<ResumeVersion>();
 }

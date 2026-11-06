@@ -75,6 +75,7 @@ Every step is a narrow, typed decision, not a free-form agent, so a wrong result
 The sync worker, recovery of jobs whose worker died, demo cleanup, and queue draining all run inside the API host.
 In Development the sync worker runs every 300 seconds; hosted deployments should use 900 seconds or more and `SyncWorker__RunOnStartup=false`.
 The web app can ask for a bounded inbox check, but it never owns the pipeline.
+The Sync inbox button puts the user on a bounded queue that `SyncNowWorker` drains four users at a time, one entry per user, and a full queue answers 429.
 Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`, and a refresh after a change reloads the whole dashboard once.
 Gmail push notifications are not implemented.
 

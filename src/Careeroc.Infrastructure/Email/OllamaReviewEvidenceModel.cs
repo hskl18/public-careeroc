@@ -30,56 +30,6 @@ public sealed class OllamaReviewEvidenceModel : IReviewEvidenceModel
     public OllamaReviewEvidenceModel(
         HttpClient httpClient,
         IOptions<OllamaEmailExtractionOptions> options,
-        ILogger<OllamaReviewEvidenceModel> logger)
-        : this(httpClient, options, OllamaModelCircuitBreaker.Disabled, NullModelCallEventRecorder.Instance, logger)
-    {
-    }
-
-    public OllamaReviewEvidenceModel(
-        HttpClient httpClient,
-        IOptions<OllamaEmailExtractionOptions> options,
-        OllamaModelCircuitBreaker circuitBreaker,
-        ILogger<OllamaReviewEvidenceModel> logger)
-        : this(httpClient, options, circuitBreaker, NullModelCallEventRecorder.Instance, logger)
-    {
-    }
-
-    public OllamaReviewEvidenceModel(
-        HttpClient httpClient,
-        IOptions<OllamaEmailExtractionOptions> options,
-        OllamaModelCircuitBreaker circuitBreaker,
-        IUserAgentContextSnapshotProvider agentContextSnapshotProvider,
-        ILogger<OllamaReviewEvidenceModel> logger)
-        : this(
-            httpClient,
-            options,
-            circuitBreaker,
-            NullModelCallEventRecorder.Instance,
-            agentContextSnapshotProvider,
-            logger)
-    {
-    }
-
-    public OllamaReviewEvidenceModel(
-        HttpClient httpClient,
-        IOptions<OllamaEmailExtractionOptions> options,
-        OllamaModelCircuitBreaker circuitBreaker,
-        IModelCallEventRecorder modelCallEventRecorder,
-        ILogger<OllamaReviewEvidenceModel> logger)
-        : this(
-            httpClient,
-            options,
-            circuitBreaker,
-            modelCallEventRecorder,
-            NullUserAgentContextSnapshotProvider.Instance,
-            logger)
-    {
-    }
-
-    [ActivatorUtilitiesConstructor]
-    public OllamaReviewEvidenceModel(
-        HttpClient httpClient,
-        IOptions<OllamaEmailExtractionOptions> options,
         OllamaModelCircuitBreaker circuitBreaker,
         IModelCallEventRecorder modelCallEventRecorder,
         IUserAgentContextSnapshotProvider agentContextSnapshotProvider,

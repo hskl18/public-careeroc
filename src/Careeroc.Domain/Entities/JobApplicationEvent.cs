@@ -8,7 +8,7 @@ public sealed class JobApplicationEvent
     public string EventType { get; set; } = string.Empty;
     public DateTimeOffset EventTimeUtc { get; set; }
     public string ExtractedDataJson { get; set; } = "{}";
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public JobApplication JobApplication { get; set; } = null!;
     public InboxEmail? InboxEmail { get; set; }
 }
