@@ -12,6 +12,7 @@ import type {
   UpdateUserProfileRequest,
   UserProfile,
 } from "@/lib/profile";
+import { readErrorMessage as readSharedErrorMessage } from "@/lib/client-fetch";
 
 type ProfileSettingsPanelProps = {
   initialProfile: UserProfile;
@@ -38,28 +39,19 @@ const timeZoneOptions = [
 
 async function readErrorMessage(response: Response) {
   if (response.status === 404) {
-    return "Profile settings are not available right now. Try again in a moment.";
+    return "Settings are unavailable. Try again.";
   }
 
   if (response.status >= 500) {
-    return "Profile API failed in the backend. Restart the API and make sure the latest migration has been applied.";
+    return "The profile API failed.";
   }
 
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-
-  return `Request failed with ${response.status}`;
+  return readSharedErrorMessage(response);
 }
 
 function normalizeNullable(value: string) {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function getTimeZoneLabel(value: string) {
-  return timeZoneOptions.find((option) => option.value === value)?.label ?? value;
 }
 
 export function ProfileSettingsPanel({
@@ -168,7 +160,7 @@ export function ProfileSettingsPanel({
 
   return (
     <form
-      className="card flex h-full min-h-0 flex-col overflow-hidden p-0"
+      className="card flex min-h-0 flex-col p-0"
       onSubmit={handleSubmit}
     >
       <div className="shrink-0 px-4 pt-4 sm:px-5 sm:pt-5">
@@ -180,8 +172,7 @@ export function ProfileSettingsPanel({
               className="h-12 w-12 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)]"
             />
             <div className="min-w-0">
-              <p className="eyebrow">Candidate</p>
-              <h2 className="mt-2 truncate text-xl font-semibold text-[var(--text-primary)]">
+              <h2 className="truncate text-base font-semibold text-[var(--text-primary)]">
                 {displayName}
               </h2>
               <p className="mt-1 break-all text-sm text-[var(--text-secondary)]">
@@ -200,34 +191,14 @@ export function ProfileSettingsPanel({
         </div>
       </div>
 
-      <div className="shrink-0 px-4 py-4 sm:px-5">
-        <div className="border-t border-[var(--border)] pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="eyebrow">Profile details</p>
-              <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
-                Candidate profile
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                Used to tailor resume feedback, job recommendations, and follow-up strategy.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="badge bg-[var(--surface-elevated)] text-[var(--text-secondary)]">
-                {getTimeZoneLabel(profile.timeZoneId)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 pt-4 pb-4 sm:px-5 sm:pb-5">
-        <section>
-          <div className="grid gap-4 sm:grid-cols-2">
+      {/* A container query, because the form shares its row with the token panel when the API is live. */}
+      <div className="workspace-scroll-region @container flex flex-1 flex-col px-4 pt-4 pb-4 sm:px-5 sm:pb-5">
+        <section className="shrink-0">
+          <div className="grid gap-4 sm:grid-cols-2 @4xl:grid-cols-4">
           <label className="grid gap-2 sm:col-span-1">
             <span className="eyebrow">Name</span>
             <input
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)]"
+              className="input"
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={200}
@@ -238,7 +209,7 @@ export function ProfileSettingsPanel({
           <label className="grid gap-2 sm:col-span-1">
             <span className="eyebrow">Time zone</span>
             <select
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)]"
+              className="input"
               value={timeZoneId}
               onChange={(event) => setTimeZoneId(event.target.value)}
               disabled={isSaving}
@@ -254,7 +225,7 @@ export function ProfileSettingsPanel({
           <label className="grid gap-2 sm:col-span-1">
             <span className="eyebrow">Location</span>
             <input
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)]"
+              className="input"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
               maxLength={160}
@@ -266,7 +237,7 @@ export function ProfileSettingsPanel({
           <label className="grid gap-2 sm:col-span-1">
             <span className="eyebrow">Target role</span>
             <input
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)]"
+              className="input"
               value={targetRole}
               onChange={(event) => setTargetRole(event.target.value)}
               maxLength={200}
@@ -277,17 +248,10 @@ export function ProfileSettingsPanel({
         </div>
       </section>
 
-      <section className="mt-5 border-t border-[var(--border)] pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Profile icon</p>
-            <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
-              Choose a profile icon
-            </h2>
-          </div>
-        </div>
+      <section className="mt-4 flex flex-1 flex-col border-t border-[var(--border)] pt-4">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Icon</h2>
         <div
-          className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
+          className="mt-2 grid flex-1 auto-rows-[minmax(2.75rem,1fr)] grid-cols-6 gap-1.5 sm:gap-2"
           role="radiogroup"
           aria-label="Profile icon"
         >
@@ -300,51 +264,32 @@ export function ProfileSettingsPanel({
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                className={`relative flex min-h-20 items-center gap-2 rounded-md border px-2 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${
+                aria-label={option.label}
+                title={option.label}
+                className={`relative min-w-0 rounded-md border transition ${
                   selected
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_0_1px_var(--accent)]"
-                    : "border-[var(--border)] bg-[var(--surface-elevated)]/60 hover:border-[var(--border-hover)] hover:bg-[var(--surface-elevated)]"
+                    ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
+                    : "border-[var(--border)] hover:border-[var(--border-hover)]"
                 }`}
                 disabled={isSaving}
                 onClick={() => setProfileIcon(option.id)}
               >
-                {selected ? (
-                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-white">
-                    ✓
-                  </span>
-                ) : null}
-                <ProfileIcon icon={option.id} decorative className="h-9 w-9 shrink-0" />
-                <span className="min-w-0">
-                  <span className="block text-xs font-semibold leading-tight text-[var(--text-primary)]">
-                    {option.label}
-                  </span>
-                  {selected ? (
-                    <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
-                      Selected
-                    </span>
-                  ) : null}
-                </span>
+                <ProfileIcon icon={option.id} decorative className="absolute inset-[12%] h-auto w-auto" />
               </button>
             );
           })}
         </div>
       </section>
 
-      <div className="mt-4 flex flex-col gap-2">
-        {notice ? (
-          <p className="text-sm font-medium text-[var(--green)]">{notice}</p>
-        ) : null}
+      <div className="mt-4 flex shrink-0 flex-col gap-2 empty:hidden">
+        <p role="status" className="text-sm font-medium text-[var(--green)] empty:hidden">
+          {notice}
+        </p>
         {error ? (
-          <p className="text-sm font-medium text-[var(--red)]">{error}</p>
+          <p role="alert" className="text-sm font-medium text-[var(--red)]">{error}</p>
         ) : null}
-        {!proxyPrefix ? (
-          <p className="text-sm text-[var(--text-tertiary)]">
-            Live sync is required to save profile settings.
-          </p>
-        ) : !loadedFromApi && !error && !notice ? (
-          <p className="text-sm text-[var(--text-tertiary)]">
-            Profile data is using fallback values right now. Save will work after the backend exposes the latest profile API.
-          </p>
+        {!proxyPrefix || (!loadedFromApi && !error && !notice) ? (
+          <p className="text-sm text-[var(--text-tertiary)]">Offline.</p>
         ) : null}
       </div>
       </div>

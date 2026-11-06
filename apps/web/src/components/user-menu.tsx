@@ -61,6 +61,8 @@ export function UserMenu({ children, summary }: UserMenuProps) {
   function handleKeyDown(event: KeyboardEvent<HTMLDetailsElement>) {
     if (event.key === "Escape") {
       closeMenu();
+      // Focus was on a link that just hid; keep it on the menu button.
+      detailsRef.current?.querySelector("summary")?.focus();
     }
   }
 
@@ -73,7 +75,7 @@ export function UserMenu({ children, summary }: UserMenuProps) {
     >
       <summary
         aria-label="Open user menu"
-        className="user-menu-summary flex items-center gap-2.5 rounded-md border border-transparent px-2 py-1 transition-colors hover:border-[var(--border)] hover:bg-[var(--surface)]"
+        className="flex items-center gap-2.5 rounded-md border border-transparent px-2 py-1 transition-colors hover:border-[var(--border)] hover:bg-[var(--surface)]"
       >
         {summary}
       </summary>

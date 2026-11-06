@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 import { ManualReviewEmailDetail } from "@/components/manual-review-email-detail";
-import { StatusPill } from "@/components/status-pill";
-import { fetchWithInFlightDedup } from "@/lib/client-fetch";
+import { fetchWithInFlightDedup, readErrorMessage } from "@/lib/client-fetch";
 import {
   formatTimestampInTimeZone,
   toUtcIsoStringFromDateTimeLocal,
 } from "@/lib/date-time";
 import type {
   ManualReviewResponse,
-  ReviewApplication,
   ReviewEmail,
 } from "@/lib/manual-review";
 import { formatEnumLabel } from "@/lib/labels";
@@ -20,12 +18,9 @@ type ManualReviewWorkspaceProps = {
   initialReview: ManualReviewResponse;
   source: "api" | "fallback";
   proxyPrefix: string | null;
-  currentUserEmail: string;
-  currentUserName?: string | null;
   timeZoneId: string;
   hasConnectedAccount?: boolean;
   hasSyncedOnce?: boolean;
-  readOnlyDemo: boolean;
 };
 
 function formatTimestamp(value: string, timeZoneId: string) {
@@ -38,123 +33,6 @@ function containsText(value: string | null | undefined, query: string) {
   return value.toLowerCase().includes(query);
 }
 
-function ApplicationOverridesSection({
-  applications,
-  statusOptions,
-  pendingKey,
-  canPersist,
-  timeZoneId,
-  onSubmit,
-}: {
-  applications: ReviewApplication[];
-  statusOptions: string[];
-  pendingKey: string | null;
-  canPersist: boolean;
-  timeZoneId: string;
-  onSubmit: (
-    event: React.FormEvent<HTMLFormElement>,
-    application: ReviewApplication,
-  ) => void;
-}) {
-  return (
-    <section className="card p-5">
-      <details>
-        <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
-          <p className="eyebrow">Application overrides</p>
-          <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-            {applications.length}
-          </span>
-        </summary>
-
-      {applications.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--text-tertiary)]">
-          No application records.
-        </p>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {applications.map((application) => {
-            const formKey = [
-              application.id,
-              application.status,
-              application.priority,
-              application.lastActivityAtUtc,
-            ].join(":");
-
-            return (
-              <article key={formKey} className="card-elevated p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-[var(--text-primary)]">
-                      {application.company}
-                    </h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {application.role}
-                    </p>
-                  </div>
-                  <StatusPill status={application.status} />
-                </div>
-
-                <p className="mt-2 text-xs text-[var(--text-tertiary)]">
-                  Last activity {formatTimestamp(application.lastActivityAtUtc, timeZoneId)}
-                </p>
-
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(event) => onSubmit(event, application)}
-                >
-                  <label className="block">
-                    <span className="eyebrow block mb-1.5">Stage</span>
-                    <select
-                      name="status"
-                      defaultValue={application.status}
-                      className="input"
-                      disabled={!canPersist || pendingKey !== null}
-                    >
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {formatEnumLabel(status)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="eyebrow block mb-1.5">Priority</span>
-                    <input
-                      name="priority"
-                      type="number"
-                      min={1}
-                      max={5}
-                      defaultValue={application.priority}
-                      className="input"
-                      disabled={!canPersist || pendingKey !== null}
-                    />
-                  </label>
-
-                  <button
-                    type="submit"
-                    className="btn btn-secondary btn-block"
-                    disabled={
-                      !canPersist ||
-                      pendingKey === `application:${application.id}` ||
-                      pendingKey !== null
-                    }
-                  >
-                    {pendingKey === `application:${application.id}`
-                      ? <><span className="spinner" /> Saving...</>
-                      : "Save override"}
-                  </button>
-                </form>
-              </article>
-            );
-          })}
-        </div>
-      )}
-      </details>
-    </section>
-  );
-}
-
 export function ManualReviewWorkspace({
   initialReview,
   source,
@@ -162,7 +40,6 @@ export function ManualReviewWorkspace({
   timeZoneId,
   hasConnectedAccount = true,
   hasSyncedOnce = true,
-  readOnlyDemo,
 }: ManualReviewWorkspaceProps) {
   const [review, setReview] = useState(initialReview);
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,27 +56,10 @@ export function ManualReviewWorkspace({
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
   const filtersActive =
     normalizedSearchQuery.length > 0 || selectedCategory !== "all";
-  const totalWaiting = review.totalWaiting ?? review.emails.length;
-  const totalUnassigned =
-    review.totalUnassigned ??
-    review.emails.filter((email) => !email.jobApplicationId).length;
   const coldStart =
     source === "api" &&
     review.emails.length === 0 &&
     (!hasConnectedAccount || !hasSyncedOnce);
-  const coldStartHint = !hasConnectedAccount
-    ? "Connect your Gmail in Inbox to start queueing evidence."
-    : "Once your first sync finishes, anything we're unsure about lands here for your call.";
-
-  const filteredApplications = review.applications.filter((a) => {
-    if (!normalizedSearchQuery) return true;
-    return (
-      containsText(a.company, normalizedSearchQuery) ||
-      containsText(a.role, normalizedSearchQuery) ||
-      containsText(a.status, normalizedSearchQuery)
-    );
-  });
-
   const filteredEmails = review.emails.filter((e) => {
     const matchesCat =
       selectedCategory === "all"
@@ -252,29 +112,6 @@ export function ManualReviewWorkspace({
     } finally { setPendingKey(null); }
   }
 
-  async function handleApplicationSubmit(event: React.FormEvent<HTMLFormElement>, application: ReviewApplication) {
-    event.preventDefault();
-    if (!proxyPrefix) { setError("API proxy is not configured."); return; }
-    const fd = new FormData(event.currentTarget);
-    const status = String(fd.get("status") ?? application.status);
-    const priority = Number(fd.get("priority") ?? application.priority);
-    const rk = `application:${application.id}`;
-    setPendingKey(rk); setError(null); setNotice(null);
-    try {
-      const response = await fetch(`${proxyPrefix}/api/applications/${application.id}/status`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, priority }),
-      });
-      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
-      setReview((c) => ({
-        ...c,
-        applications: c.applications.map((x) => x.id === application.id ? { ...x, status, priority, lastActivityAtUtc: new Date().toISOString() } : x),
-      }));
-      setNotice(`Updated ${application.company} / ${application.role}.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update application.");
-    } finally { setPendingKey(null); }
-  }
-
   async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>, email: ReviewEmail) {
     event.preventDefault();
     if (!proxyPrefix) { setError("API proxy is not configured."); return; }
@@ -308,7 +145,7 @@ export function ManualReviewWorkspace({
           notes,
         }),
       });
-      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+      if (!response.ok) throw new Error(await readErrorMessage(response));
       const refreshed = await refreshReviewFromApi();
       if (!refreshed) setReview((c) => ({ ...c, emails: c.emails.filter((x) => x.id !== email.id) }));
       setNotice(`Saved corrections for "${email.subject}".`);
@@ -319,58 +156,17 @@ export function ManualReviewWorkspace({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 animate-in">
-      <section className="card shrink-0 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="min-w-0">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Link href="/app" className="btn btn-secondary btn-sm">
-                  Back to dashboard
-                </Link>
-              </div>
-              <div className="flex flex-wrap items-baseline gap-3">
-                <p className="eyebrow">Email review queue</p>
-                <h1 className="text-base font-semibold text-[var(--text-primary)]">
-                  Blocked email evidence
-                </h1>
-              </div>
-              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                {coldStart
-                  ? coldStartHint
-                  : review.emails.length === 0
-                    ? "Queue is clear."
-                    : `${totalWaiting} waiting · ${totalUnassigned} unassigned · showing ${review.emails.length}`}
-              </p>
-            </div>
-          </div>
-          <span
-            className={`badge ${
-              source === "api"
-                ? "bg-[var(--green-soft)] text-[var(--green)]"
-                : "bg-[var(--yellow-soft)] text-[var(--yellow)]"
-            }`}
-          >
-            {readOnlyDemo ? "Demo" : source === "api" ? "Live" : "Offline"}
-          </span>
-        </div>
-
+      <h1 className="sr-only">Email review</h1>
+      <section className="shrink-0">
         {coldStart ? (
-          <div className="mt-3 card-elevated p-4">
+          <div className="card-elevated p-4">
             <p className="text-sm font-medium text-[var(--text-primary)]">
               {hasConnectedAccount
                 ? "Waiting on your first Gmail sync"
                 : "No Gmail connected yet"}
             </p>
-            <p className="mt-1 text-xs leading-6 text-[var(--text-tertiary)]">
-              The review queue surfaces emails where the classifier wasn&rsquo;t
-              confident enough to auto-update your pipeline. You decide the call.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {hasConnectedAccount ? (
-                <Link href="/app" className="btn btn-secondary btn-sm">
-                  Back to dashboard
-                </Link>
-              ) : (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {hasConnectedAccount ? null : (
                 <Link
                   href="/app/inbox#connect-inbox"
                   className="btn btn-primary btn-sm"
@@ -381,80 +177,76 @@ export function ManualReviewWorkspace({
             </div>
           </div>
         ) : (
-          <div className="mt-3">
-            <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
-              <label className="block">
-                <span className="eyebrow mb-1.5 block">Search review items</span>
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search sender, subject, company, notes..."
-                  className="input"
-                />
-              </label>
-              <label className="block">
-                <span className="eyebrow mb-1.5 block">Category</span>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="input"
-                >
-                  <option value="all">All categories</option>
-                  <option value="__unclassified__">Unclassified</option>
-                  {review.categoryOptions.map((c) => (
-                    <option key={c} value={c}>{formatEnumLabel(c)}</option>
-                  ))}
-                </select>
-              </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              aria-label="Search review items"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search"
+              className="input min-w-0 flex-1"
+            />
+            <select
+              aria-label="Category"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input w-44"
+            >
+              <option value="all">All categories</option>
+              <option value="__unclassified__">Unclassified</option>
+              {review.categoryOptions.map((c) => (
+                <option key={c} value={c}>{formatEnumLabel(c)}</option>
+              ))}
+            </select>
+            {filtersActive ? (
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}
-                disabled={!filtersActive}
               >
                 Clear
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void handleRefreshReview()}
-                disabled={!canPersist || pendingKey !== null}
-              >
-                {pendingKey === "refresh" ? <><span className="spinner" /> Refreshing...</> : "Refresh"}
-              </button>
-            </div>
+            ) : null}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => void handleRefreshReview()}
+              disabled={!canPersist || pendingKey !== null}
+            >
+              {pendingKey === "refresh" ? <><span className="spinner" /> Refreshing...</> : "Refresh"}
+            </button>
           </div>
         )}
 
         {!canPersist && (
-          <div className="alert alert-warning mt-4">
-            Offline - corrections disabled until the API reconnects.
+          <div role="status" className="alert alert-warning mt-2">
+            Offline.
           </div>
         )}
-        {notice && <div className="alert alert-success mt-3">{notice}</div>}
-        {error && <div className="alert alert-error mt-3">{error}</div>}
+        {notice ? <div className="alert alert-success mt-3">{notice}</div> : null}
+        <p role="status" className="sr-only">{notice ?? ""}</p>
+        {error && <div role="alert" className="alert alert-error mt-3">{error}</div>}
       </section>
 
-      <div className="grid min-h-0 flex-1 gap-4 [grid-template-rows:minmax(0,1fr)] xl:grid-cols-[0.74fr_1.26fr]">
+      <div className="grid min-h-0 flex-1 gap-3 [grid-template-rows:minmax(0,1fr)] md:[grid-template-rows:minmax(0,2fr)_minmax(0,3fr)] xl:grid-cols-[0.74fr_1.26fr] xl:[grid-template-rows:minmax(0,1fr)]">
         <div className="workspace-scroll-region min-h-0 pr-1">
-          <section className="card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="eyebrow">Blocked threads</p>
-              <span className="badge bg-[var(--red-soft)] text-[var(--red)]">
+          <section className="card min-h-full p-0">
+            <div className="flex items-center justify-between gap-3 px-4 pt-3">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">Emails</h2>
+              <span className="text-xs tabular-nums text-[var(--text-tertiary)]">
                 {filteredEmails.length}
               </span>
             </div>
 
             {filteredEmails.length === 0 ? (
-              <p className="mt-3 text-sm text-[var(--text-tertiary)]">
+              <p className="px-4 pb-3 pt-2 text-sm text-[var(--text-tertiary)]">
                 {review.emails.length === 0
                   ? coldStart
-                    ? "Queue will fill up after your first sync."
+                    ? "Nothing yet."
                     : "Queue is clear."
-                  : "No matches - adjust filters."}
+                  : "No matches."}
               </p>
             ) : (
-              <div className="mt-4 space-y-3">
+              <div className="mt-1 divide-y divide-[var(--border)]">
                 {filteredEmails.map((email) => {
                   const selected = selectedEmail?.id === email.id;
 
@@ -462,60 +254,17 @@ export function ManualReviewWorkspace({
                     <button
                       key={email.id}
                       type="button"
-                      className={`card-elevated w-full p-4 text-left ${
-                        selected
-                          ? "border-[var(--border-active)] bg-[var(--surface)] shadow-[0_0_0_1px_var(--border-active)]"
-                          : ""
+                      aria-pressed={selected}
+                      className={`w-full px-4 py-2.5 text-left transition hover:bg-[var(--surface-overlay)] ${
+                        selected ? "shadow-[inset_4px_0_0_var(--accent)]" : ""
                       }`}
                       onClick={() => setSelectedEmailId(email.id)}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-mono text-[var(--text-tertiary)]">
-                            {email.sender}
-                          </p>
-                          <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                            {email.subject}
-                          </h3>
-                          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                            {email.reviewReason ?? "Awaiting manual review."}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-1.5">
-                          <span className="badge bg-[var(--red-soft)] text-[var(--red)]">
-                            Review
-                          </span>
-                          <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                            {formatTimestamp(email.receivedAtUtc, timeZoneId)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {email.category ? (
-                          <span className="badge bg-[var(--surface-overlay)] text-[var(--text-secondary)]">
-                            {formatEnumLabel(email.category)}
-                          </span>
-                        ) : (
-                          <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">
-                            Unclassified
-                          </span>
-                        )}
-                        {email.jobApplicationId ? (
-                          <span className="badge bg-[var(--accent-soft)] text-[var(--accent)]">
-                            Assigned
-                          </span>
-                        ) : (
-                          <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                            Unassigned
-                          </span>
-                        )}
-                        {email.threadMessages.length > 1 ? (
-                          <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                            {email.threadMessages.length} messages in thread
-                          </span>
-                        ) : null}
-                      </div>
+                      <span className="block text-sm font-medium text-[var(--text-primary)]">{email.subject}</span>
+                      <span className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-[var(--text-tertiary)]">
+                        <span className="min-w-0 truncate">{email.sender}</span>
+                        <span className="shrink-0">{formatTimestamp(email.receivedAtUtc, timeZoneId)}</span>
+                      </span>
                     </button>
                   );
                 })}
@@ -537,18 +286,6 @@ export function ManualReviewWorkspace({
         </div>
       </div>
 
-      <div className="workspace-scroll-region shrink-0 pr-1 xl:max-h-[22rem]">
-        <ApplicationOverridesSection
-          applications={filteredApplications}
-          statusOptions={review.statusOptions}
-          pendingKey={pendingKey}
-          canPersist={canPersist}
-          timeZoneId={timeZoneId}
-          onSubmit={(event, application) =>
-            void handleApplicationSubmit(event, application)
-          }
-        />
-      </div>
     </div>
   );
 }

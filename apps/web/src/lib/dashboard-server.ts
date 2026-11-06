@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import type { DashboardResponse, DashboardView } from "./dashboard";
@@ -133,7 +134,8 @@ const getDashboardWithFiltersForUserCached = createKeyedUserScopedCache(
         source: "api",
         proxyPrefix: getCareerocClientApiBaseUrl(),
       };
-    } catch {
+    } catch (error) {
+      warnFallback("dashboard", error);
       return {
         dashboard: buildEmptyDashboard(user),
         source: "fallback",

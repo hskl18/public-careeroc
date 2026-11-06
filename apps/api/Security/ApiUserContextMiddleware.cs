@@ -34,7 +34,8 @@ internal sealed class ApiUserContextMiddleware
             return;
         }
 
-        if (await failedAuthThrottle.RejectIfExhaustedAsync(context))
+        var claimedEmail = context.Request.Headers[ApiRequestSignatureValidator.UserEmailHeader].ToString();
+        if (await failedAuthThrottle.RejectIfExhaustedAsync(context, claimedEmail))
         {
             return;
         }
@@ -47,7 +48,7 @@ internal sealed class ApiUserContextMiddleware
         if (!validation.IsValid)
         {
             _securityEventLogger.LogRequestSignatureRejected(context, validation.Error);
-            failedAuthThrottle.RecordFailure(context);
+            failedAuthThrottle.RecordFailure(context, claimedEmail);
 
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsJsonAsync(new { error = validation.Error });

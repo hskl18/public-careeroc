@@ -3,22 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { UserMemoryEntry } from "@/lib/profile";
+import { readErrorMessage } from "@/lib/client-fetch";
+import { formatConfidence } from "@/lib/labels";
 
 type InlineMemoryProposalsProps = {
   proposals?: UserMemoryEntry[] | null;
   proxyPrefix: string | null;
-  title?: string;
-  emptyCopy?: string;
 };
-
-async function readErrorMessage(response: Response) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-
-  return `Request failed with ${response.status}`;
-}
 
 function formatMemoryValue(entry: UserMemoryEntry) {
   if (entry.summary?.trim()) {
@@ -54,20 +45,9 @@ function formatMemoryValue(entry: UserMemoryEntry) {
   return rawValue;
 }
 
-function formatConfidence(value: number) {
-  if (!Number.isFinite(value)) return "n/a";
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatKind(value: string) {
-  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
 export function InlineMemoryProposals({
   proposals,
   proxyPrefix,
-  title = "Memory proposals",
-  emptyCopy = "No scoped memory proposals are waiting here.",
 }: InlineMemoryProposalsProps) {
   const router = useRouter();
   const initialProposals = useMemo(
@@ -120,12 +100,13 @@ export function InlineMemoryProposals({
     }
   }
 
+  if (items.length === 0 && !notice && !error) return null;
+
   return (
-    <section className="card app-workspace-panel p-4">
+    <section className="card p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="eyebrow">{title}</p>
-          <h2 className="mt-1.5 text-base font-semibold text-[var(--text-primary)]">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
             Confirm reusable facts
           </h2>
         </div>
@@ -137,18 +118,13 @@ export function InlineMemoryProposals({
       {notice ? <p className="mt-3 text-sm font-medium text-[var(--green)]">{notice}</p> : null}
       {error ? <p className="mt-3 text-sm font-medium text-[var(--red)]">{error}</p> : null}
 
-      {items.length === 0 ? (
-        <p className="mt-3 text-sm leading-6 text-[var(--text-tertiary)]">
-          {emptyCopy}
-        </p>
-      ) : (
+      {items.length === 0 ? null : (
         <div className="mt-4 grid gap-3">
           {items.map((proposal) => (
             <article key={proposal.id} className="card-elevated p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="eyebrow">{formatKind(proposal.kind || "memory")}</p>
-                  <h3 className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">
+                  <h3 className="break-words text-sm font-semibold text-[var(--text-primary)]">
                     {proposal.key}
                   </h3>
                 </div>

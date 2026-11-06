@@ -1,7 +1,5 @@
 using Careeroc.Application.Services;
 using Careeroc.Application.Abstractions;
-using Careeroc.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace Careeroc.Api.Background;
 

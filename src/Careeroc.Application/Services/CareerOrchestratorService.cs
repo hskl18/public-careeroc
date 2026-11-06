@@ -68,7 +68,7 @@ public sealed class CareerOrchestratorService
         string? userEmail,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, null, cancellationToken);
         var mailboxSnapshot = await _resumeMailboxContextBuilder.BuildForUserAsync(user.Id, cancellationToken);
         var withOpenReminders = await LoadApplicationsWithOpenRemindersAsync(user.Id, cancellationToken);
 
@@ -581,30 +581,4 @@ public sealed class CareerOrchestratorService
             : value;
     }
 
-    private async Task<User> GetOrCreateUserAsync(string? userEmail, CancellationToken cancellationToken)
-    {
-        var resolvedUserEmail = ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
-
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new User
-        {
-            Email = resolvedUserEmail,
-            Name = ResolveUserName(resolvedUserEmail)
-        };
-        _dbContext.Users.Add(user);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return user;
-    }
-
-    private static string ResolveUserName(string userEmail)
-    {
-        var separatorIndex = userEmail.IndexOf('@');
-        return separatorIndex > 0 ? userEmail[..separatorIndex] : ApplicationDefaults.DefaultUserName;
-    }
 }

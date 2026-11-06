@@ -11,7 +11,7 @@ import type {
   ReviewAgentTraceStep,
   ReviewEmail,
 } from "@/lib/manual-review";
-import { formatEnumLabel } from "@/lib/labels";
+import { formatEnumLabel, formatConfidence } from "@/lib/labels";
 
 type ManualReviewEmailDetailProps = {
   email: ReviewEmail | null;
@@ -34,11 +34,6 @@ function toLocalDateTimeInputValue(value: string | null, timeZoneId: string) {
   return formatDateTimeLocalInputInTimeZone(value, timeZoneId);
 }
 
-
-function formatConfidence(value: number | null) {
-  if (value === null) return "n/a";
-  return value.toFixed(2);
-}
 
 function toStageLabel(value: string) {
   return value
@@ -100,7 +95,7 @@ function AgentTraceStepCard({ step }: { step: ReviewAgentTraceStep }) {
               key={`${step.stage}:${fact.label}`}
               className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
             >
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+              <p className="text-xs text-[var(--text-tertiary)]">
                 {fact.label}
               </p>
               <p className="mt-1 text-xs font-medium text-[var(--text-primary)]">
@@ -158,29 +153,6 @@ export function ManualReviewEmailDetail({
       value: formatEnumLabel(email.category),
     },
     {
-      label: "Assigned",
-      value: assignedApplication
-        ? `${assignedApplication.company} / ${assignedApplication.role}`
-        : "Not assigned",
-      extra: assignedApplication ? (
-        <Link
-          href={`/app/applications/${assignedApplication.id}`}
-          className="mt-1 inline-flex text-[11px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
-        >
-          Open detail →
-        </Link>
-      ) : null,
-    },
-    {
-      label: "Contact",
-      value: email.contactName ?? email.contactEmail ?? "—",
-      extra: email.contactType ? (
-        <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
-          {email.contactType}
-        </p>
-      ) : null,
-    },
-    {
       label: "Company",
       value: email.extractedCompany ?? "—",
     },
@@ -212,36 +184,30 @@ export function ManualReviewEmailDetail({
 
   return (
     <section className="card p-0">
-      <header className="flex flex-col gap-2 border-b border-[var(--border)] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[11px] font-mono text-[var(--text-tertiary)]">
-            {email.sender}
-          </p>
-          <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-            {email.subject}
-          </h3>
-          <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-            {email.snippet}
-          </p>
-        </div>
-        <span className="badge shrink-0 bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-          {formatTimestamp(email.receivedAtUtc, timeZoneId)}
-        </span>
+      <header className="border-b border-[var(--border)] px-4 py-3">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">{email.subject}</h3>
+        {assignedApplication ? (
+          <Link
+            href={`/app/applications/${assignedApplication.id}`}
+            className="text-xs font-medium text-[var(--accent)] hover:underline"
+          >
+            {assignedApplication.company} / {assignedApplication.role}
+          </Link>
+        ) : null}
+        <p className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-[var(--text-tertiary)]">
+          <span className="min-w-0 truncate">{email.sender}</span>
+          <span className="shrink-0">{formatTimestamp(email.receivedAtUtc, timeZoneId)}</span>
+        </p>
       </header>
 
-      <div className="flex flex-col gap-4 px-5 py-4">
-        <div className="rounded-[var(--radius-md)] border border-[var(--red)]/25 bg-[var(--red-soft)]/50 px-4 py-3">
-          <p className="eyebrow text-[var(--red)]">Why this stopped automation</p>
-          <p className="mt-2 text-sm leading-7 text-[var(--text-primary)]">
-            {buildReviewReason(email)}
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 px-4 py-3">
+        <p className="alert alert-warning">{buildReviewReason(email)}</p>
 
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
           {metaCells.map((cell) => (
             <div
               key={cell.label}
-              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2.5"
+              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5"
             >
               <p className="eyebrow">{cell.label}</p>
               <p className="mt-1 text-sm font-medium text-[var(--text-primary)]">
@@ -252,23 +218,27 @@ export function ManualReviewEmailDetail({
           ))}
         </div>
 
-        <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2.5">
+        <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5">
           <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
             <p className="eyebrow">Body</p>
-            <span className="text-xs text-[var(--text-tertiary)]">Expand</span>
           </summary>
           <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm leading-7 text-[var(--text-secondary)]">
             {email.bodyPreview}
           </div>
         </details>
 
-        <AgentTraceSummaryCard
-          summary={email.traceSummary ?? email.agentTrace?.summary ?? null}
-          title="Structured model trace"
-        />
+        <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5">
+          <summary className="eyebrow">Model trace</summary>
+          <div className="mt-2">
+            <AgentTraceSummaryCard
+              summary={email.traceSummary ?? email.agentTrace?.summary ?? null}
+              title="Model trace"
+            />
+          </div>
+        </details>
 
         {email.threadMessages.length > 1 ? (
-          <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2.5">
+          <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5">
             <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
               <p className="eyebrow">Thread timeline</p>
               <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
@@ -282,12 +252,12 @@ export function ManualReviewEmailDetail({
                   className={`px-4 py-3 ${
                     message.isCurrentEmail
                       ? "bg-[var(--surface)] shadow-[inset_3px_0_0_var(--accent)]"
-                      : "bg-[rgba(255,255,255,0.42)]"
+                      : "bg-[var(--surface-strong)]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[11px] font-mono text-[var(--text-tertiary)]">
+                      <p className="text-xs text-[var(--text-tertiary)]">
                         {message.sender}
                       </p>
                       <p className="mt-0.5 text-sm font-medium text-[var(--text-primary)]">
@@ -303,7 +273,7 @@ export function ManualReviewEmailDetail({
                   <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
                     {message.snippet}
                   </p>
-                  <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                     {formatTimestamp(message.receivedAtUtc, timeZoneId)}
                   </p>
                 </article>
@@ -313,7 +283,7 @@ export function ManualReviewEmailDetail({
         ) : null}
 
         {email.agentTrace?.steps.length ? (
-          <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2.5">
+          <details className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5">
             <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
               <p className="eyebrow">Agent trace</p>
               <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
@@ -330,7 +300,7 @@ export function ManualReviewEmailDetail({
       </div>
 
       <form
-        className="border-t border-[var(--border)] bg-[rgba(255,255,255,0.32)] px-5 py-4"
+        className="border-t border-[var(--border)] bg-[var(--surface-strong)] px-5 py-4"
         onSubmit={(event) => onSubmit(event, email)}
       >
         <p className="eyebrow text-[var(--accent)]">Apply correction</p>
@@ -407,7 +377,7 @@ export function ManualReviewEmailDetail({
                 disabled={!canPersist || pendingKey !== null}
               />
             </label>
-            <label className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2.5 text-sm text-[var(--text-primary)]">
+            <label className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5 text-sm text-[var(--text-primary)]">
               <input
                 name="actionRequired"
                 type="checkbox"

@@ -27,7 +27,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 | Human in the loop | A review that proposes a write pauses on a LangGraph `interrupt()` with a Postgres checkpoint. When the user approves it, the API, never the agents, creates the reminders, and the graph resumes so the decision lands in its trace. |
 | Bring your own assistant | Read-only personal access tokens, an MCP server at `/mcp`, and an A2A 1.0 agent with a public agent card. |
 | Observability | OpenTelemetry from the browser-facing web app through the API into each agent node, using the GenAI `invoke_agent` span conventions. |
-| Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI for triage, category, company, status, and review precision and recall, the same scores for each free Ollama model, and a model-free eval of the evidence gate against invented citations and prompt injection. |
+| Evals | The 48 inbound emails of the 51-email demo inbox, labeled by hand and scored in CI with the rules alone for triage, category, company, status, and review precision and recall; the same scores for each free Ollama model, run by hand with `scripts/eval-model.sh`; and a model-free eval of the evidence gate against invented citations and prompt injection. |
 | Deploy | Docker Compose and a Helm chart for any Kubernetes, both started and smoke tested in CI, and multi-arch images on GHCR. |
 
 ## Screenshots
@@ -36,7 +36,7 @@ It is a working system rather than a template: a .NET 10 API, a Next.js 16 web a
 |---|---|
 | ![Applications](docs/media/applications.png) **Applications.** 51 emails become 20 tracked applications. | ![Application detail](docs/media/application-detail.png) **Application detail.** Pipeline stage, evidence, the next move, and resume fit. |
 | ![Review queue](docs/media/review-queue.png) **Review queue.** The agency and the scam email wait for a person. | ![Agent review](docs/media/agent-review.png) **Multi-agent review.** The agents propose reminders, the gate drops the citations it cannot find, and nothing is created until the user approves. |
-| ![Assistant access](docs/media/assistant-access.png) **Assistant access.** Tokens, the MCP command, and the A2A card. | ![Landing page](docs/media/landing.png) **Landing.** One click opens the demo. |
+| ![Assistant access](docs/media/assistant-access.png) **Connect your own assistant.** Tokens, the MCP command, and the A2A card. | ![Landing page](docs/media/landing.png) **Landing.** One click opens the demo. |
 
 One "Run review" click, traced across all three services in Jaeger:
 
@@ -63,7 +63,7 @@ flowchart LR
 
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
-  The agent runtime ships a deterministic suite, so local runs and CI need no model or API key, and the trace above and CI's evals come from it.
+  The agent runtime ships a deterministic suite, so local runs and CI need no model or API key; the trace above comes from it, and CI's evals use no model at all.
   The hosted demo is one unedited recording with real models behind both steps, with the citations the gate dropped still on show.
 - **Agent output is visible.** Each step's summary, reason, confidence, and evidence are shown on the dashboard, and low-confidence results and proposed writes stay pending until a person decides.
 
@@ -71,7 +71,7 @@ flowchart LR
 
 ## Where to start reading
 
-1. [graph.py](services/agent-runtime/src/careeroc_agent_runtime/graph.py): the review graph and the evidence gate in under 300 lines.
+1. [graph.py](services/agent-runtime/src/careeroc_agent_runtime/graph.py): the review graph and the evidence gate in about 300 lines.
 2. [test_evidence_gate_eval.py](services/agent-runtime/tests/test_evidence_gate_eval.py): what a careless or manipulated model can and cannot get past the gate.
 3. [CareerOrchestratorService.cs](src/Careeroc.Application/Services/CareerOrchestratorService.cs): the snapshot the agents see, and the approval that turns a proposal into a write.
 4. [ApplicationWorkflowService.cs](src/Careeroc.Application/Services/ApplicationWorkflowService.cs): how an email matches an application and moves its status.
@@ -84,16 +84,15 @@ You need Docker.
 ```bash
 git clone https://github.com/hskl18/public-careeroc.git
 cd public-careeroc
-docker compose --profile full up -d
+docker compose --profile full up -d --wait
 ```
 
 Open http://localhost:3000 and choose **Open the demo**.
-Compose downloads the prebuilt images for your CPU (amd64 or arm64), so nothing is compiled.
+Compose downloads the prebuilt images of the latest release for your CPU (amd64 or arm64), so nothing is compiled; set `CAREEROC_VERSION` (for example `1.2.0`) to pin a release, run `docker compose pull` to move to a newer one, or add `--build` to run this checkout.
 Running, the four containers use about 600 MB of memory and almost no CPU.
 Their ports are published on 127.0.0.1 only.
 
-To run your own changes, add `--build`.
-Compiling all three services from source takes several minutes and uses every CPU core Docker is allowed; lower that limit in Docker Desktop under **Settings > Resources** if your machine slows down.
+With `--build`, compiling all three services from source takes several minutes and uses every CPU core Docker is allowed; lower that limit in Docker Desktop under **Settings > Resources** if your machine slows down.
 
 To see traces, start Jaeger as well and open http://localhost:16686:
 
@@ -104,7 +103,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 \
 
 ### Connect your own assistant
 
-In the app, open **Settings**, create a token under **Assistant access**, and copy it.
+In the app, open **Settings**, create a token under **Connect your own assistant**, and copy it.
 
 MCP, for example in Claude Code:
 
@@ -138,9 +137,9 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
 
   `Ollama__*` sets the pass on each email, which sends the email's text to that model, so use it on real mail only with a provider you trust.
   `AGENT_*` sets the review agents, which see only the bounded snapshot; set `AGENT_PROVIDER=openai` and `AGENT_API_KEY` for an OpenAI-compatible endpoint.
-  All seven free models finished the review, but they differ on email: [DESIGN.md](DESIGN.md#evals) has their scores, and `scripts/eval-model.sh` reproduces them.
+  The free models differ on email: [DESIGN.md](DESIGN.md#evals) has their scores, and `scripts/eval-model.sh` reproduces them.
   The rules and the deterministic suite stay the fallback.
-- **Gmail.** Create a Google OAuth client, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and an access allowlist, and run the services outside demo mode as described in [AGENTS.md](AGENTS.md).
+- **Gmail.** Create a Google OAuth client with two redirect URIs, `<web URL>/api/auth/callback/google` for sign-in and the Gmail one from `.env.example`, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` for the web app, `Google__ClientId` and `Google__ClientSecret` for the API, and an access allowlist, and run the services outside demo mode as described in [AGENTS.md](AGENTS.md).
   Before you do, replace the `local-compose-only-*` secrets: the API and web app refuse them once real accounts can sign in.
 
 ## Deploy
@@ -171,10 +170,12 @@ docs                              design notes, ADRs, and deploy guides
 
 ## Testing
 
+You need the .NET SDK from `global.json`, Node 26 with pnpm 10, and Python 3.14 with uv; `pnpm install` once first.
+
 ```bash
 dotnet test Careeroc.sln                       # .NET: pipeline, API, MCP, tokens, evals
 pnpm --dir apps/web lint && pnpm --dir apps/web test:unit && pnpm web:build
-cd services/agent-runtime && uv run ruff check . && uv run pytest
+cd services/agent-runtime && uv run ruff check . && uv run ruff format --check . && uv run pytest
 ```
 
 Set `CAREEROC_TEST_POSTGRES` to a Postgres connection string to also run the tests that need real Postgres behavior.
@@ -182,7 +183,7 @@ Set `CAREEROC_TEST_POSTGRES` to a Postgres connection string to also run the tes
 Two CI jobs start the whole system and drive it like a visitor and their assistant would, with [scripts/smoke-demo.sh](scripts/smoke-demo.sh): demo sign-in, the processed pipeline, a multi-agent review and its approval, a personal access token, MCP, A2A, and revoking the token.
 One runs it on Docker Compose; the other installs the Helm chart on a kind Kubernetes cluster ([scripts/smoke-kubernetes.sh](scripts/smoke-kubernetes.sh)).
 A third drives the review in Chromium against the real API with a scripted agent runtime ([scripts/e2e-multi-agent.sh](scripts/e2e-multi-agent.sh)).
-A fourth builds the hosted demo with `DEMO_SNAPSHOT` and walks it in Chromium on desktop and phone sizes, including the refused writes ([hosted-demo.spec.ts](apps/web/e2e/hosted-demo.spec.ts)).
+The frontend job also builds the hosted demo with `DEMO_SNAPSHOT` and walks it in Chromium on desktop and phone sizes, including the refused writes ([hosted-demo.spec.ts](apps/web/e2e/hosted-demo.spec.ts)).
 CI also validates the Helm chart with `helm lint` and `kubeconform`.
 
 The pipeline eval in [eval/pipeline-results.json](eval/pipeline-results.json) is 1.0 on every metric.
@@ -198,8 +199,11 @@ The evidence-gate eval and its cases are in [DESIGN.md](DESIGN.md#evals).
 - [docs/routing.md](docs/routing.md) - web routes and API endpoints
 - [docs/backend/agentic-workflow-engine-decision.md](docs/backend/agentic-workflow-engine-decision.md) - why LangGraph, and how the graph is shaped
 - [docs/adr](docs/adr) - architecture decision records
+- [docs/deploy/README.md](docs/deploy/README.md) - deployment targets and secrets
 - [SECURITY.md](SECURITY.md) - controls and how to report a vulnerability
+- [CONTRIBUTING.md](CONTRIBUTING.md) - what changes are welcome and how to send them
 - [AGENTS.md](AGENTS.md) - commands and conventions for contributors and coding agents
+- [Releases](https://github.com/hskl18/public-careeroc/releases) - what changed in each version
 
 ## License
 

@@ -22,7 +22,6 @@
 **/.next/
 **/out/
 **/coverage/
-**/.terraform/
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/

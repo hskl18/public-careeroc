@@ -2,16 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { LocalTime } from "@/components/local-time";
-
-export type AccessToken = {
-  id: string;
-  name: string;
-  tokenPrefix: string;
-  createdAtUtc: string;
-  expiresAtUtc: string;
-  lastUsedAtUtc: string | null;
-  revokedAtUtc: string | null;
-};
+import { readErrorMessage } from "@/lib/client-fetch";
+import type { AccessToken } from "@/lib/access-tokens";
 
 type AssistantAccessPanelProps = {
   initialTokens: AccessToken[];
@@ -25,14 +17,6 @@ const lifetimeOptions = [
   { days: 30, label: "30 days" },
   { days: 90, label: "90 days" },
 ];
-
-async function readError(response: Response) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-  return `Request failed with ${response.status}`;
-}
 
 export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agentCardUrl }: AssistantAccessPanelProps) {
   const [tokens, setTokens] = useState<AccessToken[]>(initialTokens);
@@ -61,7 +45,7 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, expiresInDays: lifetimeDays }),
       });
-      if (!response.ok) throw new Error(await readError(response));
+      if (!response.ok) throw new Error(await readErrorMessage(response));
       const created = (await response.json()) as { token: string };
       setNewToken(created.token);
       await load();
@@ -76,7 +60,7 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
     if (!proxyPrefix || !window.confirm("Revoke this token? Assistants using it lose access immediately.")) return;
     const response = await fetch(`${proxyPrefix}/api/profile/access-tokens/${tokenId}`, { method: "DELETE" });
     if (!response.ok) {
-      setError(await readError(response));
+      setError(await readErrorMessage(response));
       return;
     }
     await load();
@@ -86,12 +70,10 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
   const tokenForSnippet = newToken ?? "<your token>";
 
   return (
-    <section className="card app-workspace-panel p-5">
-      <p className="eyebrow">Assistant access</p>
-      <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">Connect your own assistant</h2>
+    <section className="card min-h-full p-4">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">Connect your own assistant</h2>
       <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-        Give Claude, Codex, or any MCP or A2A client read-only access to this pipeline. Tokens can see your
-        applications, timelines, and reminders. They cannot change anything, and you can revoke them at any time.
+        Read-only tokens for any MCP or A2A client.
       </p>
 
       {proxyPrefix ? (
@@ -125,10 +107,10 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
           </button>
         </form>
       ) : (
-        <p className="alert alert-warning mt-4">Tokens are unavailable while the API is offline.</p>
+        <p role="status" className="alert alert-warning mt-4">Tokens are unavailable while the API is offline.</p>
       )}
 
-      {error ? <p className="alert alert-error mt-3">{error}</p> : null}
+      {error ? <p role="alert" className="alert alert-error mt-3">{error}</p> : null}
 
       {newToken ? (
         <div className="mt-4 rounded-md border border-[var(--border-active)] bg-[var(--surface-elevated)] p-3">
@@ -149,13 +131,13 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
       {mcpUrl ? (
         <div className="mt-4 space-y-2">
           <p className="text-xs font-semibold text-[var(--text-primary)]">MCP (Claude Code)</p>
-          <pre className="overflow-x-auto rounded-md bg-[var(--surface-strong)] p-3 text-[11px] leading-5 text-[var(--text-primary)]">
+          <pre className="overflow-x-auto rounded-md bg-[var(--surface-strong)] p-3 text-xs leading-5 text-[var(--text-primary)]">
             {`claude mcp add --transport http careeroc ${mcpUrl} \\\n  --header "Authorization: Bearer ${tokenForSnippet}"`}
           </pre>
           {agentCardUrl ? (
             <>
               <p className="text-xs font-semibold text-[var(--text-primary)]">A2A agent card</p>
-              <code className="block break-all text-[11px] text-[var(--text-secondary)]">{agentCardUrl}</code>
+              <code className="block break-all text-xs text-[var(--text-secondary)]">{agentCardUrl}</code>
             </>
           ) : null}
         </div>

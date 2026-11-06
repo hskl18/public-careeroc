@@ -100,7 +100,7 @@ public sealed class EmailIntelligenceService
     {
         using var activity = CareerocTelemetry.ActivitySource.StartActivity("email.process_pending");
         activity?.SetTag("email.batch_size", batchSize);
-        activity?.SetTag("user.email", userEmail);
+        activity?.SetTag("careeroc.user", CareerocTelemetry.UserKey(userEmail));
 
         var jobsProcessed = 0;
         var applicationsCreated = 0;
@@ -431,7 +431,7 @@ public sealed class EmailIntelligenceService
                 await _emailProcessingQueue.MarkCompletedAsync(job.Id, cancellationToken, job.LockedAtUtc);
                 jobsProcessed++;
 
-                _logger.LogInformation(
+                _logger.LogDebug(
                     "Processed email {EmailId} through {TriageAgent}, {ExtractionSource}, and {ReviewAgent}. Category: {Category}. Company: {Company}. Role: {Role}. Resolved application status: {Status}.",
                     inboxEmail.Id,
                     triageDecision.AgentName,
@@ -442,7 +442,8 @@ public sealed class EmailIntelligenceService
                     effectiveParsed.Role,
                     resolvedStatus);
             }
-            catch (Exception exception)
+            // On shutdown the job is not failed; its lease expires and another run picks it up.
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
             {
                 activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
                 // Drop the half-applied changes first; otherwise recording the failure would try to

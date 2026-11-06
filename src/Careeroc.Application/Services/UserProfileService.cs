@@ -66,7 +66,7 @@ public sealed class UserProfileService
         string? userName = null,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, userName, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, userName, cancellationToken);
 
         var profileDefaultsChanged = false;
         if (string.IsNullOrWhiteSpace(user.TimeZoneId))
@@ -95,11 +95,11 @@ public sealed class UserProfileService
         string? userName = null,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, userName, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, userName, cancellationToken);
 
         user.Name = NormalizeRequired(
             request.Name,
-            ResolveUserName(userName, user.Email),
+            UserAccounts.DisplayName(userName, user.Email),
             maxLength: 200,
             fieldName: "Name");
         user.TimeZoneId = NormalizeTimeZoneId(request.TimeZoneId);
@@ -117,7 +117,7 @@ public sealed class UserProfileService
         string? userName = null,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, userName, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, userName, cancellationToken);
 
         if (!user.WelcomeDismissedAtUtc.HasValue)
         {
@@ -126,33 +126,6 @@ public sealed class UserProfileService
         }
 
         return await MapProfileAsync(user, cancellationToken);
-    }
-
-    private async Task<User> GetOrCreateUserAsync(
-        string? userEmail,
-        string? userName,
-        CancellationToken cancellationToken)
-    {
-        var resolvedUserEmail = ResolveUserEmail(userEmail);
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
-
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new User
-        {
-            Email = resolvedUserEmail,
-            Name = ResolveUserName(userName, resolvedUserEmail),
-            TimeZoneId = ApplicationDefaults.DefaultTimeZoneId,
-            ProfileIcon = DefaultProfileIcon
-        };
-
-        await _dbContext.Users.AddAsync(user, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return user;
     }
 
     private async Task<UserProfileDto> MapProfileAsync(User user, CancellationToken cancellationToken)
@@ -527,14 +500,4 @@ public sealed class UserProfileService
         return ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
     }
 
-    private static string ResolveUserName(string? userName, string userEmail)
-    {
-        if (!string.IsNullOrWhiteSpace(userName))
-        {
-            return userName.Trim();
-        }
-
-        var separatorIndex = userEmail.IndexOf('@');
-        return separatorIndex > 0 ? userEmail[..separatorIndex] : ApplicationDefaults.DefaultUserName;
-    }
 }

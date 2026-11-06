@@ -74,27 +74,6 @@ public sealed partial class ResumeIntelligenceService
         entry.UpdatedAtUtc = nowUtc;
     }
 
-    private async Task<User> GetOrCreateUserAsync(string? userEmail, CancellationToken cancellationToken)
-    {
-        var resolvedUserEmail = ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
-
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new User
-        {
-            Email = resolvedUserEmail,
-            Name = ResolveUserName(resolvedUserEmail)
-        };
-        _dbContext.Users.Add(user);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return user;
-    }
-
     private async Task<ResumeEvaluationContext> LoadEvaluationContextAsync(
         Guid userId,
         CancellationToken cancellationToken)
@@ -125,9 +104,4 @@ public sealed partial class ResumeIntelligenceService
             applicationStats?.InterviewOrOffer ?? 0);
     }
 
-    private static string ResolveUserName(string userEmail)
-    {
-        var separatorIndex = userEmail.IndexOf('@');
-        return separatorIndex > 0 ? userEmail[..separatorIndex] : ApplicationDefaults.DefaultUserName;
-    }
 }

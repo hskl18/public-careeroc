@@ -82,47 +82,6 @@ public sealed class UserMemoryProposalService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<UserMemoryEntryDto>> GetProposalsForResumeAsync(
-        Guid resumeDocumentId,
-        string? userEmail,
-        int limit = 5,
-        CancellationToken cancellationToken = default)
-    {
-        var user = await GetExistingUserAsync(userEmail, cancellationToken);
-        if (user is null)
-        {
-            return [];
-        }
-
-        var resumeVersionIds = await _dbContext.ResumeVersions
-            .AsNoTracking()
-            .Where(version =>
-                version.ResumeDocumentId == resumeDocumentId &&
-                version.ResumeDocument.UserId == user.Id)
-            .Select(version => version.Id)
-            .Take(50)
-            .ToListAsync(cancellationToken);
-
-        var sourceIds = resumeVersionIds
-            .Append(resumeDocumentId)
-            .ToHashSet();
-        var nowUtc = _clock.UtcNow;
-
-        return await _dbContext.UserMemoryEntries
-            .AsNoTracking()
-            .Where(entry =>
-                entry.UserId == user.Id &&
-                entry.ConfirmationStatus == "pending" &&
-                entry.SourceId.HasValue &&
-                sourceIds.Contains(entry.SourceId.Value) &&
-                (!entry.ExpiresAtUtc.HasValue || entry.ExpiresAtUtc > nowUtc))
-            .OrderByDescending(entry => entry.CreatedAtUtc)
-            .ThenByDescending(entry => entry.UpdatedAtUtc)
-            .Take(Math.Clamp(limit, 1, 20))
-            .Select(entry => MapMemory(entry))
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<IReadOnlyList<UserMemoryEntryDto>> GetConfirmedMemoryAsync(
         string? userEmail,
         CancellationToken cancellationToken = default)
@@ -153,7 +112,7 @@ public sealed class UserMemoryProposalService
         string? userEmail,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, null, cancellationToken);
         var nowUtc = _clock.UtcNow;
         var normalized = NormalizeProposal(request, nowUtc);
         var proposal = await _dbContext.UserMemoryEntries
@@ -197,7 +156,7 @@ public sealed class UserMemoryProposalService
         string? userEmail,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, null, cancellationToken);
         var memory = await _dbContext.UserMemoryEntries
             .FirstOrDefaultAsync(
                 entry =>
@@ -221,7 +180,7 @@ public sealed class UserMemoryProposalService
         string? userEmail,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, null, cancellationToken);
         var action = NormalizeResolutionAction(request.Action);
         var nowUtc = _clock.UtcNow;
         var proposal = await _dbContext.UserMemoryEntries
@@ -284,28 +243,6 @@ public sealed class UserMemoryProposalService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return MapMemory(proposal);
-    }
-
-    private async Task<User> GetOrCreateUserAsync(string? userEmail, CancellationToken cancellationToken)
-    {
-        var resolvedUserEmail = ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
-
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new User
-        {
-            Email = resolvedUserEmail,
-            Name = ResolveUserName(resolvedUserEmail),
-            TimeZoneId = ApplicationDefaults.DefaultTimeZoneId
-        };
-        _dbContext.Users.Add(user);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return user;
     }
 
     private async Task<User?> GetExistingUserAsync(string? userEmail, CancellationToken cancellationToken)
@@ -438,11 +375,6 @@ public sealed class UserMemoryProposalService
             entry.ExpiresAtUtc);
     }
 
-    private static string ResolveUserName(string userEmail)
-    {
-        var separatorIndex = userEmail.IndexOf('@');
-        return separatorIndex > 0 ? userEmail[..separatorIndex] : ApplicationDefaults.DefaultUserName;
-    }
 
     private sealed record NormalizedMemoryProposal(
         string Kind,

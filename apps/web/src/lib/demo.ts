@@ -1,5 +1,6 @@
 export const defaultDemoEmailDomain = "demo.careeroc.example";
-export const demoPersonaName = "Alex Rivera";
+const demoPersonaName = "Alex Rivera";
+// Server only: the browser bundle never sees DEMO_SNAPSHOT, so this is always false there.
 export const isDemoSnapshot = /^(1|true|yes)$/i.test(process.env.DEMO_SNAPSHOT?.trim() ?? "");
 export const demoReadOnlyMessage = "This hosted demo is read-only. Clone the repo to try changes.";
 

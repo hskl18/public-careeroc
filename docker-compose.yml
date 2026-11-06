@@ -7,6 +7,7 @@
 #
 # Ports are published on 127.0.0.1 only. The fallback secrets below are public: the API and web app
 # refuse them once real accounts can sign in, so set your own before enabling Google sign-in.
+# The Postgres passwords are fixed and local-only too; use your own database outside this file.
 
 x-api-signing-secret: &api-signing-secret ${CAREEROC_API_AUTH_SECRET:-local-compose-only-api-signing-secret-0001}
 x-agent-shared-secret: &agent-shared-secret ${AGENT_SHARED_SECRET:-local-compose-only-agent-shared-secret-01}
@@ -139,6 +140,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      # So `up --wait` returns only once the app answers; the image has busybox wget.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   jaeger:
     profiles: ["observability"]

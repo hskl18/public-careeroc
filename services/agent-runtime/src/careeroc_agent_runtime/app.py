@@ -5,6 +5,7 @@ import hmac
 import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from importlib.metadata import version
 
 import httpx
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -14,7 +15,7 @@ from a2a.server.routes import (
     create_jsonrpc_routes,
 )
 from a2a.server.tasks import InMemoryTaskStore
-from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.types import Command
@@ -60,6 +61,13 @@ def create_app(
         )
 
         app.state.model_path = resolved_suite.model_path
+        # A2A reviews never pause (humanReviewAvailable is false), so they need no checkpoints;
+        # with them, every read-only call would leave a thread in the database forever.
+        app.state.a2a_graph = build_graph(
+            resolved_suite,
+            minimum_confidence=resolved_settings.minimum_confidence,
+            agent_timeout_seconds=resolved_settings.request_timeout_seconds,
+        )
         if checkpointer is not None:
             app.state.checkpoint_mode = "injected"
             app.state.graph = build_graph(
@@ -104,7 +112,7 @@ def create_app(
 
     runtime = FastAPI(
         title="Careeroc Agent Runtime",
-        version="0.1.0",
+        version=version("careeroc-agent-runtime"),
         lifespan=lifespan,
     )
 
@@ -114,7 +122,7 @@ def create_app(
         agent_card = build_agent_card(resolved_settings.public_url)
         executor = CareerocAgentExecutor(
             resolved_settings.api_base_url,
-            lambda: runtime.state.graph,
+            lambda: runtime.state.a2a_graph,
             a2a_http_client_factory,
             resolved_settings.run_timeout_seconds,
         )
@@ -136,10 +144,17 @@ def create_app(
             http_client_factory=a2a_http_client_factory or (lambda: httpx.AsyncClient(timeout=30)),
         )
 
-    def require_shared_secret(candidate: str | None) -> None:
+    # A dependency, so a caller without the secret gets 401 before the body is validated.
+    def require_shared_secret(
+        x_careeroc_agent_secret: str | None = Header(default=None),
+    ) -> None:
         expected = resolved_settings.shared_secret
         # Fails closed: with no secret configured, the internal endpoints answer nobody.
-        if not expected or candidate is None or not hmac.compare_digest(candidate, expected):
+        if (
+            not expected
+            or x_careeroc_agent_secret is None
+            or not hmac.compare_digest(x_careeroc_agent_secret.encode(), expected.encode())
+        ):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     # Liveness: the process answers. Readiness, below, also needs the checkpoint database, so a
@@ -167,25 +182,33 @@ def create_app(
                 ) from exc
         return {"status": "ready"}
 
-    @runtime.post("/v1/resume-mailbox-review", response_model=ResumeMailboxReviewResponse)
+    @runtime.post(
+        "/v1/resume-mailbox-review",
+        response_model=ResumeMailboxReviewResponse,
+        dependencies=[Depends(require_shared_secret)],
+    )
     async def review_resume_mailbox(
         payload: ResumeMailboxReviewRequest,
         request: Request,
-        x_careeroc_agent_secret: str | None = Header(default=None),
     ) -> ResumeMailboxReviewResponse:
-        require_shared_secret(x_careeroc_agent_secret)
+        graph = request.app.state.graph
+        config = {"configurable": {"thread_id": payload.thread_id}, "recursion_limit": 20}
+        # A reused thread would add this run's analyses and trace to the old run's through the
+        # list reducers, or restart a review that is waiting for a decision.
+        if (await graph.aget_state(config)).values:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This review thread already exists.",
+            )
         try:
             async with asyncio.timeout(resolved_settings.run_timeout_seconds):
-                state = await request.app.state.graph.ainvoke(
+                state = await graph.ainvoke(
                     {
                         "request": payload.model_dump(mode="json", by_alias=True),
                         "analyses": [],
                         "trace": [],
                     },
-                    config={
-                        "configurable": {"thread_id": payload.thread_id},
-                        "recursion_limit": 20,
-                    },
+                    config=config,
                 )
             return ResumeMailboxReviewResponse.model_validate(state["review"])
         except Exception as exc:
@@ -198,14 +221,13 @@ def create_app(
     @runtime.post(
         "/v1/resume-mailbox-review/{thread_id}/decision",
         response_model=ResumeMailboxReviewResponse,
+        dependencies=[Depends(require_shared_secret)],
     )
     async def decide_resume_mailbox_review(
         thread_id: str,
         decision: ReviewDecision,
         request: Request,
-        x_careeroc_agent_secret: str | None = Header(default=None),
     ) -> ResumeMailboxReviewResponse:
-        require_shared_secret(x_careeroc_agent_secret)
         graph = request.app.state.graph
         config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 20}
         snapshot = await graph.aget_state(config)

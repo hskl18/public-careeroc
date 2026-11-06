@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ResumeFit } from "@/lib/resumes";
+import { readErrorMessage } from "@/lib/client-fetch";
 
 type ResumeFitPanelProps = {
   applicationId: string;
@@ -10,15 +11,6 @@ type ResumeFitPanelProps = {
 };
 
 const resumeFitCache = new Map<string, ResumeFit>();
-
-async function readErrorMessage(response: Response) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-
-  return `Request failed with ${response.status}`;
-}
 
 function normalizeFit(payload: Partial<ResumeFit>): ResumeFit {
   return {
@@ -61,7 +53,7 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
         if (response.status === 404) {
           if (!cancelled) {
             setFit(null);
-            setError("Resume fit is not available until a parsed resume and role evidence exist.");
+            setError("Not available yet.");
           }
           return;
         }
@@ -94,16 +86,15 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
   const displayLoading = Boolean(proxyPrefix) && loading;
 
   return (
-    <section className="card app-workspace-panel p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Resume fit</p>
-          <h2 className="mt-1.5 text-base font-semibold text-[var(--text-primary)]">
+    <section className="card p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+          <Link href="/app/resume" className="hover:underline max-sm:inline-flex max-sm:min-h-6 max-sm:items-center">
             Role match
-          </h2>
-        </div>
-        <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-          {displayLoading ? "Computing" : fit ? `${Math.round(fit.matchScore)}%` : "Unavailable"}
+          </Link>
+        </h2>
+        <span className="text-base font-semibold tabular-nums text-[var(--text-primary)]">
+          {displayLoading ? "…" : fit ? `${Math.round(fit.matchScore)}%` : "—"}
         </span>
       </div>
 
@@ -115,53 +106,14 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
       ) : error ? (
         <p className="mt-3 text-sm leading-6 text-[var(--text-tertiary)]">{error}</p>
       ) : fit ? (
-        <div className="mt-4 grid gap-4">
-          <div>
-            <p className="text-3xl font-semibold text-[var(--text-primary)]">
-              {Math.round(fit.matchScore)}%
-            </p>
-            {fit.rationale ? (
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                {fit.rationale}
-              </p>
-            ) : null}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ResumeFitList title="Strengths" items={fit.strengths.slice(0, 3)} tone="success" />
-            <ResumeFitList title="Gaps" items={fit.gaps.slice(0, 3)} tone="warning" />
-          </div>
-          <Link href="/app/resume" className="btn btn-secondary btn-sm w-fit">
-            Open resume
-          </Link>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function ResumeFitList({
-  title,
-  items,
-  tone,
-}: {
-  title: string;
-  items: string[];
-  tone: "success" | "warning";
-}) {
-  const colorClass = tone === "success" ? "text-[var(--green)]" : "text-[var(--yellow)]";
-
-  return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3">
-      <p className={`eyebrow ${colorClass}`}>{title}</p>
-      {items.length === 0 ? (
-        <p className="mt-2 text-sm text-[var(--text-tertiary)]">No signals returned.</p>
-      ) : (
-        <ul className="mt-2 grid gap-2 text-sm leading-6 text-[var(--text-secondary)]">
-          {items.map((item) => (
-            <li key={item}>{item}</li>
+        <ul className="mt-1 divide-y divide-[var(--border)]">
+          {fit.gaps.slice(0, 3).map((gap) => (
+            <li key={gap} className="py-1.5 text-sm text-[var(--text-secondary)]">
+              {gap}
+            </li>
           ))}
         </ul>
-      )}
-    </div>
+      ) : null}
+    </section>
   );
 }

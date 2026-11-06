@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { appendExpiredAuthCookies } from "@/lib/auth-cookie-cleanup";
 import { resolvePublicOrigin } from "@/lib/public-origin";
+import { safeAppPath } from "@/lib/url-policy";
 
 export function GET(request: NextRequest) {
-  const nextPath = normalizeNextPath(request.nextUrl.searchParams.get("next"));
+  const nextPath = safeAppPath(request.nextUrl.searchParams.get("next"));
   const redirectUrl = new URL("/", resolvePublicOrigin(request));
 
   redirectUrl.searchParams.set("next", nextPath);
@@ -13,16 +14,4 @@ export function GET(request: NextRequest) {
   appendExpiredAuthCookies(response.headers);
 
   return response;
-}
-
-function normalizeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
-  }
-
-  if (!value.startsWith("/app")) {
-    return "/app";
-  }
-
-  return value;
 }

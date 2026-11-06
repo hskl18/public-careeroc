@@ -30,8 +30,6 @@ export default async function ApplicationDetailPage({
       detail={detail}
       source={source}
       proxyPrefix={proxyPrefix}
-      currentUserEmail={user.email}
-      currentUserName={user.name}
       timeZoneId={profile.timeZoneId}
     />
   );

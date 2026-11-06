@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import { buildFallbackProfile, type UserMemoryEntry, type UserProfile } from "./profile";
@@ -55,7 +56,8 @@ const getProfileForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("profile", error);
     return {
       profile: buildFallbackProfile(user),
       source: "fallback",
@@ -113,7 +115,8 @@ const getMemoryReviewForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("profile", error);
     return {
       profile: buildFallbackProfile(user),
       pendingMemory: [],

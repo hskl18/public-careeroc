@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Careeroc.Application;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
 
 namespace Careeroc.Api.Security;
@@ -92,10 +93,12 @@ internal static class ApiRequestSignatureValidator
             return ApiRequestSignatureValidationResult.Invalid("The API request body hash is invalid.");
         }
 
+        // The web app percent-encodes the name, since header values cannot carry other scripts.
+        var displayName = Uri.UnescapeDataString(normalizedName).Trim();
         return ApiRequestSignatureValidationResult.Valid(
             new AuthenticatedUserContext(
                 normalizedEmail,
-                string.IsNullOrWhiteSpace(normalizedName) ? null : normalizedName));
+                string.IsNullOrWhiteSpace(displayName) ? null : displayName));
     }
 
     private static string ResolveSecret(IConfiguration configuration, IHostEnvironment environment)
@@ -160,9 +163,16 @@ internal static class ApiRequestSignatureValidator
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
+    // The request target exactly as the web app sent and signed it. Path and QueryString come back
+    // re-escaped by ASP.NET's own rules, which differ from fetch's for characters like é or |.
     private static string GetRequestPathAndQuery(HttpRequest request)
     {
-        return $"{request.Path}{request.QueryString}";
+        // An absolute-form target (GET http://host/api/x) carries the host too; the web app never
+        // sends one, so only origin-form targets are taken as they arrived.
+        var rawTarget = request.HttpContext.Features.Get<IHttpRequestFeature>()?.RawTarget;
+        return rawTarget is not null && rawTarget.StartsWith('/')
+            ? rawTarget
+            : $"{request.PathBase}{request.Path}{request.QueryString}";
     }
 
     private static async Task<string> ComputeRequestBodyHashAsync(
@@ -176,20 +186,15 @@ internal static class ApiRequestSignatureValidator
             request.Body.Position = 0;
         }
 
-        using var reader = new StreamReader(
-            request.Body,
-            Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: false,
-            bufferSize: 8192,
-            leaveOpen: true);
-        var body = await reader.ReadToEndAsync(cancellationToken);
+        // The raw bytes, so two different invalid UTF-8 bodies cannot share a hash.
+        var hash = await SHA256.HashDataAsync(request.Body, cancellationToken);
 
         if (request.Body.CanSeek)
         {
             request.Body.Position = 0;
         }
 
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(body))).ToLowerInvariant();
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     private static bool IsSha256Hash(string value)

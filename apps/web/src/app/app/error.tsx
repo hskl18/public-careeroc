@@ -14,7 +14,6 @@ export default function WorkspaceErrorBoundary({
       error={error}
       reset={reset}
       title="The workspace could not load."
-      description="Retry the workspace. If the API is unavailable, the page will recover once signed requests start succeeding again."
     />
   );
 }

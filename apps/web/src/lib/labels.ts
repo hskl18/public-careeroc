@@ -7,3 +7,8 @@ export function formatEnumLabel(value: string | null): string {
     .map((part) => (part.toLowerCase() === "oa" ? "OA" : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(" ");
 }
+
+// Confidence everywhere reads as a percentage, so a score means the same on every page.
+export function formatConfidence(value: number | null) {
+  return value === null || !Number.isFinite(value) ? "n/a" : `${Math.round(value * 100)}%`;
+}

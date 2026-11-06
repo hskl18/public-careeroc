@@ -181,7 +181,7 @@ public sealed class ReminderEvidenceRefreshService
             }
 
             var reminderUpdated = _applicationWorkflowService.RefreshReminderFromExplicitEvidence(reminder, evidence.DueDateUtc.Value);
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Reminder evidence refresh selected email {EmailId} (subject: {Subject}) with due date {DueDateUtc} for reminder {ReminderId} ({Title}); reminder updated: {ReminderUpdated}.",
                 evidence.Email.Id,
                 SubjectForLog(evidence.Email.Subject),
@@ -269,7 +269,7 @@ public sealed class ReminderEvidenceRefreshService
                 }
             }
 
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Reminder evidence candidate for reminder {ReminderId}: email {EmailId}, subject: {Subject}, category: {Category}, actionRequired: {ActionRequired}, manualReview: {RequiresManualReview}, storedDueDateUtc: {StoredDueDateUtc}, resolvedDueDateUtc: {ResolvedDueDateUtc}, dueDateSource: {DueDateSource}.",
                 reminder.Id,
                 email.Id,

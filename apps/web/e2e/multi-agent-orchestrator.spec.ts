@@ -30,9 +30,12 @@ test.describe("multi-agent resume and mailbox review", () => {
 
     await page.goto("/app");
     await expect(page).toHaveURL(/\/app$/);
-    await expect(page.getByText("Multi-agent review", { exact: true })).toBeVisible();
+    // The review is one row on the dashboard; running and deciding happen in its dialog.
+    const openReview = () => page.getByRole("button", { name: /Multi-agent review/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Multi-agent review" });
+    await openReview();
 
-    await page.getByRole("button", { name: "Run review" }).click();
+    await dialog.getByRole("button", { name: "Run review" }).click();
 
     const response = await reviewResponse;
     expect(response.status()).toBe(200);
@@ -60,15 +63,13 @@ test.describe("multi-agent resume and mailbox review", () => {
       "career_supervisor",
     ]);
 
-    await expect(page.getByText("Review updated.")).toBeVisible();
-    await expect(page.getByText("langgraph.resume_mailbox_review.v1")).toBeVisible();
-    await expect(page.getByText("fixture/e2e-structured-output", { exact: true })).toBeVisible();
-    await expect(page.getByText("88%", { exact: true })).toBeVisible();
-    await expect(page.getByText("Waiting for your approval")).toBeVisible();
-    await expect(page.getByText("resume analyst", { exact: true })).toBeVisible();
-    await expect(page.getByText("mailbox analyst", { exact: true })).toBeVisible();
-    await expect(page.getByText("strategy analyst", { exact: true })).toBeVisible();
-    await expect(page.getByText("career supervisor", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Review updated.", { exact: true }).first()).toBeVisible();
+    await expect(dialog).toContainText("fixture/e2e-structured-output · confidence 88%");
+    await expect(dialog.getByText("Waiting for your approval")).toBeVisible();
+    await expect(dialog.getByText("resume analyst", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("mailbox analyst", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("strategy analyst", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("career supervisor", { exact: true })).toBeVisible();
 
     const fixtureStateResponse = await request.get(`${fixtureUrl}/__e2e/state`);
     expect(fixtureStateResponse.ok()).toBe(true);
@@ -93,9 +94,11 @@ test.describe("multi-agent resume and mailbox review", () => {
     expect(fixtureState.lastRequest).not.toHaveProperty("emailBodies");
 
     await page.reload();
-    await expect(page.getByText("fixture/e2e-structured-output", { exact: true })).toBeVisible();
-    await expect(page.getByText("Waiting for your approval")).toBeVisible();
-    await expect(page.getByText("career supervisor", { exact: true })).toBeVisible();
+    await expect(page.getByText("Needs your approval", { exact: true })).toBeVisible();
+    await openReview();
+    await expect(dialog).toContainText("fixture/e2e-structured-output");
+    await expect(dialog.getByText("Waiting for your approval")).toBeVisible();
+    await expect(dialog.getByText("career supervisor", { exact: true })).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

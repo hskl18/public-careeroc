@@ -1,6 +1,5 @@
 import { requireUser } from "@/lib/require-user";
 import dynamic from "next/dynamic";
-import { isDemoSnapshot } from "@/lib/demo";
 import { getInboxSetupForUser } from "@/lib/inbox-accounts-server";
 import { getManualReviewForUser } from "@/lib/manual-review-server";
 import { getProfileForUser } from "@/lib/profile-server";
@@ -32,23 +31,19 @@ export default async function ReviewPage() {
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col gap-4 px-5 py-6 animate-in md:h-full md:overflow-hidden">
+      <div className="flex min-h-full w-full flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 animate-in md:h-full md:overflow-hidden">
         {inboxSetupSource === "fallback" || source === "fallback" ? (
-          <div className="alert alert-warning shrink-0">
-            Live API data is unavailable right now. The review queue is showing
-            an empty local state until the API comes back.
+          <div role="status" className="alert alert-warning shrink-0">
+            API unavailable. Showing empty data.
           </div>
         ) : null}
         <ManualReviewWorkspace
           initialReview={review}
           source={source}
           proxyPrefix={proxyPrefix}
-          currentUserEmail={user.email}
-          currentUserName={user.name}
           timeZoneId={profile.timeZoneId}
           hasConnectedAccount={hasConnectedAccount}
           hasSyncedOnce={hasSyncedOnce}
-          readOnlyDemo={isDemoSnapshot}
         />
       </div>
     </main>

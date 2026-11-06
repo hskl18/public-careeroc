@@ -8,11 +8,12 @@ import {
   isGoogleAuthConfigured,
   startSignIn,
 } from "@/auth";
-import { isDemoSnapshot } from "@/lib/demo";
 import { GoogleSignInSubmit } from "@/components/google-sign-in-submit";
 import { PublicSiteShell } from "@/components/public-site-chrome";
 import { StatusPill } from "@/components/status-pill";
+import { SvgAsset, mascotAssets } from "@/components/svg-asset";
 import { buildPageMetadata, repositoryUrl } from "@/lib/site-metadata";
+import { safeAppPath } from "@/lib/url-policy";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Multi-agent job search for recruiting email",
@@ -24,14 +25,6 @@ type HomePageProps = {
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizeNextPath(value: string | undefined) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
-  }
-
-  return value;
 }
 
 function formatAuthError(value: string | undefined) {
@@ -62,28 +55,51 @@ function formatSessionRecovery(value: string | undefined) {
   return "Your session expired. Sign in again to return to your workspace.";
 }
 
+const demoCounts = [
+  ["51", "Demo emails", "profile-inbox-blue"],
+  ["20", "Applications", "profile-resume-stack"],
+  ["4", "Interviewing", "profile-agent-spark"],
+  ["1", "Offer", "profile-star-scout"],
+  ["2", "Email review", "profile-inbox-alert"],
+];
+
+const agents = [
+  ["Mailbox analyst", "profile-inbox-mint", "Reads outcomes."],
+  ["Resume analyst", "profile-resume-card", "Checks evidence."],
+  ["Strategy analyst", "profile-agent-radar", "Picks next actions."],
+  ["Supervisor", "profile-agent-crown", "Merges all three."],
+  ["Evidence gate", "profile-agent-flag", "Drops what it can't verify."],
+  ["You", "profile-inbox-wink", "Approve or reject."],
+];
+
 const pipelinePreview = [
-  ["Northstar Labs", "Software Engineer Intern", "Interviewing"],
-  ["Atlas Robotics", "Backend Engineer", "Oa Pending"],
-  ["Linear Systems", "Product Infrastructure", "Applied"],
-  ["Unknown Company", "Product Engineering", "Review"],
+  ["Kestrel AI", "Backend Engineer, New Grad", "Offer"],
+  ["Lumen Robotics", "Robotics Software Engineer", "Interviewing"],
+  ["Redwood Security", "Security Engineer", "Oa Pending"],
+  ["Summit Logistics", "Junior Software Developer", "Applied"],
+  ["Agency email", "Backend Engineer, confidential client", "Email review"],
 ];
 
 const howSteps = [
-  ["1", "Connect Gmail", "Read-only access to recruiting mail, separate from sign-in."],
-  ["2", "Extract evidence", "Threads become companies, roles, deadlines, and contacts."],
-  ["3", "Review risky changes", "Low-confidence updates wait in a review queue."],
-  ["4", "Work the pipeline", "Applications, reminders, and resume feedback in one place."],
+  [mascotAssets.loading, "Connect Gmail", "Read-only."],
+  [mascotAssets.loadingResumeScan, "Extract evidence", "Company, role, deadline."],
+  [mascotAssets.resumeBuddyStack, "Review risky changes", "Unsure mail waits for you."],
+  ["/profile-icons/profile-agent-crown.svg", "Agent review", "Nothing applies until you approve."],
+  [mascotAssets.resumeBuddyCard, "Work the pipeline", "Applications and reminders."],
 ];
 
+function characterPath(name: string) {
+  return `/profile-icons/${name}.svg`;
+}
+
 const rowClass =
-  "rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2.5";
+  "rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1.5";
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const session = await getOptionalSession();
   const isSignedIn = Boolean(session?.user);
   const resolvedSearchParams = (await searchParams) ?? {};
-  const nextPath = normalizeNextPath(readSearchParam(resolvedSearchParams.next));
+  const nextPath = safeAppPath(readSearchParam(resolvedSearchParams.next));
   const authError = readSearchParam(resolvedSearchParams.error);
   const authErrorMessage = formatAuthError(authError);
   const sessionRecoveryMessage = formatSessionRecovery(
@@ -92,24 +108,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <PublicSiteShell>
-      <section className="card app-workspace-panel p-3 sm:p-4">
+      <section className="card flex grow flex-col p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="eyebrow">Open-source agent system</p>
-            <h1 className="mt-1 text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:text-2xl">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <SvgAsset
+              src={mascotAssets.loading}
+              decorative
+              className="h-12 w-12"
+            />
+            <h1 className="min-w-0 text-xl font-semibold text-[var(--text-primary)]">
               Multi-agent job search for recruiting email
             </h1>
-            <p className="mt-2 max-w-3xl text-base leading-6 text-[var(--text-secondary)]">
-              careeroc turns recruiting email into an evidence-backed pipeline.
-              Specialist agents review the search, and you approve what they propose.
-            </p>
-            <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
-              {isDemoSnapshot
-                ? "No sign-up. You get a read-only workspace built from a fictional inbox."
-                : isDemoMode
-                  ? "No sign-up. You get a private workspace built from a fictional inbox, deleted after 24 hours."
-                  : "Google sign-in and Gmail access are separate. Gmail sync is controlled inside the app."}
-            </p>
           </div>
 
           <div
@@ -157,20 +166,43 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             {sessionRecoveryMessage}
           </p>
         )}
+
+        <div className="mt-2 grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {demoCounts.map(([count, label, character]) => (
+            <div key={label} className={`flex items-center gap-3 last:col-span-2 lg:last:col-span-1 ${rowClass}`}>
+              <SvgAsset src={characterPath(character)} decorative className="h-9 w-9" />
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-[var(--text-primary)]">{count}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
-      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-        <section className="card app-workspace-panel p-3 sm:p-4">
-          <p className="eyebrow">Example</p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
-            Active pipeline
+      <section className="card flex grow flex-col p-4">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">The agents</h2>
+        <div className="mt-2 grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {agents.map(([name, character, body]) => (
+            <article key={name} className={`flex items-center gap-2 ${rowClass}`}>
+              <SvgAsset src={characterPath(character)} decorative className="h-10 w-10" />
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{name}</h3>
+                <p className="text-xs text-[var(--text-tertiary)]">{body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid grow-[2] gap-3 lg:grid-cols-2">
+        <section className="card flex flex-col p-4">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
+            Demo pipeline
           </h2>
-          <div className="mt-3 grid gap-2">
+          <div className="mt-1 flex flex-1 flex-col divide-y divide-[var(--border)]">
             {pipelinePreview.map(([company, role, status]) => (
-              <div
-                key={company}
-                className={`flex items-center justify-between gap-3 ${rowClass}`}
-              >
+              <div key={company} className="flex flex-1 items-center justify-between gap-3 py-1">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                     {company}
@@ -183,15 +215,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </section>
 
-        <section className="card app-workspace-panel p-3 sm:p-4">
-          <p className="eyebrow">How it works</p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
+        <section className="card flex flex-col p-4">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
             From inbox to pipeline
           </h2>
-          <ol className="mt-3 grid gap-2">
-            {howSteps.map(([step, title, body]) => (
-              <li key={step} className={`flex items-baseline gap-3 ${rowClass}`}>
-                <span className="eyebrow">{step}</span>
+          <ol className="mt-1 flex flex-1 flex-col divide-y divide-[var(--border)]">
+            {howSteps.map(([mascot, title, body]) => (
+              <li key={title} className="flex flex-1 items-center gap-3 py-1">
+                <SvgAsset src={mascot} decorative className="h-8 w-8" />
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
                   <p className="text-xs text-[var(--text-tertiary)]">{body}</p>

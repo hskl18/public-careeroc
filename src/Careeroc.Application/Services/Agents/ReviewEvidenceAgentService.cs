@@ -25,13 +25,6 @@ public sealed class ReviewEvidenceAgentService
         _reviewEvidenceModel = reviewEvidenceModel;
     }
 
-    public ReviewEvidenceDecision Evaluate(
-        ParsedRecruitingEmail parsed,
-        ApplicationMatchResult match)
-    {
-        return EvaluateDeterministically(parsed, match);
-    }
-
     public async Task<ReviewEvidenceDecision> EvaluateAsync(
         ParsedRecruitingEmail parsed,
         ApplicationMatchResult match,

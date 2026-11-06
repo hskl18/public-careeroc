@@ -30,6 +30,10 @@ spec:
         app.kubernetes.io/name: {{ $name }}
     spec:
       automountServiceAccountToken: false
+      {{- if eq $name "agent-runtime" }}
+      # A review can run for 100 seconds; let it finish before the pod is killed.
+      terminationGracePeriodSeconds: 110
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -50,7 +54,7 @@ spec:
               value: {{ $component.port | quote }}
             {{- if eq $name "api" }}
             - { name: ASPNETCORE_ENVIRONMENT, value: Production }
-            - { name: ASPNETCORE_FORWARDEDHEADERS_ENABLED, value: "true" }
+            - { name: ForwardedHeaders__Enabled, value: "true" }
             - { name: Database__ApplyMigrationsOnStartup, value: "true" }
             - { name: API_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
             - { name: NEXT_PUBLIC_SITE_URL, value: {{ $publicUrl | quote }} }
@@ -67,6 +71,18 @@ spec:
             {{- include "careeroc.secretEnv" (list "Google__ClientSecret" $root.Values.existingSecret "GOOGLE_CLIENT_SECRET") | nindent 12 }}
             {{- else if eq $name "agent-runtime" }}
             - { name: CAREEROC_AGENT_PROVIDER, value: {{ $root.Values.agentProvider | quote }} }
+            {{- with $root.Values.agentModel }}
+            - { name: CAREEROC_AGENT_MODEL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with $root.Values.agentBaseUrl }}
+            - { name: CAREEROC_AGENT_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            - name: CAREEROC_AGENT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $root.Values.existingSecret }}
+                  key: AGENT_API_KEY
+                  optional: true
             - { name: CAREEROC_AGENT_API_BASE_URL, value: "http://api:8080" }
             - { name: CAREEROC_AGENT_PUBLIC_URL, value: {{ $publicUrl | quote }} }
             # Optional and separate from DATABASE_URL; without it, paused reviews are kept in memory.
@@ -94,6 +110,8 @@ spec:
           readinessProbe:
             httpGet: { path: {{ $component.ready }}, port: http }
             periodSeconds: 10
+            # A readiness check waits on the database; the runtime's gives up after 3 seconds.
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: { path: {{ $component.live }}, port: http }
             initialDelaySeconds: 60

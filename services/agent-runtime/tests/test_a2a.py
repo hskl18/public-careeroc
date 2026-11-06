@@ -4,6 +4,7 @@ import httpx
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
+from careeroc_agent_runtime.a2a_server import select_skill
 from careeroc_agent_runtime.app import create_app
 from careeroc_agent_runtime.deterministic import DeterministicAgentSuite
 from careeroc_agent_runtime.settings import AgentRuntimeSettings
@@ -180,3 +181,42 @@ async def test_api_failures_do_not_leak_internal_urls() -> None:
     task = result["result"]["task"]
     assert task["status"]["state"] == "TASK_STATE_FAILED"
     assert "careeroc.test" not in str(result)
+
+
+@pytest.mark.parametrize(
+    ("text", "skill"),
+    [
+        ("What are my next steps?", "career_review"),
+        ("Any reviews of my resume?", "career_review"),
+        ("How can I improve my odds?", "career_review"),
+        ("Show me a preview of my pipeline", "pipeline_status"),
+        ("Where do my applications stand?", "pipeline_status"),
+    ],
+)
+def test_skill_routing_matches_word_starts(text: str, skill: str) -> None:
+    assert select_skill(text) == skill
+
+
+@pytest.mark.asyncio
+async def test_a_caller_the_api_no_longer_allows_gets_403() -> None:
+    def forbidding_api(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(403)
+
+    app = create_app(
+        settings=AgentRuntimeSettings(
+            provider="deterministic",
+            api_base_url="https://api.careeroc.test",
+            public_url="https://agent.careeroc.test",
+        ),
+        suite=DeterministicAgentSuite(),
+        checkpointer=InMemorySaver(),
+        a2a_http_client_factory=lambda: httpx.AsyncClient(
+            transport=httpx.MockTransport(forbidding_api)
+        ),
+    )
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://runtime") as client:
+            response = await call(client, "ListTasks", {})
+
+    assert response.status_code == 403

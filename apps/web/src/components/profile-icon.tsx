@@ -97,7 +97,7 @@ export const profileIconOptions = [
 
 export type ProfileIconId = (typeof profileIconOptions)[number]["id"];
 
-export function resolveProfileIcon(icon: string | null | undefined) {
+function resolveProfileIcon(icon: string | null | undefined) {
   return (
     profileIconOptions.find((option) => option.id === icon) ??
     profileIconOptions[0]

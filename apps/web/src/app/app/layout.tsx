@@ -65,12 +65,16 @@ export default async function AppLayout({
       <SiteHeader homeHref="/app">
         <WorkspaceNav />
 
-        <div className="flex min-w-0 flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center max-lg:flex-none">
           {isDemoMode ? (
-            <p className="hidden truncate rounded-full bg-[var(--yellow-soft)] px-3 py-1 text-xs font-medium text-[var(--text-primary)] lg:block">
-              {isDemoSnapshot
-                ? "Read-only demo with fictional data"
-                : "Demo workspace with fictional data, deleted after 24 hours"}
+            <p className="shrink-0 truncate rounded-full bg-[var(--yellow-soft)] px-3 py-1 text-xs font-medium text-[var(--text-primary)]">
+              {/* Short on narrow screens, so the notice never disappears. */}
+              <span className="lg:hidden">Demo</span>
+              <span className="hidden lg:inline">
+                {isDemoSnapshot
+                  ? "Read-only demo with fictional data"
+                  : "Demo workspace with fictional data, deleted after 24 hours"}
+              </span>
             </p>
           ) : null}
         </div>
@@ -91,25 +95,20 @@ export default async function AppLayout({
                 label={`${displayName} profile icon`}
                 className="h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface-elevated)]"
               />
-              <span className="hidden max-w-44 text-right xl:block">
-                <span className="block text-xs font-medium leading-tight text-[var(--text-primary)]">
-                  {displayName}
-                </span>
-                <span className="block truncate text-[11px] leading-tight text-[var(--text-tertiary)]">
-                  {displayEmail}
-                </span>
+              <span className="hidden max-w-44 truncate text-xs font-medium text-[var(--text-primary)] xl:block">
+                {displayName}
               </span>
             </>
           }
         >
           <div
-            className="absolute right-0 top-[calc(100%+0.6rem)] z-[100] isolate w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[var(--brand-blue)]/18 bg-[var(--surface-strong)]/92 p-2 text-[var(--text-primary)] shadow-[0_18px_48px_rgba(15,23,42,0.14)] backdrop-blur-xl before:pointer-events-none before:absolute before:inset-0 before:bg-white/40 sm:w-72"
+            className="absolute right-0 top-[calc(100%+0.6rem)] z-[100] isolate w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-[var(--brand-blue)]/18 bg-[var(--surface-strong)] p-2 text-[var(--text-primary)] shadow-lg sm:w-72"
           >
             <div className="relative flex items-center gap-3 border-b border-[var(--border)] px-3 py-3">
               <ProfileIcon
                 icon={profile.profileIcon}
                 decorative
-                className="h-11 w-11 rounded-md border border-[var(--brand-green)]/30 bg-[var(--surface-elevated)] shadow-[0_0_0_3px_rgba(22,163,74,0.08)]"
+                className="h-11 w-11 rounded-md border border-[var(--brand-green)]/30 bg-[var(--surface-elevated)]"
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-[var(--text-primary)]">
@@ -126,6 +125,14 @@ export default async function AppLayout({
               className="relative mt-2 flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--blue-soft)] hover:text-[var(--brand-blue)]"
             >
               Product overview
+              <span className="text-[var(--text-tertiary)]">&rarr;</span>
+            </Link>
+
+            <Link
+              href="/app/inbox"
+              className="relative mt-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--blue-soft)] hover:text-[var(--brand-blue)]"
+            >
+              Inbox
               <span className="text-[var(--text-tertiary)]">&rarr;</span>
             </Link>
 
@@ -150,7 +157,7 @@ export default async function AppLayout({
         </UserMenu>
       </SiteHeader>
 
-      <div className="min-h-0 flex-1 md:overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col md:block md:overflow-hidden">
         {children}
       </div>
 

@@ -7,6 +7,7 @@ import type { DashboardResponse } from "@/lib/dashboard";
 import {
   activeMailSyncPollingIntervalMs,
   idleWorkspacePollingIntervalMs,
+  isInboxAnalysisActive,
 } from "@/lib/workspace-polling";
 import { SvgAsset, mascotAssets } from "./svg-asset";
 import type {
@@ -114,13 +115,7 @@ function getPollingIntervalMs(
     return null;
   }
 
-  const { processed, total } = getDashboardProgress(dashboard);
-  const hasActiveAnalysis =
-    (dashboard.inbox.pendingAnalysisEmails ?? 0) > 0 ||
-    (dashboard.inbox.processingAnalysisEmails ?? 0) > 0 ||
-    (total > 0 && processed < total);
-
-  return hasActiveAnalysis || !dashboard.inbox.lastSyncAtUtc
+  return isInboxAnalysisActive(dashboard)
     ? activeMailSyncPollingIntervalMs
     : idleWorkspacePollingIntervalMs;
 }
@@ -284,7 +279,7 @@ function SyncMetric({
         : "var(--text-primary)";
 
   return (
-    <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-3">
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
       <p className="eyebrow">{label}</p>
       <p className="mt-2 text-sm font-semibold" style={{ color: valueColor }}>
         {value}
@@ -328,12 +323,8 @@ export function MailSyncPanel({
     dashboard,
   );
   const isStalled = progressEstimate?.kind === "stalled";
-  const progressDetail =
-    isStalled
-      ? progressEstimate.detail
-      : progressEstimate
-        ? progressEstimate.detail
-        : "New analysis is running in the background.";
+  const progressDetail = progressEstimate?.detail ?? "Analysis is running.";
+  const analyzing = isInboxAnalysisActive(dashboard);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -373,7 +364,7 @@ export function MailSyncPanel({
               tone: "border-[var(--red)]/25 bg-[var(--red-soft)] text-[var(--red)]",
               dot: "bg-[var(--red)]",
               pulse: false,
-              detail: `${reconnectableAccounts.length} Gmail connection${reconnectableAccounts.length === 1 ? "" : "s"} needs Google reconnection before sync can continue.`,
+              detail: "Reconnect Google to resume sync.",
             }
         : !dashboardLive
           ? {
@@ -389,36 +380,36 @@ export function MailSyncPanel({
               tone: "border-[var(--red)]/25 bg-[var(--red-soft)] text-[var(--red)]",
               dot: "bg-[var(--red)]",
               pulse: false,
-              detail: `${attentionAccounts.length} Gmail connection${attentionAccounts.length === 1 ? "" : "s"} needs setup.`,
+              detail: `${attentionAccounts.length === 1 ? "1 Gmail connection needs" : `${attentionAccounts.length} Gmail connections need`} setup.`,
             }
           : dashboard.inbox.lastSyncAtUtc
             ? {
-                label: processed < total
+                label: analyzing
                   ? isStalled
                     ? "Analysis stalled"
                     : "Analyzing mail"
                   : "Synced",
-                tone: processed < total
+                tone: analyzing
                   ? isStalled
                     ? "border-[var(--yellow)]/25 bg-[var(--yellow-soft)] text-[var(--yellow)]"
                     : "border-[var(--blue)]/25 bg-[var(--blue-soft)] text-[var(--blue)]"
                   : "border-[var(--green)]/25 bg-[var(--green-soft)] text-[var(--green)]",
-                dot: processed < total
+                dot: analyzing
                   ? isStalled
                     ? "bg-[var(--yellow)]"
                     : "bg-[var(--blue)]"
                   : "bg-[var(--green)]",
-                pulse: processed < total && !isStalled,
-                detail: processed < total
+                pulse: analyzing && !isStalled,
+                detail: analyzing
                   ? progressDetail
-                  : "Last sync and analysis are complete. New Gmail messages will sync automatically.",
+                  : "Up to date.",
               }
             : {
                 label: "Waiting for first sync",
                 tone: "border-[var(--blue)]/25 bg-[var(--blue-soft)] text-[var(--blue)]",
                 dot: "bg-[var(--blue)]",
                 pulse: true,
-                detail: "Gmail is connected and waiting for the first sync to finish.",
+                detail: "Waiting for first sync.",
               };
 
   const refreshDashboard = useEffectEvent(async () => {
@@ -520,17 +511,16 @@ export function MailSyncPanel({
     connectedAccounts.length === 0 && reconnectableAccounts.length === 0;
 
   return (
-    <section id="mail-sync" className="card app-workspace-panel scroll-mt-20 p-5">
+    <section id="mail-sync" className="card scroll-mt-20 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div className="min-w-0">
-            <p className="eyebrow">Gmail sync</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--text-primary)]">
-              {shouldCollapseSyncDetails ? "No Gmail inbox connected yet" : "Gmail sync"}
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">
+              Gmail sync
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
               {shouldCollapseSyncDetails
-                ? "Connect Gmail to import the last 3 months of recruiting emails and start building your application tracker."
+                ? "Connect Gmail to start."
                 : status.detail}
             </p>
           </div>
@@ -542,30 +532,27 @@ export function MailSyncPanel({
       </div>
 
       {shouldCollapseSyncDetails ? (
-        <details className="mt-5 overflow-hidden rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.32)]">
+        <details className="mt-5 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-strong)]">
           <summary className="px-4 py-3">
             <div className="flex-1">
               <p className="eyebrow">Advanced sync details</p>
-              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                Import history, sync queue, and issue counters.
-              </p>
             </div>
           </summary>
           <div className="border-t border-[var(--border)] p-4">
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-3">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
                 <p className="eyebrow">Last sync</p>
                 <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
                   {formatTimestamp(dashboard.inbox.lastSyncAtUtc, timeZoneId)}
                 </p>
               </div>
-              <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-3">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
                 <p className="eyebrow">Emails processed</p>
                 <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
                   {total > 0 ? `${processed}/${total} emails analyzed` : "No synced mail yet"}
                 </p>
               </div>
-              <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-3">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
                 <p className="eyebrow">Sync queue</p>
                 <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
                   {pendingAnalysis + processingAnalysis} active jobs
@@ -574,7 +561,7 @@ export function MailSyncPanel({
                   {pendingAnalysis} pending · {processingAnalysis} processing
                 </p>
               </div>
-              <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-3">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
                 <p className="eyebrow">Issues</p>
                 <p
                   className="mt-2 text-sm font-semibold"
@@ -586,13 +573,13 @@ export function MailSyncPanel({
             </div>
 
             {attentionAccounts.length > 0 ? (
-              <div className="info-tile mt-3 border-[rgba(138,90,9,0.32)] bg-[var(--yellow-soft)]">
+              <div className="info-tile mt-3 border-[var(--border)] bg-[var(--yellow-soft)]">
                 <p className="eyebrow text-[var(--yellow)]">Finish setup</p>
                 <div className="mt-3 space-y-3">
                   {attentionAccounts.map((account) => (
                     <div
                       key={account.id}
-                      className="grid gap-1 border-t border-[rgba(138,90,9,0.18)] pt-3 first:border-t-0 first:pt-0"
+                      className="grid gap-1 border-t border-[var(--border)] pt-3 first:border-t-0 first:pt-0"
                     >
                       <p className="break-all text-sm font-medium text-[var(--text-primary)]">
                         {account.emailAddress}
@@ -611,12 +598,12 @@ export function MailSyncPanel({
         </details>
       ) : (
         <>
-      <div className="mt-5 rounded-md border border-[var(--border)] bg-white/45 p-4">
+      <div className="mt-5 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-4">
         <div className="grid gap-4 lg:grid-cols-[10rem_minmax(0,1fr)] lg:items-center">
           <div className="flex items-center gap-3 lg:block">
             <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface-elevated)]">
               <div className="text-center">
-                <p className="text-2xl font-semibold text-[var(--text-primary)]">{percent}%</p>
+                <p className="text-xl font-semibold text-[var(--text-primary)]">{percent}%</p>
                 <p className="eyebrow mt-1">Analyzed</p>
               </div>
             </div>
@@ -632,11 +619,11 @@ export function MailSyncPanel({
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {total > 0 ? `${processed.toLocaleString()}/${total.toLocaleString()} emails analyzed` : "No synced mail yet"}
+                  {total > 0 ? `${processed.toLocaleString("en-US")}/${total.toLocaleString("en-US")} emails analyzed` : "No synced mail yet"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                   {remaining > 0
-                    ? `${remaining.toLocaleString()} email${remaining === 1 ? "" : "s"} remaining`
+                    ? `${remaining.toLocaleString("en-US")} email${remaining === 1 ? "" : "s"} remaining`
                     : "Mailbox analysis is complete"}
                 </p>
               </div>
@@ -666,7 +653,7 @@ export function MailSyncPanel({
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <SyncMetric label="Last sync" value={formatTimestamp(dashboard.inbox.lastSyncAtUtc, timeZoneId)} />
-        <SyncMetric label="Remaining" value={remaining > 0 ? remaining.toLocaleString() : "0"} hint="emails left" />
+        <SyncMetric label="Remaining" value={remaining > 0 ? remaining.toLocaleString("en-US") : "0"} hint="emails left" />
         <SyncMetric
           label="Queue"
           value={`${pendingAnalysis + processingAnalysis} active`}
@@ -674,7 +661,7 @@ export function MailSyncPanel({
         />
         <SyncMetric
           label="Issues"
-          value={failedAnalysis.toLocaleString()}
+          value={failedAnalysis.toLocaleString("en-US")}
           hint="latest analysis errors"
           tone={failedAnalysis > 0 ? "bad" : "good"}
         />
@@ -698,13 +685,13 @@ export function MailSyncPanel({
         </div>
 
         {attentionAccounts.length > 0 ? (
-          <div className="info-tile border-[rgba(138,90,9,0.32)] bg-[var(--yellow-soft)]">
+          <div className="info-tile border-[var(--border)] bg-[var(--yellow-soft)]">
             <p className="eyebrow text-[var(--yellow)]">Finish setup</p>
             <div className="mt-3 space-y-3">
               {attentionAccounts.map((account) => (
                 <div
                   key={account.id}
-                  className="grid gap-1 border-t border-[rgba(138,90,9,0.18)] pt-3 first:border-t-0 first:pt-0"
+                  className="grid gap-1 border-t border-[var(--border)] pt-3 first:border-t-0 first:pt-0"
                 >
                   <p className="break-all text-sm font-medium text-[var(--text-primary)]">
                     {account.emailAddress}

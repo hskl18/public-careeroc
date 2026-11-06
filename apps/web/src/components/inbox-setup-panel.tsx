@@ -7,25 +7,16 @@ import type {
   InboxAccountSetup,
   InboxSetupResponse,
 } from "@/lib/inbox-accounts";
+import { readErrorMessage } from "@/lib/client-fetch";
 
 type InboxSetupPanelProps = {
   initialSetup: InboxSetupResponse;
   canPersist: boolean;
   proxyPrefix: string | null;
   currentUserEmail: string;
-  currentUserName?: string | null;
   timeZoneId: string;
   onAccountsChanged?: () => Promise<unknown>;
 };
-
-async function readErrorMessage(response: Response) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload.error) return payload.error;
-  } catch {}
-
-  return `Request failed with ${response.status}`;
-}
 
 const gmailBackfillOptions = [
   { value: "1", label: "Last 1 month" },
@@ -165,12 +156,12 @@ function GmailTrustList() {
   ];
 
   return (
-    <div className="grid gap-2 rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-4">
+    <div className="grid gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-4">
       <p className="eyebrow">What happens when you connect Gmail</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {items.map((item) => (
           <div key={item} className="flex min-w-0 items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
-            <span className="mt-0.5 font-mono text-[var(--green)]">OK</span>
+            <span className="mt-0.5 text-[var(--green)]">OK</span>
             <span>{item}</span>
           </div>
         ))}
@@ -195,12 +186,11 @@ function SignedInGmailPrompt({
       <div className="absolute top-0 left-0 h-[2px] w-full bg-[var(--accent)]" />
       <div className="flex flex-col gap-3 pt-1 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-xs font-bold text-[var(--accent)]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-strong)] text-xs font-semibold text-[var(--accent)]">
             G
           </div>
           <div className="min-w-0">
-            <p className="eyebrow">Current Google account</p>
-            <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">
               Connect this Gmail inbox
             </h3>
             <p className="mt-1 break-all text-sm font-medium text-[var(--text-primary)]">
@@ -249,7 +239,7 @@ function GmailConnectCard({
     <div className="card-elevated p-5 space-y-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 h-[2px] w-full bg-[var(--accent)]" />
       <div className="flex items-center gap-2.5 pt-1">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-xs font-bold text-[var(--accent)]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-strong)] text-xs font-semibold text-[var(--accent)]">
           G
         </div>
         <div>
@@ -320,7 +310,7 @@ export function InboxSetupPanel({
       queueMicrotask(() => {
         setNotice(null);
         setError(
-          "Gmail connection could not finish because the careeroc API is unavailable. Start the API and retry from this page.",
+          "The API is unavailable. Try again.",
         );
       });
       return;
@@ -501,44 +491,38 @@ export function InboxSetupPanel({
   const hasAccounts = gmailAccounts.length > 0;
 
   return (
-    <div id="connect-inbox" className="card app-workspace-panel scroll-mt-20 p-5">
+    <div id="connect-inbox" className="card scroll-mt-20 p-4">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-        <p className="eyebrow">Inbox setup</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--text-primary)]">
-          {hasAccounts ? "Gmail connection" : "Connect Gmail to start tracking applications"}
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+          {hasAccounts ? "Gmail" : "Connect Gmail"}
         </h2>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          {hasAccounts
-            ? "Manage the Gmail inbox used for recruiting mail and choose how far back the importer should scan."
-            : "careeroc finds recruiting emails, application confirmations, interview invites, and recruiter updates from your Gmail inbox."}
-        </p>
+        {hasAccounts ? null : (
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Reads recruiting mail only.
+          </p>
+        )}
         </div>
-        {hasAccounts ? (
-          <span className="badge w-fit bg-[var(--green-soft)] text-[var(--green)]">
-            {connectedAccounts.length} connected
-          </span>
-        ) : null}
       </div>
 
       {!canPersist && (
-        <div className="alert alert-warning mb-5">
-          Live Gmail setup is unavailable right now. Connection changes are
-          disabled until the API comes back.
+        <div role="status" className="alert alert-warning mb-5">
+          Offline.
         </div>
       )}
-      {notice && <div className="alert alert-success mb-5">{notice}</div>}
-      {error && <div className="alert alert-error mb-5">{error}</div>}
+      {notice ? <div className="alert alert-success mb-5">{notice}</div> : null}
+      <p role="status" className="sr-only">{notice ?? ""}</p>
+      {error && <div role="alert" className="alert alert-error mb-5">{error}</div>}
 
       {hasAccounts && (
         <div className="mb-5 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-md border border-[var(--border)] bg-white/45 px-4 py-3">
+          <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3">
             <p className="eyebrow">Status</p>
             <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
               {connectedAccounts.length} connected
             </p>
           </div>
-          <div className="rounded-md border border-[var(--border)] bg-white/45 px-4 py-3">
+          <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3">
             <p className="eyebrow">Import window</p>
             <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
               {connectedAccounts[0]
@@ -549,7 +533,7 @@ export function InboxSetupPanel({
                 : "Not selected"}
             </p>
           </div>
-          <div className="rounded-md border border-[var(--border)] bg-white/45 px-4 py-3">
+          <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3">
             <p className="eyebrow">Setup issues</p>
             <p
               className="mt-2 text-sm font-semibold"
@@ -570,23 +554,7 @@ export function InboxSetupPanel({
         />
       ) : null}
 
-      {gmailAccounts.length === 0 ? (
-        <div
-          className="card-elevated p-10 text-center"
-          style={{ borderStyle: "dashed", borderColor: "var(--border-hover)" }}
-        >
-          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-lg font-bold text-[var(--accent)]">
-            +
-          </div>
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            No Gmail inbox connected yet
-          </p>
-          <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-[var(--text-tertiary)]">
-            Connect Gmail above to import recruiting history, monitor new mail,
-            and keep the pipeline current.
-          </p>
-        </div>
-      ) : (
+      {gmailAccounts.length === 0 ? null : (
         <div className="space-y-4">
           {connectedAccounts.length > 0 && (
             <section>
@@ -608,7 +576,7 @@ export function InboxSetupPanel({
                       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="mb-3 flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--red)] text-xs font-bold text-white">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--red)] text-xs font-semibold text-[var(--on-accent)]">
                               G
                             </div>
                             <div className="min-w-0 flex-1">
@@ -644,7 +612,7 @@ export function InboxSetupPanel({
 
                       <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
                         <div className="info-tile border-l-2 border-l-[var(--blue)]">
-                          <p className="text-[11px] font-mono text-[var(--text-tertiary)]">
+                          <p className="text-xs text-[var(--text-tertiary)]">
                             Last sync
                           </p>
                           <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
@@ -655,7 +623,7 @@ export function InboxSetupPanel({
                         <div className="info-tile border-l-2 border-l-[var(--accent)]">
                           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                             <label className="block min-w-0">
-                              <span className="text-[11px] font-mono text-[var(--text-tertiary)]">
+                              <span className="text-xs text-[var(--text-tertiary)]">
                                 Sync window
                               </span>
                               <select
@@ -717,7 +685,7 @@ export function InboxSetupPanel({
                       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="mb-3 flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--red)] text-xs font-bold text-white">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--red)] text-xs font-semibold text-[var(--on-accent)]">
                               G
                             </div>
                             <div className="min-w-0 flex-1">

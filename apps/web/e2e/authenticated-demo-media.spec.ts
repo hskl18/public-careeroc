@@ -8,23 +8,23 @@ const screenshotRoutes = [
   {
     path: "/app",
     name: "app-dashboard",
-    readyText: /connect gmail|needs action|active applications/i,
+    readyText: /connect gmail|needs action|recent activity/i,
   },
   {
     path: "/app/inbox",
     name: "app-inbox-contacts",
-    readyText: /contact history and aliases|connect your gmail inbox|gmail inbox is connected/i,
-    focusText: /contact history and aliases/i,
+    readyText: /contacts|connect gmail|gmail inbox|demo inbox/i,
+    focusText: /contacts/i,
   },
   {
     path: "/app/applications",
     name: "app-applications",
-    readyText: /job pipeline/i,
+    readyText: /needs action/i,
   },
   {
     path: "/app/memory",
     name: "app-memory",
-    readyText: /long-term memory/i,
+    readyText: /pending|confirmed/i,
   },
 ] as const;
 

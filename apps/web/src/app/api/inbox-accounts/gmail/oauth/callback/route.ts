@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { fetchCareerocApi } from "@/lib/careeroc-api-server";
 import { resolvePublicOrigin } from "@/lib/public-origin";
+import { safeAppPath } from "@/lib/url-policy";
 
 export const runtime = "nodejs";
 
@@ -31,8 +32,6 @@ export async function GET(request: NextRequest) {
   }
 
   // The API answers with a path on this site; anything else lands on the inbox page.
-  const location = upstream.headers.get("location");
-  const target =
-    location?.startsWith("/") && !location.startsWith("//") ? location : "/app/inbox#mail-sync";
+  const target = safeAppPath(upstream.headers.get("location"), "/app/inbox#mail-sync");
   return NextResponse.redirect(new URL(target, origin));
 }

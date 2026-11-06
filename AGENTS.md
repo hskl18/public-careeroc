@@ -24,7 +24,7 @@ CAREEROC_TEST_POSTGRES="Host=localhost;Port=5432;Database=postgres;Username=post
 # Run a single test class
 dotnet test Careeroc.sln --filter "FullyQualifiedName~ClassName"
 
-# Multi-agent browser E2E against a disposable database (CI runs it on every push)
+# Multi-agent browser E2E against a disposable database (CI runs it on every pull request and push to main)
 CAREEROC_E2E_CONNECTION_STRING='Host=localhost;Port=5432;Database=careeroc_e2e;Username=postgres;Password=postgres' \
   pnpm e2e:multi-agent
 
@@ -40,14 +40,14 @@ pnpm --dir apps/web dev                             # port 3000
 dotnet ef migrations add MigrationName --project src/Careeroc.Infrastructure
 dotnet ef database update --project src/Careeroc.Infrastructure
 
-# Contract and link guardrails (apps/web)
+# API contract guardrails (apps/web)
 pnpm --dir apps/web gen:api      # regenerate the TS schema from the running API's swagger.json
 pnpm --dir apps/web check:api    # fail if apps/web/src/lib/api-schema.ts drifts
 ```
 
 Copy `.env.example` to `.env` first.
 Set `DEMO_MODE=true` and `Demo__Enabled=true` to sign in without Google, or set the Google variables to connect a real Gmail inbox.
-In Development, `apps/api` hosts `InboxSyncWorker` itself, so local sync and analysis run without a separate worker process.
+`apps/api` hosts `InboxSyncWorker` itself, so sync and analysis need no separate worker process; `SyncWorker__Enabled=false` turns it off.
 
 Docker fallback if the .NET SDK is not installed:
 
@@ -74,10 +74,10 @@ Entities are singular nouns (`InboxEmail`), application services end in `Service
 
 ### Layers
 
-- **Domain** (`src/Careeroc.Domain`): entities (`User`, `InboxAccount`, `InboxEmail`, `JobApplication`, `JobApplicationEvent`, `Reminder`, `EmailProcessingJob`, `ResumeDocument`, `ResumeVersion`, `UserMemoryEntry`, `PersonalAccessToken`) and enums.
+- **Domain** (`src/Careeroc.Domain`): entities (listed in [docs/architecture.md](docs/architecture.md#entities)) and enums.
   No persistence or transport concerns.
 - **Application** (`src/Careeroc.Application`): orchestration services and abstractions (`IInboxEmailSource`, `IRecruitingEmailParser`, `IEmailProcessingQueue`, `ILeaseManager`, `ICareerAgentGraphClient`, `IClock`).
-  Depends only on Domain and its own abstractions.
+  Depends on Domain, Contracts, and EF Core abstractions (`ICareerocDbContext`), never on Infrastructure.
 - **Infrastructure** (`src/Careeroc.Infrastructure`): EF Core with Npgsql and snake_case names, the Gmail client, the demo inbox, the heuristic parser, the database-backed queue and leases, the agent runtime client, and migrations.
 - **Contracts** (`src/Careeroc.Contracts`): API DTOs shared with the web app.
 
@@ -146,7 +146,7 @@ After changing auth, signing, proxy routes, OAuth, tokens, rate limiting, or use
 - **The queue is a table**: `IEmailProcessingQueue` claims jobs with `FOR UPDATE SKIP LOCKED` and can move to a managed queue later.
 - **One API host**: sync and processing run inside the API; split them out only if throughput requires it.
 - **Manual correction is first-class**: review corrections rerun the same workflow rules as automation.
-- **User scope is the product boundary**: signed user context, allowlists, role checks, and ownership checks protect every query.
+- **User scope is the product boundary**: signed user context, allowlists, and ownership checks protect every query.
   Do not trust browser-supplied identity or bypass user-scoped queries.
 
 ## Conventions
@@ -191,12 +191,12 @@ Then run `pnpm --dir apps/web gen:api` against the running API, and `pnpm --dir 
 - `services/agent-runtime/tests/test_evidence_gate_eval.py` scripts what a careless or manipulated model could return and checks what the evidence gate lets through; add a case for every new gate rule.
 - Use `TestClock`, and fakes for Gmail, the model provider, and the agent runtime; tests make no network calls.
 - Prefer specific assertions such as `Assert.Equal(expected, actual)`, and cover each service's happy path plus at least one failure or fallback.
-- The agent runtime tests use the deterministic suite and an in-memory checkpointer, plus one Postgres test when `CAREEROC_AGENT_TEST_DATABASE_URL` is set.
+- The agent runtime tests use the deterministic suite and an in-memory checkpointer, plus two Postgres tests when `CAREEROC_AGENT_TEST_DATABASE_URL` is set.
 - Web unit tests use Vitest for pure helpers and UI logic; do not add UI snapshot tests.
 
 ## Environment
 
-The API loads the root `.env` through `EnvironmentFileLoader`; `.env.example` lists the variables the code reads.
+The API loads the root `.env` through `EnvironmentFileLoader`; `.env.example` lists the variables for running the API and web app from source.
 The main ones:
 
 - `ConnectionStrings__Careeroc` or `DATABASE_URL`: Postgres
@@ -229,13 +229,15 @@ If Auth.js reports `JWTSessionError: no matching decryption secret` after `AUTH_
 3. Run `dotnet ef migrations add DescriptiveName --project src/Careeroc.Infrastructure`.
 4. Migrations apply on API startup in Development, and anywhere `Database__ApplyMigrationsOnStartup=true` is set.
 
+## Releasing
+
+Versions follow semver; one version covers the three images and the Helm chart's `appVersion`.
+
+1. Bump the version in `deploy/helm/careeroc/Chart.yaml` (`appVersion`, and the chart's own `version`), `Directory.Build.props`, `services/agent-runtime/pyproject.toml` (then `uv lock`), and `apps/web/package.json`; CI fails a tag that differs from `appVersion` or any of the other three files (the chart's own `version` has its own number).
+2. Merge, then tag the merge commit `vX.Y.Z` and push the tag.
+   CI runs every job again and then publishes multi-arch images to GHCR.
+3. Write the release notes with `gh release create vX.Y.Z`.
+
 ## Documentation
 
-- `DESIGN.md`: system design, decisions with rejected alternatives, trust boundaries, failure modes, evals
-- `SECURITY.md`: security controls and vulnerability reporting
-- `docs/architecture.md`: layers and processing flows
-- `UI.md`: product surfaces and the UI contract
-- `docs/routing.md`: web routes and API endpoints
-- API reference: the OpenAPI document at `/swagger` when the API runs in Development, and the TypeScript types generated from it in `apps/web/src/lib/api-schema.ts`, which CI checks for drift
-- `docs/adr/`: decision records
-- `docs/deploy/README.md`: deployment targets and secrets
+The index is in the [README](README.md#documentation).

@@ -66,11 +66,10 @@ export default async function ApplicationsPage({
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col px-3 py-4 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
+      <div className="flex min-h-full w-full flex-col px-3 py-4 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
         {source === "fallback" ? (
-          <div className="alert alert-warning">
-            Live API data is unavailable right now. This page is showing an
-            empty local state until the API comes back.
+          <div role="status" className="alert alert-warning">
+            API unavailable. Showing empty data.
           </div>
         ) : null}
 
@@ -78,7 +77,7 @@ export default async function ApplicationsPage({
           key={explorerKey}
           dashboard={dashboard}
           timeZoneId={profile.timeZoneId}
-          variant="page"
+          view={selectedView}
         />
       </div>
     </main>

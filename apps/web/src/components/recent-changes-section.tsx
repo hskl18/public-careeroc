@@ -1,24 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { RecentActivity } from "@/lib/dashboard";
-
-type ActivityCopy = {
-  label: string;
-  title: string;
-  summarySingular: string;
-  summaryPlural: string;
-  badgeClassName: string;
-  dotClassName: string;
-  timestampLabel: string;
-  showLoggedTimestamp: boolean;
-};
-
-type ActivityKindSummary = {
-  text: string;
-  badgeClassName: string;
-  dotClassName: string;
-};
+import { formatTimestampInTimeZone } from "@/lib/date-time";
 
 type ActivityGroup = {
   key: string;
@@ -47,23 +32,22 @@ type RecentChangesSectionProps = {
 };
 
 const recentChangeDisplayLimit = 5;
+const previewRowLimit = 3;
 
-const summaryFormatter = new Intl.ListFormat("en-US", {
-  style: "long",
-  type: "conjunction",
-});
-
-function formatTimestamp(value: string | null, timeZoneId: string) {
-  if (!value) return "Waiting for first sync";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: timeZoneId,
-  }).format(new Date(value));
-}
+const activityCopy: Record<string, { label: string; dotClassName: string }> = {
+  recruiter_outreach: { label: "Recruiter", dotClassName: "bg-[var(--blue)]" },
+  application_received: { label: "Applied", dotClassName: "bg-[var(--green)]" },
+  oa_invitation: { label: "OA invite", dotClassName: "bg-[var(--violet)]" },
+  interview_invitation: { label: "Interview invite", dotClassName: "bg-[var(--accent)]" },
+  interview_confirmation: { label: "Interview set", dotClassName: "bg-[var(--accent)]" },
+  rejection: { label: "Rejected", dotClassName: "bg-[var(--red)]" },
+  offer: { label: "Offer", dotClassName: "bg-[var(--green)]" },
+  reminder_completed: { label: "Task done", dotClassName: "bg-[var(--yellow)]" },
+  reminder_dismissed: { label: "Task dismissed", dotClassName: "bg-[var(--yellow)]" },
+  reminder_reopened: { label: "Task reopened", dotClassName: "bg-[var(--yellow)]" },
+  gmail_reply_detected: { label: "You replied", dotClassName: "bg-[var(--green)]" },
+  manual_stage_update: { label: "Status changed", dotClassName: "bg-[var(--blue)]" },
+};
 
 function normalizeCategory(category: string) {
   return category
@@ -122,153 +106,13 @@ function getActivityImportanceScore(activity: RecentActivity) {
   return Math.min(100, Math.max(0, activity.importanceScore));
 }
 
-function getActivityCopy(activity: RecentActivity): ActivityCopy {
-  switch (normalizeCategory(activity.category)) {
-    case "recruiter_outreach":
-      return {
-        label: "Outreach",
-        title: "Recruiter reached out",
-        summarySingular: "recruiter message",
-        summaryPlural: "recruiter messages",
-        badgeClassName: "bg-[var(--blue-soft)] text-[var(--blue)]",
-        dotClassName: "bg-[var(--blue)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "application_received":
-      return {
-        label: "Receipt",
-        title: "Application receipt received",
-        summarySingular: "receipt",
-        summaryPlural: "receipts",
-        badgeClassName: "bg-[var(--green-soft)] text-[var(--green)]",
-        dotClassName: "bg-[var(--green)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "oa_invitation":
-      return {
-        label: "OA",
-        title: "OA invitation received",
-        summarySingular: "oa",
-        summaryPlural: "oa",
-        badgeClassName: "bg-[var(--violet-soft)] text-[var(--violet)]",
-        dotClassName: "bg-[var(--violet)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "interview_invitation":
-      return {
-        label: "Interview",
-        title: "Interview invitation received",
-        summarySingular: "interview invitation",
-        summaryPlural: "interview invitations",
-        badgeClassName: "bg-[var(--accent-soft)] text-[var(--accent-ink)]",
-        dotClassName: "bg-[var(--accent)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "interview_confirmation":
-      return {
-        label: "Interview",
-        title: "Interview confirmed",
-        summarySingular: "interview confirmation",
-        summaryPlural: "interview confirmations",
-        badgeClassName: "bg-[var(--accent-soft)] text-[var(--accent-ink)]",
-        dotClassName: "bg-[var(--accent)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "rejection":
-      return {
-        label: "Closed",
-        title: "Rejection email received",
-        summarySingular: "rejection",
-        summaryPlural: "rejections",
-        badgeClassName: "bg-[var(--red-soft)] text-[var(--red)]",
-        dotClassName: "bg-[var(--red)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "offer":
-      return {
-        label: "Offer",
-        title: "Offer email received",
-        summarySingular: "offer",
-        summaryPlural: "offers",
-        badgeClassName: "bg-[var(--green-soft)] text-[var(--green)]",
-        dotClassName: "bg-[var(--green)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-    case "reminder_completed":
-      return {
-        label: "Task done",
-        title: "Task marked done",
-        summarySingular: "completed task",
-        summaryPlural: "completed tasks",
-        badgeClassName: "bg-[var(--yellow-soft)] text-[var(--yellow)]",
-        dotClassName: "bg-[var(--yellow)]",
-        timestampLabel: "Marked done",
-        showLoggedTimestamp: false,
-      };
-    case "reminder_dismissed":
-      return {
-        label: "Task dismissed",
-        title: "Task dismissed",
-        summarySingular: "dismissed task",
-        summaryPlural: "dismissed tasks",
-        badgeClassName: "bg-[var(--yellow-soft)] text-[var(--yellow)]",
-        dotClassName: "bg-[var(--yellow)]",
-        timestampLabel: "Dismissed",
-        showLoggedTimestamp: false,
-      };
-    case "reminder_reopened":
-      return {
-        label: "Task reopened",
-        title: "Task reopened",
-        summarySingular: "reopened task",
-        summaryPlural: "reopened tasks",
-        badgeClassName: "bg-[var(--yellow-soft)] text-[var(--yellow)]",
-        dotClassName: "bg-[var(--yellow)]",
-        timestampLabel: "Reopened",
-        showLoggedTimestamp: false,
-      };
-    case "gmail_reply_detected":
-      return {
-        label: "Replied",
-        title: "Your Gmail reply was sent",
-        summarySingular: "sent reply",
-        summaryPlural: "sent replies",
-        badgeClassName: "bg-[var(--green-soft)] text-[var(--green)]",
-        dotClassName: "bg-[var(--green)]",
-        timestampLabel: "Sent",
-        showLoggedTimestamp: false,
-      };
-    case "manual_stage_update":
-      return {
-        label: "Status",
-        title: "You updated the application status",
-        summarySingular: "status update",
-        summaryPlural: "status updates",
-        badgeClassName: "bg-[var(--blue-soft)] text-[var(--blue)]",
-        dotClassName: "bg-[var(--blue)]",
-        timestampLabel: "Updated",
-        showLoggedTimestamp: false,
-      };
-    case "generic_update":
-    default:
-      return {
-        label: "Update",
-        title: "Update received",
-        summarySingular: "update",
-        summaryPlural: "updates",
-        badgeClassName: "bg-[var(--blue-soft)] text-[var(--blue)]",
-        dotClassName: "bg-[var(--blue)]",
-        timestampLabel: "Received",
-        showLoggedTimestamp: false,
-      };
-  }
+function getActivityCopy(activity: RecentActivity) {
+  return (
+    activityCopy[normalizeCategory(activity.category)] ?? {
+      label: "Update",
+      dotClassName: "bg-[var(--blue)]",
+    }
+  );
 }
 
 function buildActivityGroups(recentActivity: RecentActivity[]) {
@@ -413,71 +257,6 @@ function rankCompanyActivityGroups(
     });
 }
 
-function summarizeActivityKinds(activities: RecentActivity[]): ActivityKindSummary[] {
-  const counts = new Map<
-    string,
-    {
-      count: number;
-      singular: string;
-      plural: string;
-      badgeClassName: string;
-      dotClassName: string;
-    }
-  >();
-
-  for (const activity of activities) {
-    const copy = getActivityCopy(activity);
-    const key = copy.summarySingular;
-    const current = counts.get(key);
-
-    counts.set(key, {
-      count: (current?.count ?? 0) + 1,
-      singular: copy.summarySingular,
-      plural: copy.summaryPlural,
-      badgeClassName: copy.badgeClassName,
-      dotClassName: copy.dotClassName,
-    });
-  }
-
-  return Array.from(counts.values()).map(
-    ({ count, singular, plural, badgeClassName, dotClassName }) => ({
-      text: `${count} ${count === 1 ? singular : plural}`,
-      badgeClassName,
-      dotClassName,
-    }),
-  );
-}
-
-function summarizeActivityKindLabels(activities: RecentActivity[]) {
-  return summarizeActivityKinds(activities).map((kind) => kind.text);
-}
-
-function buildRecentSummary(recentActivity: RecentActivity[], groupCount: number) {
-  const changeCount = recentActivity.length;
-  const changeLabel = changeCount === 1 ? "change" : "changes";
-  const companyLabel = groupCount === 1 ? "company" : "companies";
-  const kinds = summarizeActivityKindLabels(recentActivity).slice(0, 3);
-  const kindSummary =
-    kinds.length > 0
-      ? `Includes ${summaryFormatter.format(kinds)}.`
-      : "New recruiting events will be summarized here.";
-
-  return {
-    headline: `${changeCount} ${changeLabel} · ${groupCount} ${companyLabel}`,
-    detail: kindSummary,
-  };
-}
-
-function buildGroupSummary(activities: RecentActivity[]) {
-  if (activities.length === 1) {
-    return getActivityCopy(activities[0]).title;
-  }
-
-  return `${activities.length} updates: ${summaryFormatter.format(
-    summarizeActivityKindLabels(activities),
-  )}`;
-}
-
 function ExampleChangesPreview() {
   const examples = [
     {
@@ -503,11 +282,11 @@ function ExampleChangesPreview() {
       className="mt-4 overflow-hidden rounded-md border border-dashed border-[var(--border-hover)]"
       aria-hidden="true"
     >
-      <div className="border-b border-dashed border-[var(--border)] bg-[rgba(255,255,255,0.36)] px-4 py-2">
+      <div className="border-b border-dashed border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2">
         <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
           Example
         </span>
-        <span className="ml-2 text-[11px] text-[var(--text-tertiary)]">
+        <span className="ml-2 text-xs text-[var(--text-tertiary)]">
           Your real updates will replace this preview
         </span>
       </div>
@@ -519,7 +298,7 @@ function ExampleChangesPreview() {
           >
             <div className="flex min-w-0 gap-3">
               <span
-                className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-[rgba(255,255,255,0.82)] ${example.dot}`}
+                className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ${example.dot}`}
               />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[var(--text-primary)]">
@@ -549,207 +328,103 @@ export function RecentChangesSection({
   const companyGroups = rankCompanyActivityGroups(
     buildCompanyActivityGroups(recentActivity),
   );
-  const displayedCompanyGroups =
-    variant === "full"
-      ? companyGroups
-      : companyGroups.slice(0, recentChangeDisplayLimit);
   const canOpenFullTimeline =
     variant === "preview" && companyGroups.length > recentChangeDisplayLimit;
-  const visibleActivities = companyGroups
-    .flatMap((companyGroup) => getCompanyGroupVisibleActivities(companyGroup))
-    .sort(compareActivitiesByRecency);
-  const latestUpdateAtUtc = visibleActivities[0]?.occurredAtUtc ?? null;
-  const recentSummary = buildRecentSummary(visibleActivities, companyGroups.length);
-  const summaryPills = summarizeActivityKinds(visibleActivities).slice(0, 4);
-  const summaryInline = summarizeActivityKindLabels(visibleActivities)
-    .slice(0, 3)
-    .join(" · ");
+  // Touch screens cannot hover, so a tap shows a tag's time until the next tap.
+  const [shownTimeId, setShownTimeId] = useState<string | null>(null);
 
   return (
-    <section className="card app-workspace-panel flex h-full min-h-0 flex-col p-0">
-      <div className="shrink-0 px-4 pt-4 sm:px-5 sm:pt-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="eyebrow">Activity log</p>
-            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">
-                What happened recently
-              </h2>
-              <p className="text-[11px] text-[var(--text-tertiary)]">
-                Last update {formatTimestamp(latestUpdateAtUtc, timeZoneId)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {visibleActivities.length > 0 ? (
-          <div className="mt-3 border-t border-[var(--border)] pt-3 sm:mt-4">
-            <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {recentSummary.headline}
-                </p>
-                {summaryInline ? (
-                  <p className="mt-1 truncate text-[11px] text-[var(--text-tertiary)] lg:hidden">
-                    {summaryInline}
-                  </p>
-                ) : null}
-              </div>
-              <div className="hidden flex-nowrap gap-2 overflow-x-auto pb-1 lg:flex lg:justify-end">
-                {summaryPills.map((pill) => (
-                  <span
-                    key={pill.text}
-                    className={`badge shrink-0 gap-2 whitespace-nowrap ${pill.badgeClassName}`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${pill.dotClassName}`}
-                      aria-hidden="true"
-                    />
-                    {pill.text}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+    <section className="card flex h-full min-h-0 flex-col p-0">
+      <div className={`shrink-0 items-center justify-between gap-3 px-4 pt-3 ${variant === "full" ? "hidden" : "flex"}`}>
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent activity</h2>
+        {canOpenFullTimeline ? (
+          <Link
+            href="/app/updates"
+            className="max-sm:inline-flex max-sm:min-h-6 max-sm:items-center text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline"
+          >
+            All activity
+          </Link>
         ) : null}
       </div>
 
-      {visibleActivities.length === 0 ? (
+      {recentActivity.length === 0 ? (
         <div className="px-5 pt-4 pb-5">
-          <div className="rounded-md border border-dashed border-[var(--border-hover)] bg-[rgba(255,255,255,0.36)] p-6">
+          <div className="rounded-md border border-dashed border-[var(--border-hover)] bg-[var(--surface-strong)] p-6">
             <p className="text-sm font-medium text-[var(--text-primary)]">
               {coldStart ? "Nothing synced yet" : "No changes recorded yet"}
-            </p>
-            <p className="mt-1 text-xs leading-6 text-[var(--text-tertiary)]">
-              Stage changes, recruiter replies, interviews, assessments, offers,
-              and rejections will appear here after sync.
             </p>
           </div>
           {coldStart ? <ExampleChangesPreview /> : null}
         </div>
       ) : (
-        <>
-          <div className="workspace-scroll-region min-h-0 flex-1 px-4 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-5">
-            <div className="space-y-2.5 sm:space-y-3">
-            {displayedCompanyGroups.map((companyGroup) => {
-              const visibleCompanyActivities = getCompanyGroupVisibleActivities(companyGroup);
-              const latestCompanyActivity =
-                visibleCompanyActivities[0] ??
-                companyGroup.roleGroups[0]?.activities[0];
-
-              if (!latestCompanyActivity) {
-                return null;
-              }
+        <div className="workspace-scroll-region min-h-0 flex-1 divide-y divide-[var(--border)] overflow-x-hidden px-4 pt-1 pb-2">
+          {companyGroups
+            .flatMap((companyGroup, groupIndex) =>
+              companyGroup.roleGroups.map((roleGroup) => ({ roleGroup, groupIndex })),
+            )
+            .map(({ roleGroup, groupIndex }) => {
+              const activities = getVisibleActivities(roleGroup.activities);
+              // A taller screen shows more of the list; phones scroll the page, so they keep a short preview.
+              const phoneHidden = variant === "preview" && groupIndex >= recentChangeDisplayLimit;
 
               return (
                 <article
-                  key={companyGroup.key}
-                  className="overflow-hidden rounded-md border border-[var(--border)] bg-white/55"
+                  key={roleGroup.key}
+                  className={`flex-wrap items-center justify-between gap-x-4 gap-y-1.5 py-2.5 ${phoneHidden ? "hidden md:flex" : "flex"}`}
                 >
-                  <div className="p-3 sm:p-4">
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-semibold text-[var(--text-primary)]">
-                        {companyGroup.company}
-                      </p>
-                      <p className="mt-1 text-[11px] leading-5 text-[var(--text-tertiary)]">
-                        {companyGroup.roleGroups.length} role
-                        {companyGroup.roleGroups.length === 1 ? "" : "s"} ·{" "}
-                        {visibleCompanyActivities.length} update
-                        {visibleCompanyActivities.length === 1 ? "" : "s"} · Latest{" "}
-                        {formatTimestamp(latestCompanyActivity.occurredAtUtc, timeZoneId)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-[var(--border)]">
-                    {companyGroup.roleGroups.map((roleGroup) => {
-                      const visibleRoleActivities = getVisibleActivities(roleGroup.activities);
+                  <Link
+                    href={`/app/applications/${roleGroup.jobApplicationId}`}
+                    className="flex min-w-0 items-baseline gap-2 max-sm:min-h-6 hover:underline"
+                  >
+                    <span className="shrink-0 text-sm font-medium text-[var(--text-primary)]">
+                      {roleGroup.company}
+                    </span>
+                    <span className="min-w-0 truncate text-xs text-[var(--text-tertiary)]">
+                      {roleGroup.role}
+                    </span>
+                  </Link>
+                  {/* Newest first, beside the company when the row has room and below it when not.
+                      Each tag shows its time on hover or tap, and screen readers hear it. */}
+                  <ul className="flex flex-wrap gap-1.5">
+                    {(variant === "full"
+                      ? activities
+                      : activities.slice(0, previewRowLimit)
+                    ).map((activity) => {
+                      const copy = getActivityCopy(activity);
+                      const time = formatTimestampInTimeZone(activity.occurredAtUtc, timeZoneId, "Waiting for first sync");
 
                       return (
-                        <div
-                          key={roleGroup.key}
-                          className="border-b border-[var(--border)] last:border-b-0"
-                        >
-                          <Link
-                            href={`/app/applications/${roleGroup.jobApplicationId}`}
-                            className="grid gap-2 px-3 py-2.5 transition-colors hover:bg-white/55 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:px-4 lg:py-3"
+                        <li key={activity.id} className="relative">
+                          <button
+                            type="button"
+                            className="badge group gap-1.5 text-[var(--text-secondary)] max-sm:min-h-6"
+                            onClick={() =>
+                              setShownTimeId((current) => (current === activity.id ? null : activity.id))
+                            }
                           >
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold leading-5 text-[var(--text-primary)]">
-                                {roleGroup.role}
-                              </p>
-                              <p className="text-[11px] leading-5 text-[var(--text-secondary)]">
-                                {buildGroupSummary(visibleRoleActivities)}
-                              </p>
-                            </div>
-                            <span className="hidden w-fit rounded-full border border-[var(--border)] bg-white/70 px-2 py-0.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)] lg:inline-flex lg:justify-self-end">
-                              {visibleRoleActivities.length} update
-                              {visibleRoleActivities.length === 1 ? "" : "s"}
+                            <span
+                              className={`h-1.5 w-1.5 shrink-0 rounded-full ${copy.dotClassName}`}
+                              aria-hidden="true"
+                            />
+                            {copy.label}
+                            <span className="sr-only">, {time}</span>
+                            <span
+                              aria-hidden="true"
+                              className={`pointer-events-none absolute top-full left-1/2 z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--text-primary)] px-2 py-0.5 text-xs text-[var(--surface)] transition-opacity group-hover:opacity-100 ${
+                                shownTimeId === activity.id ? "opacity-100" : "opacity-0"
+                              }`}
+                            >
+                              {time}
                             </span>
-                          </Link>
-
-                          <div className="divide-y divide-[var(--border)] border-t border-[var(--border)]">
-                            {visibleRoleActivities.map((activity) => {
-                              const copy = getActivityCopy(activity);
-
-                              return (
-                                <Link
-                                  key={activity.id}
-                                  href={`/app/applications/${activity.jobApplicationId}`}
-                                  className="grid gap-2 px-3 py-2.5 transition-colors hover:bg-white/50 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:px-4 lg:py-3"
-                                >
-                                  <div className="flex min-w-0 gap-2.5">
-                                    <span
-                                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ring-2 ring-white/80 ${copy.dotClassName}`}
-                                      aria-hidden="true"
-                                    />
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-medium leading-5 text-[var(--text-primary)]">
-                                        {copy.title}
-                                      </p>
-                                      <p className="text-[11px] leading-5 text-[var(--text-tertiary)]">
-                                        {copy.timestampLabel}{" "}
-                                        {formatTimestamp(
-                                          copy.showLoggedTimestamp
-                                            ? activity.receivedAtUtc
-                                            : activity.occurredAtUtc,
-                                          timeZoneId,
-                                        )}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="lg:text-right">
-                                    <span className={`badge max-lg:hidden ${copy.badgeClassName}`}>
-                                      {copy.label}
-                                    </span>
-                                    {copy.showLoggedTimestamp ? (
-                                      <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">
-                                        Logged {formatTimestamp(activity.occurredAtUtc, timeZoneId)}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </div>
+                          </button>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </article>
               );
             })}
-            </div>
-          </div>
-
-          {canOpenFullTimeline ? (
-            <div className="shrink-0 border-t border-[var(--border)] bg-[rgba(255,255,255,0.32)] px-5 py-3 flex justify-end">
-              <Link href="/app/updates" className="btn btn-secondary btn-sm w-full sm:w-auto">
-                View full timeline
-              </Link>
-            </div>
-          ) : null}
-        </>
+        </div>
       )}
     </section>
   );

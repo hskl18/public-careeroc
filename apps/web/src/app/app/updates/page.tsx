@@ -52,33 +52,18 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
 
   return (
     <main className="app-scroll-main">
-      <div className="workspace-shell mx-auto flex w-full max-w-[104rem] flex-col gap-4 px-5 py-6 animate-in">
+      <div className="workspace-shell flex w-full flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 animate-in">
         {source !== "api" ? (
-          <div className="alert alert-warning shrink-0">
-            Live API data is unavailable right now. This page is showing an
-            empty local state until the API comes back.
+          <div role="status" className="alert alert-warning shrink-0">
+            API unavailable. Showing empty data.
           </div>
         ) : null}
 
-        <section className="card shrink-0 p-4">
+        <section className="shrink-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="eyebrow">Updates</p>
-                <h1 className="text-base font-semibold text-[var(--text-primary)]">
-                  Recruiting timeline
-                </h1>
-                <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-                  Every recorded change to your applications, newest first. Filters
-                  apply to the loaded page.
-                </p>
-              </div>
-            </div>
-            <Link href="/app" className="btn btn-secondary btn-sm">
-              Back to dashboard
-            </Link>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">All activity</h1>
           </div>
-          <div className="mt-4 flex flex-col gap-3 border-t border-[var(--border)] pt-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <nav className="flex flex-wrap gap-2" aria-label="Activity filters">
               {activityFilters.map((filter) => {
                 const selected = selectedType === filter.value;
@@ -100,10 +85,7 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
               })}
             </nav>
             <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-              <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                Showing {filteredActivity.length.toLocaleString()} of{" "}
-                {dashboard.recentActivity.length.toLocaleString()} loaded
-              </span>
+              <span className="tabular-nums text-[var(--text-tertiary)]">{filteredActivity.length}</span>
               {previousHref ? (
                 <Link href={previousHref} className="btn btn-secondary btn-sm">
                   First page

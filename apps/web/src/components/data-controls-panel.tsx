@@ -1,27 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { components } from "@/lib/api-schema";
 import type { InboxAccountSetup } from "@/lib/inbox-accounts";
+import { readErrorMessage } from "@/lib/client-fetch";
+import { SvgAsset } from "@/components/svg-asset";
 
-type DeleteImportedDataResponse = {
-  emailAddress: string;
-  deletedEmails: number;
-  deletedProcessingJobs: number;
-  unlinkedEvents: number;
-  preservedApplications: number;
-};
-
-type DeleteInboxPurgeResponse = {
-  emailAddress: string;
-  deletedEmails: number;
-  deletedProcessingJobs: number;
-  deletedApplications: number;
-  deletedReminders: number;
-  deletedEvents: number;
-  unlinkedEvents: number;
-  deletedInboxAccounts: number;
-};
+// Generated from the API's OpenAPI document, so CI's drift check covers them.
+type DeleteImportedDataResponse = components["schemas"]["DeleteImportedInboxDataResponse"];
+type DeleteInboxPurgeResponse = components["schemas"]["DeleteInboxPurgeResponse"];
 
 type DataControlsPanelProps = {
   accounts: InboxAccountSetup[];
@@ -42,8 +30,9 @@ export function DataControlsPanel({
   const [purgePending, setPurgePending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Falls back to the first account when the chosen one disappears after a refresh.
   const selectedAccount = useMemo(
-    () => accounts.find((account) => account.id === selectedAccountId) ?? null,
+    () => accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null,
     [accounts, selectedAccountId],
   );
   const purgePhrase = selectedAccount ? `DELETE ${selectedAccount.emailAddress}` : "";
@@ -55,19 +44,6 @@ export function DataControlsPanel({
     purgeConfirmation.trim().toLowerCase() === purgePhrase.toLowerCase();
   const controlsDisabled = !canPersist || pending || purgePending;
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      setSelectedAccountId((currentAccountId) => {
-        if (accounts.length === 0) {
-          return "";
-        }
-
-        return accounts.some((account) => account.id === currentAccountId)
-          ? currentAccountId
-          : accounts[0].id;
-      });
-    });
-  }, [accounts]);
 
   async function deleteImportedData() {
     if (!proxyPrefix || !selectedAccount) {
@@ -97,7 +73,7 @@ export function DataControlsPanel({
 
       const result = (await response.json()) as DeleteImportedDataResponse;
       setNotice(
-        `Deleted ${result.deletedEmails} imported email${result.deletedEmails === 1 ? "" : "s"} from ${result.emailAddress}. Preserved ${result.preservedApplications} application${result.preservedApplications === 1 ? "" : "s"}.`,
+        `Deleted ${result.deletedEmails ?? 0} imported email${result.deletedEmails === 1 ? "" : "s"} from ${result.emailAddress ?? "the inbox"}. Applications stay.`,
       );
       setConfirmation("");
       router.refresh();
@@ -140,7 +116,7 @@ export function DataControlsPanel({
 
       const result = (await response.json()) as DeleteInboxPurgeResponse;
       setNotice(
-        `Purged ${result.emailAddress}: deleted ${result.deletedInboxAccounts} inbox, ${result.deletedEmails} email${result.deletedEmails === 1 ? "" : "s"}, and ${result.deletedApplications} imported application${result.deletedApplications === 1 ? "" : "s"}.`,
+        `Deleted ${result.emailAddress ?? "the inbox"}, ${result.deletedEmails ?? 0} email${result.deletedEmails === 1 ? "" : "s"}, and ${result.deletedApplications ?? 0} application${result.deletedApplications === 1 ? "" : "s"}.`,
       );
       setConfirmation("");
       setPurgeConfirmation("");
@@ -157,16 +133,17 @@ export function DataControlsPanel({
   }
 
   return (
-    <section className="card space-y-6 p-5">
-      <p className="eyebrow">Deletion gates</p>
-      <h2 className="text-xl font-semibold">Imported data deletion</h2>
-      <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+    // The panel fills the page; both forms sit in its middle under a mascot instead of leaving a band.
+    <section className="card flex h-full flex-col justify-center space-y-5 p-4">
+      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-2">
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-[var(--text-primary)]">
-            Gmail inbox
+          <SvgAsset src="/profile-icons/profile-inbox-alert.svg" decorative className="h-14 w-14" />
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Delete imported data</h2>
+          <label className="block text-xs font-medium text-[var(--text-secondary)]">
+            Inbox
             <select
-              className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm"
-              value={selectedAccountId}
+              className="input mt-1"
+              value={selectedAccount?.id ?? ""}
               onChange={(event) => {
                 setSelectedAccountId(event.target.value);
                 setConfirmation("");
@@ -183,95 +160,65 @@ export function DataControlsPanel({
               ))}
             </select>
           </label>
-          <label className="block text-sm font-medium text-[var(--text-primary)]">
-            Type the inbox email address
+          <label className="block text-xs font-medium text-[var(--text-secondary)]">
+            Type the inbox address to confirm
             <input
-              className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm"
+              className="input mt-1"
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               placeholder={selectedAccount?.emailAddress ?? "inbox@example.com"}
               disabled={controlsDisabled || !selectedAccount}
             />
           </label>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Removes this inbox&apos;s emails, analysis jobs, and Gmail tokens. Applications and
+            reminders stay.
+          </p>
           <button
             type="button"
-            className="btn btn-danger"
+            className="btn btn-danger btn-sm"
             disabled={controlsDisabled || !confirmationMatches}
             onClick={() => void deleteImportedData()}
           >
-            {pending ? <><span className="spinner" /> Deleting...</> : "Delete Imported Data"}
+            {pending ? <><span className="spinner" /> Deleting...</> : "Delete imported data"}
           </button>
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
-          <h3 className="text-base font-semibold">What this removes</h3>
-          <ul className="mt-3 space-y-2 text-sm text-[var(--text-secondary)]">
-            <li>Imported Gmail messages and source thread links for the selected inbox.</li>
-            <li>Pending, processing, and failed analysis jobs tied to those messages.</li>
-            <li>OAuth tokens and history cursor, so sync remains paused until reconnect.</li>
-          </ul>
-          <h3 className="mt-4 text-base font-semibold">What stays</h3>
-          <ul className="mt-3 space-y-2 text-sm text-[var(--text-secondary)]">
-            <li>Applications, reminders, and application events.</li>
-            <li>Durable audit rows recording the deletion request.</li>
-          </ul>
+
+        <div className="space-y-3 border-t border-[var(--border)] pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+          <SvgAsset src="/profile-icons/profile-inbox-night.svg" decorative className="h-14 w-14" />
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Delete inbox</h2>
+          <label className="block text-xs font-medium text-[var(--text-secondary)]">
+            Type {purgePhrase || "DELETE inbox@example.com"} to confirm
+            <input
+              className="input mt-1"
+              value={purgeConfirmation}
+              onChange={(event) => setPurgeConfirmation(event.target.value)}
+              placeholder={purgePhrase || "DELETE inbox@example.com"}
+              disabled={controlsDisabled || !selectedAccount}
+            />
+          </label>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Also removes applications found only in this inbox. Applications with mail in another
+            inbox stay.
+          </p>
+          <button
+            type="button"
+            className="btn btn-danger btn-sm"
+            disabled={controlsDisabled || !purgeConfirmationMatches}
+            onClick={() => void purgeInboxAndApplications()}
+          >
+            {purgePending ? <><span className="spinner" /> Deleting...</> : "Delete inbox"}
+          </button>
         </div>
       </div>
-      <div className="border-t border-[var(--border)] pt-5">
-        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-3">
-            <p className="eyebrow text-[var(--red)]">Explicit purge</p>
-            <h3 className="text-base font-semibold">Delete inbox and imported applications</h3>
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
-              Type the purge phrase
-              <input
-                className="mt-2 w-full rounded-lg border border-[var(--red)]/40 bg-[var(--surface-elevated)] px-3 py-2 text-sm"
-                value={purgeConfirmation}
-                onChange={(event) => setPurgeConfirmation(event.target.value)}
-                placeholder={purgePhrase || "DELETE inbox@example.com"}
-                disabled={controlsDisabled || !selectedAccount}
-              />
-            </label>
-            <button
-              type="button"
-              className="btn btn-danger"
-              disabled={controlsDisabled || !purgeConfirmationMatches}
-              onClick={() => void purgeInboxAndApplications()}
-            >
-              {purgePending ? <><span className="spinner" /> Purging...</> : "Purge Inbox"}
-            </button>
-          </div>
-          <div className="rounded-lg border border-[var(--red)]/25 bg-[var(--red-soft)]/40 p-4">
-            <h3 className="text-base font-semibold">What this permanently removes</h3>
-            <ul className="mt-3 space-y-2 text-sm text-[var(--text-secondary)]">
-              <li>The selected inbox account and imported emails.</li>
-              <li>Processing jobs, reminders, and events for applications only linked to this inbox.</li>
-              <li>Applications created from this inbox when no other inbox has evidence for them.</li>
-            </ul>
-            <p className="mt-3 text-sm text-[var(--text-secondary)]">
-              Cross-inbox applications stay in place, and their events are unlinked from deleted source emails.
-            </p>
-          </div>
-        </div>
-      </div>
-      {notice ? (
-        <p className="mt-4 rounded-lg bg-[var(--green-soft)] px-3 py-2 text-sm text-[var(--green)]">
-          {notice}
-        </p>
-      ) : null}
+      {notice ? <p className="alert alert-success mt-4">{notice}</p> : null}
+      {/* Mounted from the start, so screen readers announce each new notice. */}
+      <p role="status" className="sr-only">{notice ?? ""}</p>
       {error ? (
-        <p className="mt-4 rounded-lg bg-[var(--red-soft)] px-3 py-2 text-sm text-[var(--red)]">
+        <p role="alert" className="alert alert-error mt-4">
           {error}
         </p>
       ) : null}
     </section>
   );
-}
-
-async function readErrorMessage(response: Response) {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? `Request failed with status ${response.status}.`;
-  } catch {
-    return `Request failed with status ${response.status}.`;
-  }
 }

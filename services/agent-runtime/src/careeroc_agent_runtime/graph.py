@@ -4,7 +4,7 @@ import operator
 import re
 from typing import Annotated, Any, TypedDict
 
-from langgraph.errors import GraphRecursionError
+from langgraph.errors import GraphRecursionError, NodeTimeoutError
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy, TimeoutPolicy, interrupt
 
@@ -22,6 +22,8 @@ from careeroc_agent_runtime.contracts import (
 from careeroc_agent_runtime.telemetry import agent_span
 
 _WORD = re.compile(r"[^\W_]+")
+# Fields that are not evidence: their digits (timestamps, ids) would let invented numbers pass.
+_NOT_EVIDENCE = {"threadid", "requestedatutc", "lastactivityatutc", "id"}
 
 
 class CareerGraphState(TypedDict, total=False):
@@ -46,37 +48,46 @@ def _deduplicate(values: list[str], limit: int) -> list[str]:
     return result
 
 
-def _count_reminders(count: int) -> str:
+def count_reminders(count: int) -> str:
     return "1 reminder" if count == 1 else f"{count} reminders"
 
 
-def _collect_terms(node: Any, labels: set[str], words: set[str]) -> None:
+def _collect_terms(node: Any, by_label: dict[str, set[str]]) -> set[str]:
+    # Returns the evidence words under node, and records the words under each field name.
     if isinstance(node, dict):
-        labels.update(key.casefold() for key in node)
-        for child in node.values():
-            _collect_terms(child, labels, words)
-    elif isinstance(node, list):
-        for child in node:
-            _collect_terms(child, labels, words)
-    elif node is not None and not isinstance(node, bool):
-        words.update(_WORD.findall(str(node).casefold()))
+        words: set[str] = set()
+        for key, child in node.items():
+            label = key.casefold()
+            child_words = _collect_terms(child, by_label)
+            by_label.setdefault(label, set()).update(child_words)
+            if label not in _NOT_EVIDENCE:
+                words |= child_words
+        return words
+    if isinstance(node, list):
+        return {word for child in node for word in _collect_terms(child, by_label)}
+    if node is None or isinstance(node, bool):
+        return set()
+    return set(_WORD.findall(str(node).casefold()))
 
 
 def _grounded_references(references: list[str], request: ResumeMailboxReviewRequest) -> list[str]:
-    # shortcut: a reference counts when every word in it is a whole word among the snapshot's
-    # values, which catches invented companies and numbers but not a wrong pairing of real ones.
+    # shortcut: a labelled reference (totalApplications:20) counts when its value's words are under
+    # that field, and free text when every word is among the snapshot's evidence values. That
+    # catches invented companies and numbers, but not a wrong pairing of real ones in free text.
     # Upgrade to structured references (application id plus field) if pairings start to matter.
-    labels: set[str] = set()
-    words: set[str] = set()
-    _collect_terms(request.model_dump(mode="json", by_alias=True), labels, words)
+    by_label: dict[str, set[str]] = {}
+    words = _collect_terms(request.model_dump(mode="json", by_alias=True), by_label)
 
     def grounded(reference: str) -> bool:
         label, separator, value = reference.partition(":")
         # Models cite nested fields by path: latestResume.skills:TypeScript.
-        is_field = all(part.strip().casefold() in labels for part in label.split("."))
-        claimed = value if separator and is_field else reference
+        path = [part.strip().casefold() for part in label.split(".")]
+        if separator and all(part in by_label for part in path):
+            pool, claimed = by_label[path[-1]], value
+        else:
+            pool, claimed = words, reference
         found = _WORD.findall(claimed.casefold())
-        return bool(found) and all(word in words for word in found)
+        return bool(found) and all(word in pool for word in found)
 
     return [reference for reference in references if grounded(reference)]
 
@@ -84,9 +95,14 @@ def _grounded_references(references: list[str], request: ResumeMailboxReviewRequ
 def _grounded_reminders(
     proposals: list[ReminderProposal], request: ResumeMailboxReviewRequest
 ) -> list[ReminderProposal]:
-    # A model can name any id; only applications in this snapshot without an open reminder count.
+    # A model can name any id; only open applications in this snapshot without an open reminder
+    # count. The API skips rejected and closed applications on approval, so proposing one would
+    # ask a person to approve a reminder that is never created.
     eligible = {
-        application.id for application in request.applications if not application.has_open_reminder
+        application.id
+        for application in request.applications
+        if not application.has_open_reminder
+        and application.status.strip().casefold() not in {"rejected", "closed"}
     }
     kept: list[ReminderProposal] = []
     for proposal in proposals:
@@ -177,7 +193,7 @@ def build_graph(
             stage="evidence_gate",
             agent_name="deterministic_evidence_gate",
             summary=(
-                f"{_count_reminders(len(reminders))} proposed; waiting for the user's approval."
+                f"{count_reminders(len(reminders))} proposed; waiting for the user's approval."
                 if reminders
                 else "Review requires human confirmation before it becomes durable strategy memory."
                 if requires_human_review
@@ -238,7 +254,7 @@ def build_graph(
             agent_name="human_reviewer",
             summary=(
                 "The user approved this review and "
-                f"{_count_reminders(len(review.proposed_reminders))}."
+                f"{count_reminders(len(review.proposed_reminders))}."
                 if decision.approved
                 else "The user rejected this review; nothing from it is saved."
             ),
@@ -259,15 +275,19 @@ def build_graph(
         return "human_review" if pause else END
 
     builder = StateGraph(CareerGraphState)
-    # Model-backed nodes get a hard per-attempt deadline and one retry for transient failures;
+    # Model-backed nodes get a hard per-attempt deadline and one retry for fast transient failures;
     # if they still fail, the API falls back to its deterministic orchestrator. An agent cut off
     # for never returning its schema gets the retry too: a fresh conversation usually succeeds.
+    # A timed-out attempt is not retried: the whole run's budget would end the retry anyway.
     is_transient = RetryPolicy().retry_on
     agent_policies = {
         "timeout": TimeoutPolicy(run_timeout=agent_timeout_seconds),
         "retry_policy": RetryPolicy(
             max_attempts=2,
-            retry_on=lambda error: isinstance(error, GraphRecursionError) or is_transient(error),
+            retry_on=lambda error: (
+                not isinstance(error, NodeTimeoutError)
+                and (isinstance(error, GraphRecursionError) or is_transient(error))
+            ),
         ),
     }
     builder.add_node("resume_analyst", resume_analyst, **agent_policies)

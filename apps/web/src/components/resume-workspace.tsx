@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { InlineMemoryProposals } from "@/components/inline-memory-proposals";
-import { LocalTime } from "@/components/local-time";
+import { WorkspaceMetricTile } from "@/components/workspace-controls";
 import type {
   CreateResumeRequest,
   ResumeDocument,
@@ -14,142 +14,74 @@ import type {
 
 const minimumResumeLength = 80;
 
-const cellClass =
-  "rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2.5";
-
-function scoreTier(score: number) {
-  if (score >= 85) return "Strong";
-  if (score >= 70) return "Solid";
-  if (score >= 55) return "Mixed";
-  return "Weak";
-}
-
 function formatSectionName(value: string) {
   return value
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function Panel({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="card app-workspace-panel p-3 sm:p-4">
-      <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
-      <div className="mt-3">{children}</div>
+    <section className="card flex min-h-0 flex-1 flex-col p-0">
+      <h2 className="shrink-0 px-4 pt-3 text-base font-semibold text-[var(--text-primary)]">{title}</h2>
+      <div className="workspace-scroll-region flex min-h-0 flex-1 flex-col px-4 pb-3 pt-2">{children}</div>
     </section>
   );
 }
 
-function SignalList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+function ParsedResume({ data }: { data: ResumeStructuredData }) {
+  const skills = [...new Set([...data.skills.technical, ...data.skills.languages, ...data.skills.other])];
+  const rows = [
+    ...data.experience.map((role) => ({
+      key: `${role.company}-${role.title}-${role.dateRange}`,
+      title: [role.title, role.company].filter(Boolean).join(" at "),
+      detail: role.dateRange,
+    })),
+    ...data.projects.map((project) => ({ key: project.name, title: project.name, detail: "Project" })),
+    ...data.education.map((school) => ({
+      key: `${school.school}-${school.degree}`,
+      title: school.school,
+      detail: school.dateRange,
+    })),
+  ];
   return (
-    <div className={cellClass}>
-      <p className="eyebrow">{title}</p>
-      <ul className="mt-2 space-y-1.5 text-sm leading-5 text-[var(--text-secondary)]">
-        {(items.length > 0 ? items : [empty]).map((item) => (
-          <li key={item} className="break-words">
-            {item}
+    <Panel title="What careeroc read">
+      <ul className="fill-rows flex-1 divide-y divide-[var(--border)]">
+        {rows.map((row) => (
+          <li key={row.key} className="flex items-center justify-between gap-3 py-1.5">
+            <span className="min-w-0 truncate text-sm text-[var(--text-primary)]">{row.title}</span>
+            <span className="shrink-0 text-xs text-[var(--text-tertiary)]">{row.detail}</span>
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function BulletList({ items }: { items: string[] }) {
-  if (items.length === 0) return null;
-  return (
-    <ul className="mt-2 list-disc space-y-1 pl-4 text-sm leading-5 text-[var(--text-secondary)]">
-      {items.map((item) => (
-        <li key={item} className="break-words">
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ParsedResume({ summary, data }: { summary: string; data: ResumeStructuredData }) {
-  const skills = [...data.skills.technical, ...data.skills.languages, ...data.skills.other];
-  return (
-    <Panel eyebrow="Parsed" title="What careeroc read">
-      <div className="grid gap-2">
-        <p className={`text-sm leading-6 text-[var(--text-secondary)] ${cellClass}`}>{summary}</p>
-        {data.experience.map((role) => (
-          <article key={`${role.company}-${role.title}-${role.dateRange}`} className={cellClass}>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-              {[role.title, role.company].filter(Boolean).join(" at ")}
-            </h3>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              {[role.dateRange, role.location].filter(Boolean).join(" · ")}
-            </p>
-            <BulletList items={role.bullets} />
-          </article>
-        ))}
-        {data.projects.map((project) => (
-          <article key={project.name} className={cellClass}>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{project.name}</h3>
-            <p className="text-sm leading-5 text-[var(--text-secondary)]">{project.description}</p>
-            <BulletList items={project.bullets} />
-          </article>
-        ))}
-        {data.education.map((school) => (
-          <article key={`${school.school}-${school.degree}`} className={cellClass}>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{school.school}</h3>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              {[school.degree, school.field, school.dateRange].filter(Boolean).join(" · ")}
-            </p>
-          </article>
-        ))}
-        {skills.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span key={skill} className="badge text-[var(--text-secondary)]">
-                {skill}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      {skills.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {skills.map((skill) => (
+            <span key={skill} className="badge text-[var(--text-secondary)]">
+              {skill}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </Panel>
   );
 }
 
-function RecruiterReview({ evaluation }: { evaluation: ResumeEvaluation }) {
-  const sections = evaluation.sectionReviews.filter(
-    (review: ResumeSectionReview) => review.section.toLowerCase() !== "overall",
-  );
+function ToFix({ evaluation }: { evaluation: ResumeEvaluation }) {
+  const items = [...new Set([...evaluation.gaps, ...evaluation.nextActions])];
   return (
-    <Panel eyebrow="Review" title={evaluation.verdict}>
-      <div className="grid gap-2 md:grid-cols-3">
-        <SignalList title="Strengths" items={evaluation.strengths} empty="None detected yet." />
-        <SignalList title="Gaps" items={evaluation.gaps} empty="No major gaps detected." />
-        <SignalList title="Next actions" items={evaluation.nextActions} empty="Nothing to do yet." />
-      </div>
-      {sections.length > 0 ? (
-        <div className="mt-2 grid gap-2 lg:grid-cols-2">
-          {sections.map((review) => (
-            <article key={review.section} className={cellClass}>
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                  {formatSectionName(review.section)}
-                </h3>
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  {review.score}/100 · {scoreTier(review.score)}
-                </p>
-              </div>
-              <BulletList items={[...review.weaknesses, ...review.suggestions]} />
-            </article>
+    <Panel title="To fix">
+      {items.length > 0 ? (
+        <ul className="fill-rows flex-1 divide-y divide-[var(--border)]">
+          {items.map((item) => (
+            <li key={item} className="py-1.5 text-sm text-[var(--text-secondary)]">
+              {item}
+            </li>
           ))}
-        </div>
-      ) : null}
+        </ul>
+      ) : (
+        <p className="text-sm text-[var(--text-tertiary)]">Nothing to fix.</p>
+      )}
     </Panel>
   );
 }
@@ -238,46 +170,45 @@ function ResumeDetail({
 }) {
   const version = document.latestVersion;
   const evaluation = document.latestEvaluation;
+  const sections = (evaluation?.sectionReviews ?? []).filter(
+    (review: ResumeSectionReview) => review.section.toLowerCase() !== "overall",
+  );
   return (
     <>
-      <section className="card app-workspace-panel p-3 sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="eyebrow">Latest resume</p>
-            <h1 className="mt-1 break-words text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:text-2xl">
-              {document.title}
-            </h1>
-            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-              Saved <LocalTime value={document.createdAtUtc} />
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:shrink-0">
-            {[
-              ["Score", evaluation?.score ?? 0],
-              ["Skills", version?.skills.length ?? 0],
-              ["Roles", version?.experienceCount ?? 0],
-              ["Projects", version?.projectCount ?? 0],
-            ].map(([label, value]) => (
-              <div key={label} className={cellClass}>
-                <p className="eyebrow">{label}</p>
-                <p className="mt-1 font-semibold text-[var(--text-primary)]">{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="shrink-0">
+        <h1 className="truncate text-xl font-semibold text-[var(--text-primary)]">{document.title}</h1>
+        {evaluation ? (
+          <p className="truncate text-sm text-[var(--text-secondary)]">{evaluation.verdict}</p>
+        ) : null}
+      </div>
 
-      {evaluation ? <RecruiterReview evaluation={evaluation} /> : null}
-      {version?.structuredData ? (
-        <ParsedResume summary={version.summary} data={version.structuredData} />
-      ) : null}
-      <InlineMemoryProposals
-        proposals={document.memoryProposals}
-        proxyPrefix={proxyPrefix}
-        title="Resume memory"
-        emptyCopy="No resume-scoped memory proposals are waiting here."
-      />
-      {children}
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <WorkspaceMetricTile
+          label="Score"
+          value={evaluation?.score ?? "—"}
+          tone="var(--accent)"
+        />
+        {sections.map((review) => (
+          <WorkspaceMetricTile
+            key={review.section}
+            label={formatSectionName(review.section)}
+            value={review.score}
+          />
+        ))}
+      </div>
+
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-2 xl:[grid-template-rows:minmax(0,1fr)]">
+        <div className="flex min-h-0 flex-col gap-3">
+          {evaluation ? <ToFix evaluation={evaluation} /> : null}
+          {(document.memoryProposals?.length ?? 0) > 0 ? (
+            <div className="shrink-0">
+              <InlineMemoryProposals proposals={document.memoryProposals} proxyPrefix={proxyPrefix} />
+            </div>
+          ) : null}
+          <div className="shrink-0">{children}</div>
+        </div>
+        {version?.structuredData ? <ParsedResume data={version.structuredData} /> : null}
+      </div>
     </>
   );
 }
@@ -294,20 +225,18 @@ export function ResumeWorkspace({
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col gap-3 px-3 pb-6 pt-4 animate-in sm:gap-4 sm:px-5 sm:pt-6">
+      <div className="workspace-shell flex w-full flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-6">
         {latest ? (
           <ResumeDetail document={latest} proxyPrefix={proxyPrefix}>
-            <details className="card app-workspace-panel p-3 sm:p-4">
-              <summary className="text-sm font-semibold text-[var(--text-primary)]">
-                Save a new version
-              </summary>
+            <details className="card px-4 py-2.5">
+              <summary className="text-sm font-medium text-[var(--text-primary)]">New version</summary>
               <div className="mt-3">
                 <NewResumeForm proxyPrefix={proxyPrefix} onCreated={setWorkspace} />
               </div>
             </details>
           </ResumeDetail>
         ) : (
-          <Panel eyebrow="Resume" title="Add your resume">
+          <Panel title="Add your resume">
             <NewResumeForm proxyPrefix={proxyPrefix} onCreated={setWorkspace} />
           </Panel>
         )}

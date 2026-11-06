@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 type RouteErrorStateProps = {
@@ -13,7 +14,7 @@ export function RouteErrorState({
   error,
   reset,
   title = "Something went wrong.",
-  description = "Retry the view. If it keeps failing, the API or session may need attention.",
+  description,
 }: RouteErrorStateProps) {
   useEffect(() => {
     console.error(error);
@@ -21,23 +22,23 @@ export function RouteErrorState({
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-[60vh] w-full max-w-3xl items-center px-4 py-10">
-        <section className="paper-card grid w-full gap-5 p-6 sm:p-8">
-          <div className="grid gap-2">
-            <p className="eyebrow">Recoverable error</p>
-            <h1 className="text-2xl font-semibold">{title}</h1>
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {description}
-            </p>
-            {error.digest ? (
-              <p className="font-mono text-xs text-[var(--text-tertiary)]">
-                Error digest: {error.digest}
-              </p>
-            ) : null}
+      <div className="flex min-h-full w-full items-center justify-center px-3 py-6 sm:px-5">
+        <section role="alert" className="card grid w-full max-w-md gap-3 p-5">
+          <h1 className="text-base font-semibold text-[var(--text-primary)]">{title}</h1>
+          {description ? (
+            <p className="text-sm text-[var(--text-secondary)]">{description}</p>
+          ) : null}
+          {error.digest ? (
+            <p className="text-xs text-[var(--text-tertiary)]">Error {error.digest}</p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary btn-sm" onClick={reset}>
+              Try again
+            </button>
+            <Link href="/app" className="btn btn-secondary btn-sm">
+              Dashboard
+            </Link>
           </div>
-          <button type="button" className="btn btn-primary w-fit" onClick={reset}>
-            Try again
-          </button>
         </section>
       </div>
     </main>

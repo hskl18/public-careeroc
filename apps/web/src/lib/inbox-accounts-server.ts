@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import type { InboxSetupResponse } from "./inbox-accounts";
@@ -45,7 +46,8 @@ const getInboxSetupForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("inbox-accounts", error);
     return {
       setup: fallbackSetup,
       source: "fallback",

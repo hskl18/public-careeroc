@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import {
@@ -49,7 +50,8 @@ const getRecruitingContactsForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("recruiting-contacts", error);
     return {
       contacts: fallbackContacts,
       source: "fallback",

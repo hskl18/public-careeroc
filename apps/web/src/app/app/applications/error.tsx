@@ -14,7 +14,7 @@ export default function ApplicationsErrorBoundary({
       error={error}
       reset={reset}
       title="Applications could not load."
-      description="Retry the applications view. Existing application data is unchanged."
+      description="Your data is unchanged."
     />
   );
 }

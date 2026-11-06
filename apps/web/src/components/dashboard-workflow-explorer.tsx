@@ -17,50 +17,23 @@ import { WorkspaceMetricTile } from "@/components/workspace-controls";
 import type {
   ApplicationCard,
   DashboardResponse,
+  DashboardView,
   PendingAction,
 } from "@/lib/dashboard";
+import { readErrorMessage } from "@/lib/client-fetch";
 
 type WorkflowExplorerProps = {
   dashboard: DashboardResponse;
   timeZoneId: string;
-  variant?: "dashboard" | "page";
+  // The view the server loaded; the list below holds only that view's applications.
+  view: DashboardView;
 };
 
-type SavedView =
-  | "needs-action"
-  | "needs-review"
-  | "active"
-  | "waiting"
-  | "interviewing"
-  | "offer"
-  | "rejected"
-  | "all";
+type SavedView = DashboardView;
 
 type SortColumn = DashboardSortColumn;
 
 type SortDirection = DashboardSortDirection;
-
-const SAVED_VIEW_VALUES: readonly SavedView[] = [
-  "needs-action",
-  "needs-review",
-  "active",
-  "waiting",
-  "interviewing",
-  "offer",
-  "rejected",
-  "all",
-];
-
-const FOCUS_TO_VIEW: Record<string, SavedView> = {
-  all: "all",
-  active: "active",
-  "needs-action": "needs-action",
-  "needs-review": "needs-review",
-  waiting: "waiting",
-  interviewing: "interviewing",
-  offer: "offer",
-  rejected: "rejected",
-};
 
 const STATUS_SORT_RANK: Record<string, number> = {
   Offer: 70,
@@ -81,16 +54,6 @@ const NEXT_ACTION_TONE_RANK: Record<
   waiting: 20,
   muted: 10,
 };
-
-function parseSavedView(value: string | null, fallback: SavedView): SavedView {
-  if (value && (SAVED_VIEW_VALUES as readonly string[]).includes(value)) {
-    return value as SavedView;
-  }
-  if (value && FOCUS_TO_VIEW[value]) {
-    return FOCUS_TO_VIEW[value];
-  }
-  return fallback;
-}
 
 function compareText(left: string, right: string, direction: SortDirection) {
   const result = left.localeCompare(right, undefined, {
@@ -213,30 +176,9 @@ function getApplicationUrgencyScore(application: ApplicationCard) {
   return score;
 }
 
-function describeSavedView(view: SavedView) {
-  switch (view) {
-    case "needs-action":
-      return "Action Required: open reminders and deadlines you should resolve today.";
-    case "needs-review":
-      return "Likely parser errors — fix the company or role before they enter the pipeline.";
-    case "active":
-      return "Open applications still moving through the recruiting workflow.";
-    case "waiting":
-      return "You replied. Now waiting for the employer to come back.";
-    case "interviewing":
-      return "Already in interview scheduling or interview execution.";
-    case "offer":
-      return "Reached an offer stage. Reply path matters most.";
-    case "rejected":
-      return "Closed by the employer. Hidden from the default view.";
-    default:
-      return "Every record currently visible in this workspace.";
-  }
-}
-
 const SAVED_VIEW_LABEL: Record<SavedView, string> = {
-  "needs-action": "Action Required",
-  "needs-review": "Needs Review",
+  "needs-action": "Needs action",
+  "needs-review": "Fix",
   active: "Active",
   waiting: "Waiting",
   interviewing: "Interviews",
@@ -379,6 +321,7 @@ function completeApplicationActionLocally(
 export function DashboardWorkflowExplorer({
   dashboard,
   timeZoneId,
+  view,
 }: WorkflowExplorerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -403,23 +346,11 @@ export function DashboardWorkflowExplorer({
       ),
     [completedActions, dashboard],
   );
-  const initialView = useMemo(() => {
-    const fromUrl = searchParams.get("view") ?? searchParams.get("focus");
-    if (fromUrl) {
-      return parseSavedView(fromUrl, "needs-action");
-    }
-    // Smarter default: only land on Needs Action when there is actually
-    // something to act on. Otherwise jump to Active or All so the user
-    // never sees an empty single-row table on first load.
-    if (dashboard.metrics.needsAction > 0) return "needs-action";
-    if (dashboard.metrics.activeApplications > 0) return "active";
-    return "all";
-  }, [searchParams, dashboard.metrics.needsAction, dashboard.metrics.activeApplications]);
   const initialQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
     [searchParams],
   );
-  const [savedView, setSavedView] = useState<SavedView>(initialView);
+  const [savedView, setSavedView] = useState<SavedView>(view);
   const [pipelineSearch, setPipelineSearch] = useState(initialQuery);
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
@@ -481,14 +412,15 @@ export function DashboardWorkflowExplorer({
     highlight?: boolean;
   }> = [
     {
-      label: "Action Required",
+      label: "Needs action",
       view: "needs-action",
       value: currentDashboard.metrics.needsAction,
       accent: "var(--accent)",
       highlight: true,
     },
     {
-      label: "Needs review",
+      // Applications whose company or role look misread; not the email review queue.
+      label: "Fix",
       view: "needs-review",
       value: needsReviewCount,
       accent: "var(--brand-blue-ink)",
@@ -605,7 +537,7 @@ export function DashboardWorkflowExplorer({
         );
 
         if (!reminderResponse.ok) {
-          throw new Error(`Reminder update failed with ${reminderResponse.status}`);
+          throw new Error(await readErrorMessage(reminderResponse));
         }
       }
 
@@ -623,7 +555,7 @@ export function DashboardWorkflowExplorer({
         );
 
         if (!statusResponse.ok) {
-          throw new Error(`Application update failed with ${statusResponse.status}`);
+          throw new Error(await readErrorMessage(statusResponse));
         }
       }
 
@@ -634,6 +566,8 @@ export function DashboardWorkflowExplorer({
       setActionNotice(`Marked done: ${application.company}.`);
       router.refresh();
     } catch (requestError) {
+      // The reminder may be done even if the stage update failed; reload what the API has.
+      router.refresh();
       setActionError(
         requestError instanceof Error
           ? requestError.message
@@ -654,40 +588,13 @@ export function DashboardWorkflowExplorer({
 
   return (
     <section
-      className="grid min-h-0 flex-1 items-stretch gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]"
+      className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]"
     >
       <div className="flex min-h-0 flex-col gap-3 sm:gap-4">
-        <div className="card app-workspace-panel shrink-0 overflow-hidden p-3 sm:p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <p className="eyebrow">Applications</p>
-              <h1 className="mt-1.5 text-lg font-semibold text-[var(--text-primary)] sm:mt-2 sm:text-xl">
-                Job pipeline
-              </h1>
-              <p className="mt-1.5 text-sm leading-6 text-[var(--text-secondary)] sm:mt-2">
-                Review application stages, filters, action queues, and recruiter timelines.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-              <Link href="/app/inbox" className="btn btn-secondary btn-sm max-sm:hidden">
-                Inbox
-              </Link>
-              <Link
-                href="/app/review"
-                className="btn btn-secondary btn-sm"
-                aria-label="Open review queue"
-              >
-                Email review{" "}
-                {reviewQueueCount !== null && reviewQueueCount > 0 ? (
-                  <span className="badge ml-2 border-[var(--brand-blue)]/18 bg-[var(--blue-soft)] text-[var(--brand-blue-ink)]">
-                    {reviewQueueCount}
-                  </span>
-                ) : null}
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4 sm:grid-cols-3 xl:grid-cols-8">
+        <h1 className="sr-only">Applications</h1>
+        <div className="shrink-0">
+          {/* Phones scroll the views sideways instead of hiding five of them. */}
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 xl:grid-cols-8">
             {kpiCards.map((metric) => {
               const selected = savedView === metric.view;
               return (
@@ -703,37 +610,26 @@ export function DashboardWorkflowExplorer({
                   selected={selected}
                   highlighted={Boolean(metric.highlight && metric.value !== null && metric.value > 0)}
                   onClick={() => selectView(metric.view)}
-                  className={
-                    !["needs-action", "needs-review", "active"].includes(metric.view)
-                      ? "max-sm:hidden"
-                      : ""
-                  }
+                  className="max-sm:min-w-28 max-sm:shrink-0"
                 />
               );
             })}
           </div>
         </div>
 
-        <div className="card app-workspace-panel flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-          <div className="shrink-0 border-b border-[var(--border)] px-3 pt-3 pb-3 sm:px-4 sm:pt-4">
-            <div className="grid gap-2 sm:gap-3 lg:grid-cols-[minmax(0,1fr)_10rem] lg:items-end">
-              <label className="block">
-                <span className="eyebrow mb-1.5 block">Search</span>
-                <input
-                  value={pipelineSearch}
-                  onChange={(event) => setPipelineSearch(event.target.value)}
-                  placeholder="Company, role, or stage"
-                  className="input"
-                />
-              </label>
+        <div className="card flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] p-3">
+            <input
+              aria-label="Search applications"
+              value={pipelineSearch}
+              onChange={(event) => setPipelineSearch(event.target.value)}
+              placeholder="Search"
+              className="input"
+            />
+            {searchChanged || initialQuery ? (
               <button
                 type="button"
-                className="btn btn-secondary btn-block"
-                disabled={
-                  !searchChanged &&
-                  savedView === "needs-action" &&
-                  !initialQuery
-                }
+                className="btn btn-secondary shrink-0"
                 onClick={() => {
                   if (searchChanged) {
                     selectView(savedView, pipelineSearch);
@@ -741,79 +637,23 @@ export function DashboardWorkflowExplorer({
                   }
 
                   setPipelineSearch("");
-                  selectView("needs-action", "");
+                  selectView(savedView, "");
                 }}
               >
-                {searchChanged
-                  ? "Search"
-                  : savedView === "needs-action"
-                    ? initialQuery
-                      ? "Clear search"
-                      : "Reset"
-                    : "Today’s queue"}
+                {searchChanged ? "Search" : "Clear"}
               </button>
-            </div>
-
-            {initialQuery ? (
-              <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">
-                Search applied:{" "}
-                <span className="font-medium text-[var(--text-secondary)]">
-                  {initialQuery}
-                </span>
-              </p>
             ) : null}
-
-            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[var(--text-tertiary)] sm:mt-3 sm:line-clamp-none sm:leading-6">
-              {initialQuery
-                ? `Showing ${sortedApplications.length} ${
-                    sortedApplications.length === 1 ? "record" : "records"
-                  } matching "${initialQuery}".`
-                : describeSavedView(savedView)}
-              {!initialQuery &&
-              sortedApplications.length === 1 &&
-              savedView !== "all" &&
-              totalApplications > 1 ? (
-                <>
-                  {" "}
-                  <button
-                    type="button"
-                    className="text-[12px] font-medium text-[var(--accent)] hover:underline"
-                    onClick={() => selectView("all")}
-                  >
-                    Show all {totalApplications} instead →
-                  </button>
-                </>
-              ) : null}
-            </p>
+            {reviewQueueCount !== null && reviewQueueCount > 0 ? (
+              <Link href="/app/review" className="btn btn-secondary shrink-0">
+                Email review {reviewQueueCount}
+              </Link>
+            ) : null}
           </div>
 
           {sortedApplications.length === 0 ? (
             <div className="p-4 sm:p-6">
               <p className="text-sm font-medium text-[var(--text-primary)]">
-                {savedView === "needs-action"
-                  ? "Nothing needs your attention right now"
-                  : savedView === "needs-review"
-                    ? "Nothing to review — your parser is clean"
-                    : savedView === "waiting"
-                      ? "Nothing waiting on the employer right now"
-                      : savedView === "interviewing"
-                        ? "No interviews in flight"
-                        : savedView === "offer"
-                          ? "No open offers yet"
-                          : savedView === "rejected"
-                            ? "No rejections in this range"
-                            : initialQuery
-                              ? "No records match your search"
-                              : "Nothing to show in this view"}
-              </p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                {savedView === "needs-action"
-                  ? "Open reminders and deadlines will land here when sync picks them up."
-                  : savedView === "needs-review"
-                    ? "No applications are flagged for manual review. New low-confidence parses will appear here."
-                    : initialQuery
-                      ? "Try a different search or switch view."
-                      : "Pick another view to keep working."}
+                {initialQuery ? "No matches." : "Nothing here."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {savedView !== "active" &&
@@ -863,7 +703,7 @@ export function DashboardWorkflowExplorer({
       </div>
 
       <aside className="hidden xl:flex xl:min-h-0 xl:items-stretch">
-        <div className="card app-workspace-panel application-detail-pane w-full p-5">
+        <div className="card application-detail-pane w-full p-4">
           {activeApplication ? (
             <DashboardApplicationEvidencePanel
               application={activeApplication}

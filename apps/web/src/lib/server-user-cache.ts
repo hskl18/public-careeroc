@@ -34,7 +34,7 @@ export function createKeyedUserScopedCache<TResult>(
   };
 }
 
-export function normalizeCareerocApiUser(
+function normalizeCareerocApiUser(
   user: CareerocApiUser,
 ): NormalizedCareerocApiUser {
   const normalizedName = user.name?.trim();

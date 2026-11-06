@@ -1,11 +1,11 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten'",
-    "(python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version < '3.12' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 
 [[package]]
@@ -90,11 +90,12 @@ wheels = [
 
 [[package]]
 name = "careeroc-agent-runtime"
-version = "0.1.0"
+version = "1.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk", extra = ["fastapi"] },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langchain" },
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
@@ -111,7 +112,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -121,6 +121,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", extras = ["fastapi"], specifier = "==1.2.3" },
     { name = "fastapi", specifier = "==0.162.0" },
+    { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "langchain", specifier = "==1.4.7" },
     { name = "langchain-ollama", specifier = "==1.1.0" },
     { name = "langchain-openai", specifier = "==1.7.3" },
@@ -137,7 +138,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "pytest", specifier = ">=9.1.1,<10" },
     { name = "pytest-asyncio", specifier = ">=1.4.1,<2" },
     { name = "ruff", specifier = ">=0.17.3,<0.18" },

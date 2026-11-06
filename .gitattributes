@@ -1,1 +1,7 @@
 *.sh text eol=lf
+
+# Generated or recorded files: collapsed in diffs and left out of GitHub's language stats.
+apps/web/src/lib/api-schema.ts linguist-generated=true
+apps/web/src/lib/demo-snapshot.json linguist-generated=true
+src/Careeroc.Infrastructure/Migrations/*.Designer.cs linguist-generated=true
+src/Careeroc.Infrastructure/Migrations/*ModelSnapshot.cs linguist-generated=true

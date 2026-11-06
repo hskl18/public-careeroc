@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import { fallbackResumeWorkspace, type ResumeWorkspace } from "./resumes";
@@ -46,7 +47,8 @@ const getResumeWorkspaceForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("resumes", error);
     return {
       workspace: fallbackResumeWorkspace,
       source: "fallback",

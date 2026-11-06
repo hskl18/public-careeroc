@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import type { ManualReviewResponse } from "./manual-review";
@@ -69,7 +70,8 @@ const getManualReviewForUserCached = createUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("manual-review", error);
     return {
       review: fallbackManualReview,
       source: "fallback",

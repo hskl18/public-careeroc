@@ -1,0 +1,63 @@
+# Monthly version updates, grouped per ecosystem so each month is a handful of PRs.
+# Security updates are separate and arrive as soon as an advisory is published.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: uv
+    directory: /services/agent-runtime
+    schedule:
+      interval: monthly
+    groups:
+      uv:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      nuget:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/api
+      - /apps/web
+      - /services/agent-runtime
+    schedule:
+      interval: monthly
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # Compose's own images. Postgres stays on its major version: a new major cannot read the pg17 volume.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      - dependency-name: postgres
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: monthly

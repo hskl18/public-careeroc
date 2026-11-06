@@ -71,11 +71,12 @@ export function WelcomeToast({
     }
 
     try {
-      await fetch("/api/careeroc/api/profile/welcome-dismissed", {
+      const response = await fetch("/api/careeroc/api/profile/welcome-dismissed", {
         method: "POST",
         credentials: "same-origin",
       });
-      return true;
+      // A 401 or 5xx is not saved; a later mount retries it.
+      return response.ok;
     } catch {
       // The local hide is still useful; the server will be retried on a later mount.
       return false;
@@ -142,22 +143,14 @@ export function WelcomeToast({
 
   return (
     <div className="fixed bottom-5 right-5 z-50 hidden w-[min(24rem,calc(100vw-2.5rem))] animate-in lg:block">
-      <div className="relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] p-3 shadow-[0_18px_48px_rgba(17,33,45,0.18)] backdrop-blur-xl sm:p-4">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              "rgba(248,251,255,0.92)",
-          }}
-        />
+      <div className="relative overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-3 shadow-lg sm:p-4">
         <div className="relative">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="eyebrow">Welcome</p>
-              <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                Hi {greetingName} &mdash; let&rsquo;s get your inbox flowing
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                Hi {greetingName}
               </p>
+              <p className="mt-0.5 text-sm text-[var(--text-secondary)]">Connect Gmail to start.</p>
             </div>
             <button
               type="button"
@@ -171,20 +164,6 @@ export function WelcomeToast({
             </button>
           </div>
 
-          <ol className="mt-3 hidden space-y-1.5 text-xs leading-6 text-[var(--text-secondary)] sm:block">
-            <li>
-              <span className="font-mono text-[var(--text-tertiary)]">1.</span>{" "}
-              Connect Gmail in Inbox
-            </li>
-            <li>
-              <span className="font-mono text-[var(--text-tertiary)]">2.</span>{" "}
-              Pick how far back to backfill (defaults to 6 months)
-            </li>
-            <li>
-              <span className="font-mono text-[var(--text-tertiary)]">3.</span>{" "}
-              The Review Evidence Agent handles uncertain emails in the background
-            </li>
-          </ol>
 
           <div className="mt-3 flex items-center gap-2 sm:mt-4">
             <a
@@ -192,7 +171,7 @@ export function WelcomeToast({
               className="btn btn-primary btn-sm"
               onClick={(event) => void startSetup(event)}
             >
-              Start setup
+              Connect Gmail
             </a>
             <button
               type="button"

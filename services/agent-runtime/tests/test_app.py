@@ -186,3 +186,39 @@ async def test_decision_endpoint_resumes_only_a_paused_review() -> None:
     assert decided.json()["status"] == "completed"
     assert decided.json()["trace"][-1]["reason"] == "Looks right."
     assert again.status_code == 409
+
+
+async def test_a_caller_without_the_secret_gets_401_before_the_body_is_read() -> None:
+    app = create_app(
+        settings=AgentRuntimeSettings(shared_secret="test-secret"),
+        suite=FakeAgentSuite(),
+        checkpointer=InMemorySaver(),
+    )
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # An invalid body would give 422 and describe the schema to anyone.
+            missing = await client.post("/v1/resume-mailbox-review", json={})
+            non_ascii = await client.post(
+                "/v1/resume-mailbox-review",
+                headers={"X-Careeroc-Agent-Secret": b"t\xe9st"},
+                json={},
+            )
+
+    assert missing.status_code == 401
+    assert non_ascii.status_code == 401
+
+
+async def test_a_reused_thread_is_refused_instead_of_mixing_two_runs() -> None:
+    app = create_app(
+        settings=AgentRuntimeSettings(shared_secret="test-secret"),
+        suite=FakeAgentSuite(),
+        checkpointer=InMemorySaver(),
+    )
+    payload = build_request("review:reused-001").model_dump(mode="json", by_alias=True)
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            first = await client.post("/v1/resume-mailbox-review", headers=SECRET, json=payload)
+            second = await client.post("/v1/resume-mailbox-review", headers=SECRET, json=payload)
+
+    assert first.status_code == 200
+    assert second.status_code == 409
