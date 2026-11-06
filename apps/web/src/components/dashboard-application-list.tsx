@@ -47,7 +47,10 @@ export function DashboardApplicationList({
   return (
     <>
       <div className="hidden shrink-0 border-b border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 md:grid md:items-center md:gap-3 md:[grid-template-columns:minmax(0,1.2fr)_8rem_minmax(0,1.6fr)_6rem]">
-        <SortHeader column="company" sortState={sortState} onSort={onSort} />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SortHeader column="company" sortState={sortState} onSort={onSort} />
+          <SortHeader column="role" sortState={sortState} onSort={onSort} />
+        </div>
         <SortHeader column="stage" sortState={sortState} onSort={onSort} />
         <SortHeader column="next-action" sortState={sortState} onSort={onSort} />
         <SortHeader
