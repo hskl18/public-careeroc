@@ -67,6 +67,21 @@ describe("sortApplications", () => {
     expect(order.map((application) => application.id)).toEqual(["newer", "older", "other"]);
   });
 
+  it("sorts by role when the role column is selected", () => {
+    const designer = card("designer", { role: "Product Designer" });
+    const engineer = card("engineer", { role: "Software Engineer" });
+
+    const order = sortApplications([engineer, designer], {
+      column: "role",
+      direction: "asc",
+    });
+
+    expect(order.map((application) => application.id)).toEqual([
+      "designer",
+      "engineer",
+    ]);
+  });
+
   it("ranks next actions by tone, with an unknown tone last", () => {
     const waiting = card("waiting", { nextAction: { ...card("x").nextAction, tone: "waiting" } });
     const action = card("action", { nextAction: { ...card("x").nextAction, tone: "action" } });
@@ -147,4 +162,3 @@ describe("completeApplicationActionLocally", () => {
     expect(next.applications[0].status).toBe("Oa Pending");
   });
 });
-
