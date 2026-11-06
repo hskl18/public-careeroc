@@ -30,6 +30,10 @@ public sealed class SyncNowWorker(
                     {
                         logger.LogWarning(exception, "A user-triggered inbox sync failed.");
                     }
+                    finally
+                    {
+                        queue.Complete(userEmail);
+                    }
                 });
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

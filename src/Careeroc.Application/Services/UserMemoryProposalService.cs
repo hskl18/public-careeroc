@@ -233,7 +233,7 @@ public sealed class UserMemoryProposalService
                 proposal.ConfirmationStatus = "applied";
                 proposal.UpdatedAtUtc = nowUtc;
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await SaveResolutionAsync(cancellationToken);
                 return MapMemory(existingConfirmed);
             }
         }
@@ -241,8 +241,22 @@ public sealed class UserMemoryProposalService
         proposal.ConfirmationStatus = action == "confirm" ? "confirmed" : "rejected";
         proposal.UpdatedAtUtc = nowUtc;
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveResolutionAsync(cancellationToken);
         return MapMemory(proposal);
+    }
+
+    // Two requests that both read the pending proposal (a double click) cannot both resolve it:
+    // UserMemoryEntry has a row version, so the second save conflicts and creates nothing.
+    private async Task SaveResolutionAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new UserFacingException("This proposal was decided in another request. Reload to see the result.", exception);
+        }
     }
 
     private async Task<User?> GetExistingUserAsync(string? userEmail, CancellationToken cancellationToken)

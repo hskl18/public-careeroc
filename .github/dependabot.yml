@@ -44,13 +44,14 @@ updates:
         patterns: ["*"]
         update-types: [minor, patch]
 
+  # Base images are pinned by digest, so security patches arrive only through these updates.
   - package-ecosystem: docker
     directories:
       - /apps/api
       - /apps/web
       - /services/agent-runtime
     schedule:
-      interval: monthly
+      interval: weekly
     groups:
       docker:
         patterns: ["*"]

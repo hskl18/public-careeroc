@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build from the repository root: docker build -f apps/web/Dockerfile .
 
-FROM node:26-alpine AS base
+FROM node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS base
 # Node 25+ no longer bundles Corepack; install the pnpm version from package.json.
 RUN npm install --global pnpm@10.34.9
 
@@ -21,7 +21,7 @@ ENV NEXT_OUTPUT=standalone \
     NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --dir apps/web build
 
-FROM node:26-alpine AS runtime
+FROM node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS runtime
 LABEL org.opencontainers.image.source="https://github.com/hskl18/public-careeroc" \
       org.opencontainers.image.licenses="MIT"
 WORKDIR /app

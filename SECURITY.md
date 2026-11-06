@@ -61,7 +61,7 @@ Production deployments should also enforce:
 - HTTPS end to end, or trusted TLS termination directly in front of the app
 - WAF/CDN or equivalent edge filtering
 - secret storage in a real secret manager
-- intentional secret rotation for `AUTH_SECRET`, `CAREEROC_API_AUTH_SECRET`, and the agent shared secret
+- intentional secret rotation for `AUTH_SECRET`, `CAREEROC_API_AUTH_SECRET`, and the agent shared secret; rotating `CAREEROC_TOKEN_PROTECTION_KEY` disconnects every Gmail inbox until its user reconnects
 - centralized log retention and redaction
 - locked-down CORS origins
 - a configured access allowlist, or demo mode, before the deployment is public

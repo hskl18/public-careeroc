@@ -92,7 +92,7 @@ public sealed class InboxSetupService
             : "Set Google__ClientId and Google__ClientSecret, then retry the Gmail connection flow.";
 
         WriteMetadata(account, metadata);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return await GetSetupAsync(user.Email, gmailOnly: true, cancellationToken: cancellationToken);
     }
@@ -139,7 +139,7 @@ public sealed class InboxSetupService
         metadata.OAuthStateExpiresAtUtc = _clock.UtcNow.Add(OAuthStateLifetime);
 
         WriteMetadata(account, metadata);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         var codeChallenge = WebEncoders.Base64UrlEncode(
             SHA256.HashData(Encoding.UTF8.GetBytes(metadata.OAuthCodeVerifier)));
@@ -177,7 +177,7 @@ public sealed class InboxSetupService
             pendingMetadata.ConnectionStatus = "OAuth session expired";
             pendingMetadata.NextStep = "Retry Continue with Google to start a fresh Gmail authorization session.";
             WriteMetadata(pendingAccount, pendingMetadata);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await SaveAsync(cancellationToken);
             throw new UserFacingException("The Gmail authorization session expired. Start the flow again.");
         }
 
@@ -230,7 +230,7 @@ public sealed class InboxSetupService
         targetMetadata.OAuthStateExpiresAtUtc = null;
 
         WriteMetadata(targetAccount, targetMetadata);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return new GmailOAuthCompletionResult(
             returnUrl,
@@ -261,7 +261,7 @@ public sealed class InboxSetupService
         metadata.OAuthStateExpiresAtUtc = null;
 
         WriteMetadata(pendingAccount, metadata);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return new GmailOAuthCompletionResult(
             returnUrl,
@@ -322,7 +322,7 @@ public sealed class InboxSetupService
         }
 
         WriteMetadata(account, metadata);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return await GetSetupAsync(resolvedUserEmail, gmailOnly: true, cancellationToken: cancellationToken);
     }
@@ -351,7 +351,7 @@ public sealed class InboxSetupService
             !hasImportedEmail)
         {
             _dbContext.InboxAccounts.Remove(account);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await SaveAsync(cancellationToken);
 
             return await GetSetupAsync(resolvedUserEmail, gmailOnly: true, cancellationToken: cancellationToken);
         }
@@ -368,7 +368,7 @@ public sealed class InboxSetupService
         metadata.GmailHistoryId = null;
         WriteMetadata(account, metadata);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return await GetSetupAsync(resolvedUserEmail, gmailOnly: true, cancellationToken: cancellationToken);
     }
@@ -446,7 +446,7 @@ public sealed class InboxSetupService
         metadata.SentReplyBackfillCompletedAtUtc = null;
         WriteMetadata(account, metadata);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return new DeleteImportedInboxDataResponse(
             account.Id,
@@ -573,7 +573,7 @@ public sealed class InboxSetupService
         }
 
         _dbContext.InboxAccounts.Remove(account);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
         return new DeleteInboxPurgeResponse(
             account.Id,
@@ -718,6 +718,17 @@ public sealed class InboxSetupService
             return pendingAccount;
         }
 
+        // The person chose another Google account than the inbox they started connecting. An inbox
+        // that already holds mail or a refresh token must not be deleted or relabeled as that account.
+        var holdsImportedData =
+            !string.IsNullOrWhiteSpace(ReadMetadata(pendingAccount).RefreshToken) ||
+            await _dbContext.InboxEmails.AnyAsync(email => email.InboxAccountId == pendingAccount.Id, cancellationToken);
+        if (holdsImportedData)
+        {
+            throw new UserFacingException(
+                $"Google signed you in as {actualEmailAddress}, not {pendingAccount.EmailAddress}. Continue with Google again and choose {pendingAccount.EmailAddress}, or connect {actualEmailAddress} as another inbox.");
+        }
+
         var existingAccount = await _dbContext.InboxAccounts
             .FirstOrDefaultAsync(
                 account =>
@@ -735,6 +746,20 @@ public sealed class InboxSetupService
 
         _dbContext.InboxAccounts.Remove(pendingAccount);
         return existingAccount;
+    }
+
+    // A sync that saves this inbox between this request's read and write makes the save conflict
+    // (InboxAccount has a row version); the person can simply retry.
+    private async Task SaveAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new UserFacingException("This inbox changed while saving, for example during a sync. Try again.", exception);
+        }
     }
 
     private static string CreateSecureToken()
