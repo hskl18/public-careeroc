@@ -549,7 +549,7 @@ export function DashboardWorkspace({
       <div className="workspace-shell flex w-full flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-6">
         {!liveData ? (
           <div role="status" className="alert alert-warning shrink-0">
-            API unavailable. Showing empty data.
+            API offline. Showing empty data.
           </div>
         ) : null}
         {error ? <div role="alert" className="alert alert-error shrink-0">{error}</div> : null}

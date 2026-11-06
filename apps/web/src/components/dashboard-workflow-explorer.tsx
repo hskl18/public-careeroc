@@ -8,11 +8,7 @@ import {
   DashboardApplicationEvidencePanel,
   DashboardEmptySelectedPanel,
 } from "@/components/dashboard-application-evidence-panel";
-import {
-  DashboardApplicationList,
-  type DashboardSortColumn,
-  type DashboardSortDirection,
-} from "@/components/dashboard-application-list";
+import { DashboardApplicationList } from "@/components/dashboard-application-list";
 import { WorkspaceMetricTile } from "@/components/workspace-controls";
 import type {
   ApplicationCard,
@@ -21,6 +17,12 @@ import type {
   PendingAction,
 } from "@/lib/dashboard";
 import { readErrorMessage } from "@/lib/client-fetch";
+import {
+  completeApplicationActionLocally,
+  sortApplications,
+  type SortColumn,
+  type SortState,
+} from "@/lib/dashboard-workflow";
 
 type WorkflowExplorerProps = {
   dashboard: DashboardResponse;
@@ -29,154 +31,7 @@ type WorkflowExplorerProps = {
   view: DashboardView;
 };
 
-type SavedView = DashboardView;
-
-type SortColumn = DashboardSortColumn;
-
-type SortDirection = DashboardSortDirection;
-
-const STATUS_SORT_RANK: Record<string, number> = {
-  Offer: 70,
-  Interviewing: 60,
-  "Recruiter Contact": 50,
-  "Oa Pending": 45,
-  Applied: 35,
-  Rejected: 10,
-  Closed: 0,
-};
-
-const NEXT_ACTION_TONE_RANK: Record<
-  ApplicationCard["nextAction"]["tone"],
-  number
-> = {
-  action: 40,
-  review: 30,
-  waiting: 20,
-  muted: 10,
-};
-
-function compareText(left: string, right: string, direction: SortDirection) {
-  const result = left.localeCompare(right, undefined, {
-    numeric: true,
-    sensitivity: "base",
-  });
-
-  return direction === "asc" ? result : -result;
-}
-
-function compareNullableTime(
-  left: string | null,
-  right: string | null,
-  direction: SortDirection,
-) {
-  const leftMs = left ? new Date(left).getTime() : Number.POSITIVE_INFINITY;
-  const rightMs = right ? new Date(right).getTime() : Number.POSITIVE_INFINITY;
-  const normalizedLeft = Number.isNaN(leftMs) ? Number.POSITIVE_INFINITY : leftMs;
-  const normalizedRight = Number.isNaN(rightMs) ? Number.POSITIVE_INFINITY : rightMs;
-
-  return direction === "asc"
-    ? normalizedRight - normalizedLeft
-    : normalizedLeft - normalizedRight;
-}
-
-function compareApplications(
-  left: ApplicationCard,
-  right: ApplicationCard,
-  column: SortColumn,
-  direction: SortDirection,
-) {
-  let result = 0;
-
-  switch (column) {
-    case "company":
-      result = compareText(left.company, right.company, direction);
-      break;
-    case "role":
-      result = compareText(left.role, right.role, direction);
-      break;
-    case "stage":
-      result =
-        (STATUS_SORT_RANK[right.status] ?? 20) -
-        (STATUS_SORT_RANK[left.status] ?? 20);
-      if (direction === "asc") result *= -1;
-      break;
-    case "next-action": {
-      result =
-        NEXT_ACTION_TONE_RANK[right.nextAction.tone] -
-        NEXT_ACTION_TONE_RANK[left.nextAction.tone];
-      if (result === 0) {
-        result = compareNullableTime(
-          left.nextAction.dueAtUtc,
-          right.nextAction.dueAtUtc,
-          "desc",
-        );
-      }
-      if (result === 0) {
-        result = compareText(left.nextAction.title, right.nextAction.title, "asc");
-      }
-      if (direction === "asc") result *= -1;
-      break;
-    }
-    case "priority":
-      result = left.priority - right.priority;
-      if (direction === "asc") result *= -1;
-      break;
-  }
-
-  if (result !== 0) {
-    return result;
-  }
-
-  return (
-    new Date(right.lastActivityAtUtc).getTime() -
-    new Date(left.lastActivityAtUtc).getTime()
-  );
-}
-
-function getApplicationDueAt(application: ApplicationCard) {
-  return application.nextActionDueAtUtc ?? application.nextAction.dueAtUtc;
-}
-
-function getDueSoonState(value: string) {
-  const target = new Date(value).getTime();
-  if (Number.isNaN(target)) return null;
-
-  const diffHours = (target - Date.now()) / (1000 * 60 * 60);
-  if (diffHours < 0) return "overdue";
-  if (diffHours <= 24) return "today";
-  if (diffHours <= 48) return "tomorrow";
-  if (diffHours <= 72) return "soon";
-  return null;
-}
-
-function getApplicationUrgencyScore(application: ApplicationCard) {
-  if (typeof application.urgencyScore === "number") {
-    return application.urgencyScore;
-  }
-
-  let score = 0;
-  const dueAtUtc = getApplicationDueAt(application);
-  const dueSoon = dueAtUtc ? getDueSoonState(dueAtUtc) : null;
-
-  if (dueSoon === "overdue" || dueSoon === "today" || dueSoon === "tomorrow") {
-    score += 100;
-  } else if (dueSoon === "soon") {
-    score += 60;
-  }
-
-  if (application.actionRequired) score += 40;
-  if (application.requiresReview) score += 30;
-  if (["Oa Pending", "Interviewing", "Offer"].includes(application.status)) {
-    score += 20;
-  }
-  if (["Rejected", "Closed"].includes(application.status)) {
-    score -= 10;
-  }
-
-  return score;
-}
-
-const SAVED_VIEW_LABEL: Record<SavedView, string> = {
+const SAVED_VIEW_LABEL: Record<DashboardView, string> = {
   "needs-action": "Needs action",
   "needs-review": "Fix",
   active: "Active",
@@ -187,135 +42,81 @@ const SAVED_VIEW_LABEL: Record<SavedView, string> = {
   all: "All",
 };
 
-function fallbackNextActionForApplication(application: ApplicationCard) {
-  switch (application.status) {
-    case "Oa Pending":
-      return {
-        title: "Complete assessment",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "action" as const,
-        sourceReminderId: null,
-      };
-    case "Interviewing":
-      return {
-        title: "Prepare interview",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "action" as const,
-        sourceReminderId: null,
-      };
-    case "Offer":
-      return {
-        title: "Reply to offer",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "action" as const,
-        sourceReminderId: null,
-      };
-    case "Recruiter Contact":
-      return {
-        title: "Reply to recruiter",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "action" as const,
-        sourceReminderId: null,
-      };
-    case "Applied":
-      return application.hasOutboundReply
-        ? {
-            title: "Wait for response",
-            dueAtUtc: null,
-            hasExplicitDueDate: false,
-            tone: "waiting" as const,
-            sourceReminderId: null,
-          }
-        : {
-            title: "Confirm application sent",
-            dueAtUtc: null,
-            hasExplicitDueDate: false,
-            tone: "muted" as const,
-            sourceReminderId: null,
-          };
-    case "Rejected":
-    case "Closed":
-      return {
-        title: "Archive or dispute",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "muted" as const,
-        sourceReminderId: null,
-      };
-    default:
-      return {
-        title: "Review application",
-        dueAtUtc: null,
-        hasExplicitDueDate: false,
-        tone: "muted" as const,
-        sourceReminderId: null,
-      };
-  }
+function DashboardViewTiles({
+  metrics,
+  selectedView,
+  onSelect,
+}: {
+  metrics: DashboardResponse["metrics"];
+  selectedView: DashboardView;
+  onSelect: (view: DashboardView) => void;
+}) {
+  const tiles: Array<{ view: DashboardView; value: number; accent: string; highlight?: boolean }> = [
+    { view: "needs-action", value: metrics.needsAction, accent: "var(--accent)", highlight: true },
+    // Applications whose company or role look misread; not the email review queue.
+    { view: "needs-review", value: metrics.needsReview, accent: "var(--brand-blue-ink)" },
+    { view: "active", value: metrics.activeApplications, accent: "var(--blue)" },
+    { view: "waiting", value: metrics.waitingOnEmployer, accent: "var(--green)" },
+    { view: "interviewing", value: metrics.interviews, accent: "var(--blue)" },
+    { view: "offer", value: metrics.offers, accent: "var(--green)" },
+    { view: "rejected", value: metrics.rejections, accent: "var(--red)" },
+    { view: "all", value: metrics.totalApplications, accent: "var(--text-tertiary)" },
+  ];
+
+  return (
+    // Phones scroll the views sideways instead of hiding five of them.
+    <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 xl:grid-cols-8">
+      {tiles.map((tile) => (
+        <WorkspaceMetricTile
+          key={tile.view}
+          label={SAVED_VIEW_LABEL[tile.view]}
+          value={tile.value}
+          tone={tile.value === 0 ? "var(--text-tertiary)" : tile.accent}
+          selected={selectedView === tile.view}
+          highlighted={Boolean(tile.highlight && tile.value > 0)}
+          onClick={() => onSelect(tile.view)}
+          className="max-sm:min-w-28 max-sm:shrink-0"
+        />
+      ))}
+    </div>
+  );
 }
 
-function nextActionFromReminder(reminder: PendingAction) {
-  return {
-    title: reminder.title,
-    dueAtUtc: reminder.hasExplicitDueDate ? reminder.dueAtUtc : null,
-    hasExplicitDueDate: reminder.hasExplicitDueDate,
-    tone: "action" as const,
-    sourceReminderId: reminder.id,
-  };
-}
-
-function completeApplicationActionLocally(
-  dashboard: DashboardResponse,
-  applicationId: string,
-  reminderId?: string,
-) {
-  const now = new Date().toISOString();
-  const pendingActions = reminderId
-    ? dashboard.pendingActions.filter((action) => action.id !== reminderId)
-    : dashboard.pendingActions;
-  let completedWasActionRequired = false;
-  let completedStillRequiresAction = false;
-  const applications = dashboard.applications.map((application) => {
-    if (application.id !== applicationId) {
-      return application;
-    }
-
-    const status = application.status === "Oa Pending" ? "Applied" : application.status;
-    const remainingReminder = pendingActions.find(
-      (action) => action.jobApplicationId === application.id,
-    );
-    completedWasActionRequired = application.actionRequired;
-    completedStillRequiresAction = Boolean(remainingReminder);
-    const updatedApplication = {
-      ...application,
-      status,
-      actionRequired: Boolean(remainingReminder),
-      lastActivityAtUtc: now,
-    };
-
-    return {
-      ...updatedApplication,
-      nextAction: remainingReminder
-        ? nextActionFromReminder(remainingReminder)
-        : fallbackNextActionForApplication(updatedApplication),
-    };
-  });
-
-  return {
-    ...dashboard,
-    metrics: {
-      ...dashboard.metrics,
-      needsAction:
-        completedWasActionRequired && !completedStillRequiresAction
-          ? Math.max(0, dashboard.metrics.needsAction - 1)
-          : dashboard.metrics.needsAction,
-    },
-    applications,
-    pendingActions,
-  };
+function EmptyViewActions({
+  metrics,
+  selectedView,
+  searching,
+  onSelect,
+}: {
+  metrics: DashboardResponse["metrics"];
+  selectedView: DashboardView;
+  searching: boolean;
+  onSelect: (view: DashboardView) => void;
+}) {
+  return (
+    <div className="p-4 sm:p-6">
+      <p className="text-sm font-medium text-[var(--text-primary)]">
+        {searching ? "No matches." : "Nothing here."}
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {selectedView !== "active" && metrics.activeApplications > 0 ? (
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onSelect("active")}>
+            Active ({metrics.activeApplications})
+          </button>
+        ) : null}
+        {selectedView !== "all" && metrics.totalApplications > 0 ? (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect("all")}>
+            All ({metrics.totalApplications})
+          </button>
+        ) : null}
+        {selectedView !== "interviewing" && metrics.interviews > 0 ? (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect("interviewing")}>
+            Interviews ({metrics.interviews})
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function DashboardWorkflowExplorer({
@@ -350,49 +151,20 @@ export function DashboardWorkflowExplorer({
     () => searchParams.get("q")?.trim() ?? "",
     [searchParams],
   );
-  const [savedView, setSavedView] = useState<SavedView>(view);
+  const [savedView, setSavedView] = useState<DashboardView>(view);
   const [pipelineSearch, setPipelineSearch] = useState(initialQuery);
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
-  const [sortState, setSortState] = useState<{
-    column: SortColumn | null;
-    direction: SortDirection;
-  }>({ column: null, direction: "desc" });
+  const [sortState, setSortState] = useState<SortState>({ column: null, direction: "desc" });
   const applicationListRef = useRef<HTMLDivElement | null>(null);
   const normalizedPipelineSearch = pipelineSearch.trim();
   const searchChanged = normalizedPipelineSearch !== initialQuery;
 
-  const sortedApplications = useMemo(() => {
-    return [...currentDashboard.applications].sort((left, right) => {
-      if (sortState.column) {
-        return compareApplications(
-          left,
-          right,
-          sortState.column,
-          sortState.direction,
-        );
-      }
-
-      // Action Required first, then backend urgency when available, local
-      // due-date urgency, priority, and recent activity.
-      if (left.actionRequired !== right.actionRequired) {
-        return left.actionRequired ? -1 : 1;
-      }
-      const urgencyDelta =
-        getApplicationUrgencyScore(right) - getApplicationUrgencyScore(left);
-      if (urgencyDelta !== 0) {
-        return urgencyDelta;
-      }
-      if (left.priority !== right.priority) {
-        return left.priority - right.priority;
-      }
-      return (
-        new Date(right.lastActivityAtUtc).getTime() -
-        new Date(left.lastActivityAtUtc).getTime()
-      );
-    });
-  }, [currentDashboard.applications, sortState.column, sortState.direction]);
+  const sortedApplications = useMemo(
+    () => sortApplications(currentDashboard.applications, sortState),
+    [currentDashboard.applications, sortState],
+  );
 
   const activeApplication =
     sortedApplications.find(
@@ -401,70 +173,9 @@ export function DashboardWorkflowExplorer({
     sortedApplications[0] ??
     null;
 
-  const needsReviewCount = currentDashboard.metrics.needsReview;
-  const reviewQueueCount = currentDashboard.metrics.reviewQueue ?? null;
+  const reviewQueueCount = currentDashboard.metrics.reviewQueue;
 
-  const kpiCards: Array<{
-    label: string;
-    view: SavedView;
-    value: number | null;
-    accent?: string;
-    highlight?: boolean;
-  }> = [
-    {
-      label: "Needs action",
-      view: "needs-action",
-      value: currentDashboard.metrics.needsAction,
-      accent: "var(--accent)",
-      highlight: true,
-    },
-    {
-      // Applications whose company or role look misread; not the email review queue.
-      label: "Fix",
-      view: "needs-review",
-      value: needsReviewCount,
-      accent: "var(--brand-blue-ink)",
-    },
-    {
-      label: "Active",
-      view: "active",
-      value: currentDashboard.metrics.activeApplications,
-      accent: "var(--blue)",
-    },
-    {
-      label: "Waiting",
-      view: "waiting",
-      value: currentDashboard.metrics.waitingOnEmployer,
-      accent: "var(--green)",
-    },
-    {
-      label: "Interviews",
-      view: "interviewing",
-      value: currentDashboard.metrics.interviews,
-      accent: "var(--blue)",
-    },
-    {
-      label: "Offers",
-      view: "offer",
-      value: currentDashboard.metrics.offers,
-      accent: "var(--green)",
-    },
-    {
-      label: "Rejected",
-      view: "rejected",
-      value: currentDashboard.metrics.rejections,
-      accent: "var(--red)",
-    },
-    {
-      label: "All",
-      view: "all",
-      value: currentDashboard.metrics.totalApplications,
-      accent: "var(--text-tertiary)",
-    },
-  ];
-
-  const totalApplications = currentDashboard.metrics.totalApplications;
-  function selectView(next: SavedView, nextQuery = pipelineSearch) {
+  function selectView(next: DashboardView, nextQuery = pipelineSearch) {
     setSavedView(next);
     applicationListRef.current?.scrollTo({ top: 0, left: 0 });
     const params = new URLSearchParams(searchParams.toString());
@@ -593,28 +304,11 @@ export function DashboardWorkflowExplorer({
       <div className="flex min-h-0 flex-col gap-3 sm:gap-4">
         <h1 className="sr-only">Applications</h1>
         <div className="shrink-0">
-          {/* Phones scroll the views sideways instead of hiding five of them. */}
-          <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 xl:grid-cols-8">
-            {kpiCards.map((metric) => {
-              const selected = savedView === metric.view;
-              return (
-                <WorkspaceMetricTile
-                  key={metric.label}
-                  label={metric.label}
-                  value={metric.value ?? "—"}
-                  tone={
-                    metric.value === null || metric.value === 0
-                      ? "var(--text-tertiary)"
-                      : metric.accent ?? "var(--text-primary)"
-                  }
-                  selected={selected}
-                  highlighted={Boolean(metric.highlight && metric.value !== null && metric.value > 0)}
-                  onClick={() => selectView(metric.view)}
-                  className="max-sm:min-w-28 max-sm:shrink-0"
-                />
-              );
-            })}
-          </div>
+          <DashboardViewTiles
+            metrics={currentDashboard.metrics}
+            selectedView={savedView}
+            onSelect={(next) => selectView(next)}
+          />
         </div>
 
         <div className="card flex min-h-0 flex-1 flex-col overflow-hidden p-0">
@@ -643,7 +337,7 @@ export function DashboardWorkflowExplorer({
                 {searchChanged ? "Search" : "Clear"}
               </button>
             ) : null}
-            {reviewQueueCount !== null && reviewQueueCount > 0 ? (
+            {reviewQueueCount > 0 ? (
               <Link href="/app/review" className="btn btn-secondary shrink-0">
                 Email review {reviewQueueCount}
               </Link>
@@ -651,42 +345,12 @@ export function DashboardWorkflowExplorer({
           </div>
 
           {sortedApplications.length === 0 ? (
-            <div className="p-4 sm:p-6">
-              <p className="text-sm font-medium text-[var(--text-primary)]">
-                {initialQuery ? "No matches." : "Nothing here."}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {savedView !== "active" &&
-                currentDashboard.metrics.activeApplications > 0 ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => selectView("active")}
-                  >
-                    See {currentDashboard.metrics.activeApplications} active
-                  </button>
-                ) : null}
-                {savedView !== "all" && totalApplications > 0 ? (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => selectView("all")}
-                  >
-                    See all {totalApplications}
-                  </button>
-                ) : null}
-                {savedView !== "interviewing" &&
-                currentDashboard.metrics.interviews > 0 ? (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => selectView("interviewing")}
-                  >
-                    Interviews ({currentDashboard.metrics.interviews})
-                  </button>
-                ) : null}
-              </div>
-            </div>
+            <EmptyViewActions
+              metrics={currentDashboard.metrics}
+              selectedView={savedView}
+              searching={Boolean(initialQuery)}
+              onSelect={(next) => selectView(next)}
+            />
           ) : (
             <DashboardApplicationList
               applications={sortedApplications}

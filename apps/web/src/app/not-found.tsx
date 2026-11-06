@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <PublicSiteShell>
       <section className="card p-4">
-        <h1 className="text-xl font-semibold text-[var(--text-primary)] sm:mt-2">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           Page not found
         </h1>
         <nav className="mt-3 flex flex-wrap gap-2" aria-label="Recovery links">

@@ -195,103 +195,103 @@ export function ProfileSettingsPanel({
       <div className="workspace-scroll-region @container flex flex-1 flex-col px-4 pt-4 pb-4 sm:px-5 sm:pb-5">
         <section className="shrink-0">
           <div className="grid gap-4 sm:grid-cols-2 @4xl:grid-cols-4">
-          <label className="grid gap-2 sm:col-span-1">
-            <span className="eyebrow">Name</span>
-            <input
-              className="input"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={200}
-              disabled={isSaving}
-            />
-          </label>
-
-          <label className="grid gap-2 sm:col-span-1">
-            <span className="eyebrow">Time zone</span>
-            <select
-              className="input"
-              value={timeZoneId}
-              onChange={(event) => setTimeZoneId(event.target.value)}
-              disabled={isSaving}
-            >
-              {timeZoneOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-2 sm:col-span-1">
-            <span className="eyebrow">Location</span>
-            <input
-              className="input"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              maxLength={160}
-              placeholder="Portland, OR"
-              disabled={isSaving}
-            />
-          </label>
-
-          <label className="grid gap-2 sm:col-span-1">
-            <span className="eyebrow">Target role</span>
-            <input
-              className="input"
-              value={targetRole}
-              onChange={(event) => setTargetRole(event.target.value)}
-              maxLength={200}
-              placeholder="Software engineering intern"
-              disabled={isSaving}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="mt-4 flex flex-1 flex-col border-t border-[var(--border)] pt-4">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">Icon</h2>
-        <div
-          className="mt-2 grid flex-1 auto-rows-[minmax(2.75rem,1fr)] grid-cols-6 gap-1.5 sm:gap-2"
-          role="radiogroup"
-          aria-label="Profile icon"
-        >
-          {profileIconOptions.map((option) => {
-            const selected = profileIcon === option.id;
-
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                aria-label={option.label}
-                title={option.label}
-                className={`relative min-w-0 rounded-md border transition ${
-                  selected
-                    ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
-                    : "border-[var(--border)] hover:border-[var(--border-hover)]"
-                }`}
+            <label className="grid gap-2 sm:col-span-1">
+              <span className="eyebrow">Name</span>
+              <input
+                className="input"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={200}
                 disabled={isSaving}
-                onClick={() => setProfileIcon(option.id)}
-              >
-                <ProfileIcon icon={option.id} decorative className="absolute inset-[12%] h-auto w-auto" />
-              </button>
-            );
-          })}
-        </div>
-      </section>
+              />
+            </label>
 
-      <div className="mt-4 flex shrink-0 flex-col gap-2 empty:hidden">
-        <p role="status" className="text-sm font-medium text-[var(--green)] empty:hidden">
-          {notice}
-        </p>
-        {error ? (
-          <p role="alert" className="text-sm font-medium text-[var(--red)]">{error}</p>
-        ) : null}
-        {!proxyPrefix || (!loadedFromApi && !error && !notice) ? (
-          <p className="text-sm text-[var(--text-tertiary)]">Offline.</p>
-        ) : null}
-      </div>
+            <label className="grid gap-2 sm:col-span-1">
+              <span className="eyebrow">Time zone</span>
+              <select
+                className="input"
+                value={timeZoneId}
+                onChange={(event) => setTimeZoneId(event.target.value)}
+                disabled={isSaving}
+              >
+                {timeZoneOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 sm:col-span-1">
+              <span className="eyebrow">Location</span>
+              <input
+                className="input"
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+                maxLength={160}
+                placeholder="Portland, OR"
+                disabled={isSaving}
+              />
+            </label>
+
+            <label className="grid gap-2 sm:col-span-1">
+              <span className="eyebrow">Target role</span>
+              <input
+                className="input"
+                value={targetRole}
+                onChange={(event) => setTargetRole(event.target.value)}
+                maxLength={200}
+                placeholder="Software engineering intern"
+                disabled={isSaving}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="mt-4 flex flex-1 flex-col border-t border-[var(--border)] pt-4">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Icon</h2>
+          <div
+            className="mt-2 grid flex-1 auto-rows-[minmax(2.75rem,1fr)] grid-cols-6 gap-1.5 sm:gap-2"
+            role="radiogroup"
+            aria-label="Profile icon"
+          >
+            {profileIconOptions.map((option) => {
+              const selected = profileIcon === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={option.label}
+                  title={option.label}
+                  className={`relative min-w-0 rounded-md border transition ${
+                    selected
+                      ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
+                      : "border-[var(--border)] hover:border-[var(--border-hover)]"
+                  }`}
+                  disabled={isSaving}
+                  onClick={() => setProfileIcon(option.id)}
+                >
+                  <ProfileIcon icon={option.id} decorative className="absolute inset-[12%] h-auto w-auto" />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="mt-4 flex shrink-0 flex-col gap-2 empty:hidden">
+          <p role="status" className="text-sm font-medium text-[var(--green)] empty:hidden">
+            {notice}
+          </p>
+          {error ? (
+            <p role="alert" className="text-sm font-medium text-[var(--red)]">{error}</p>
+          ) : null}
+          {!proxyPrefix || (!loadedFromApi && !error && !notice) ? (
+            <p className="text-sm text-[var(--text-tertiary)]">API offline.</p>
+          ) : null}
+        </div>
       </div>
     </form>
   );

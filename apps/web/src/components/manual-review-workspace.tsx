@@ -219,7 +219,7 @@ export function ManualReviewWorkspace({
 
         {!canPersist && (
           <div role="status" className="alert alert-warning mt-2">
-            Offline.
+            API offline.
           </div>
         )}
         {notice ? <div className="alert alert-success mt-3">{notice}</div> : null}
