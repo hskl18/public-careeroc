@@ -21,8 +21,13 @@ helm install careeroc deploy/helm/careeroc -n careeroc --set host=careeroc.examp
 - TLS is required because the web app refuses plain HTTP in production; point `ingress.tlsSecretName` at a certificate, for example one issued by cert-manager.
 - Images default to `ghcr.io/hskl18/public-careeroc/<service>`, published by `.github/workflows/images.yml` on version tags.
 - Services use fixed short names (`api`, `agent-runtime`, `web`) that match the other deployments, so install one release per namespace.
-- Set `demoMode=false`, `allowedEmailDomains`, and the Google secret keys for a real deployment.
+- Set `demoMode=false`, the Google secret keys, and `allowedEmails` or `allowedEmailDomains` for a real deployment; the install fails without one of the two.
+  Use `allowedEmails` for personal addresses, because `allowedEmailDomains=gmail.com` admits every Gmail account.
+- `ingress.className` defaults to `nginx`, with read and send timeouts of 130 seconds, because a review runs up to 100 seconds behind one request; on another controller, set its own timeout.
+- `web.extraEnv`, `api.extraEnv`, and `agentRuntime.extraEnv` add environment variables, such as `OTEL_EXPORTER_OTLP_ENDPOINT` or `Ollama__*` for the optional model pass on the API.
+- Pods read the secret only when they start, so after changing it run `kubectl rollout restart deployment/web deployment/api deployment/agent-runtime`.
 - `networkPolicy.enabled=true` lets each service accept traffic only from the ingress controller's namespace and the release's own callers; set `networkPolicy.ingressControllerNamespaceLabels` to match your controller's namespace.
   It restricts ingress only, and needs a CNI that enforces NetworkPolicy; the kind smoke test installs with it on.
+  Add `networkPolicy.extraFrom` entries, such as an `ipBlock`, for a load balancer that sends straight to pods or a hostNetwork ingress controller.
 
 The chart is checked with `helm lint` and with `kubeconform -strict` in demo mode, real mode, and with the network policy on; it has not been installed on a live cluster by this project.

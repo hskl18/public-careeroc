@@ -2,6 +2,9 @@
 Services keep the short names the apps already use (http://api:8080, http://agent-runtime:8123),
 so install one release per namespace.
 */ -}}
+{{- if and (not .Values.demoMode) (not .Values.allowedEmails) (not .Values.allowedEmailDomains) }}
+{{- fail "Set allowedEmails or allowedEmailDomains when demoMode is false, or nobody can sign in." }}
+{{- end }}
 {{- $root := . -}}
 {{- $publicUrl := include "careeroc.publicUrl" . -}}
 {{- /* callers: the release's pods that call this service, for networkPolicy. */ -}}
@@ -60,6 +63,7 @@ spec:
             - { name: API_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
             - { name: NEXT_PUBLIC_SITE_URL, value: {{ $publicUrl | quote }} }
             - { name: ACCESS_ALLOWED_DOMAINS, value: {{ ternary "demo.careeroc.example" $root.Values.allowedEmailDomains $root.Values.demoMode | quote }} }
+            - { name: ACCESS_ALLOWED_EMAILS, value: {{ ternary "" $root.Values.allowedEmails $root.Values.demoMode | quote }} }
             - { name: Demo__Enabled, value: {{ $root.Values.demoMode | quote }} }
             - { name: AgentRuntime__Enabled, value: "true" }
             - { name: AgentRuntime__BaseUrl, value: "http://agent-runtime:8123" }
@@ -102,10 +106,14 @@ spec:
             - { name: API_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
             - { name: AGENT_PUBLIC_BASE_URL, value: {{ $publicUrl | quote }} }
             - { name: ACCESS_ALLOWED_DOMAINS, value: {{ $root.Values.allowedEmailDomains | quote }} }
+            - { name: ACCESS_ALLOWED_EMAILS, value: {{ $root.Values.allowedEmails | quote }} }
             {{- include "careeroc.secretEnv" (list "AUTH_SECRET" $root.Values.existingSecret "AUTH_SECRET") | nindent 12 }}
             {{- include "careeroc.secretEnv" (list "CAREEROC_API_AUTH_SECRET" $root.Values.existingSecret "CAREEROC_API_AUTH_SECRET") | nindent 12 }}
             {{- include "careeroc.secretEnv" (list "AUTH_GOOGLE_ID" $root.Values.existingSecret "GOOGLE_CLIENT_ID") | nindent 12 }}
             {{- include "careeroc.secretEnv" (list "AUTH_GOOGLE_SECRET" $root.Values.existingSecret "GOOGLE_CLIENT_SECRET") | nindent 12 }}
+            {{- end }}
+            {{- with $component.values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           # Readiness includes the database; liveness does not, so an outage never restarts pods.
           readinessProbe:
@@ -157,6 +165,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: {{ . }}
+        {{- end }}
+        {{- with $root.Values.networkPolicy.extraFrom }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
 {{- end }}
 {{- end }}

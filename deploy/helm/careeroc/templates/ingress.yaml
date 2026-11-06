@@ -23,11 +23,14 @@ spec:
             pathType: Prefix
             backend: { service: { name: api, port: { name: http } } }
           {{- end }}
-          {{- range $path := list "/a2a" "/.well-known/agent-card.json" }}
-          - path: {{ $path }}
+          - path: /a2a
             pathType: Prefix
             backend: { service: { name: agent-runtime, port: { name: http } } }
-          {{- end }}
+          # ingress-nginx refuses a Prefix path with a dot (strict-validate-path-type), and that would
+          # reject the whole Ingress; ImplementationSpecific is matched as a prefix there too.
+          - path: /.well-known/agent-card.json
+            pathType: ImplementationSpecific
+            backend: { service: { name: agent-runtime, port: { name: http } } }
           - path: /
             pathType: Prefix
             backend: { service: { name: web, port: { name: http } } }
