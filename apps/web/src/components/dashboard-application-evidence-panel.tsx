@@ -8,7 +8,6 @@ import { hasUnknownRole as parserHasUnknownRole } from "@/lib/parser-quality";
 import type {
   ApplicationCard,
   DashboardResponse,
-  PendingAction,
   RecentActivity,
 } from "@/lib/dashboard";
 import { deriveNextAction, describePriority, nextActionToneClass } from "@/lib/application-display";
@@ -20,10 +19,7 @@ type DashboardApplicationEvidencePanelProps = {
   pendingCompletionKey: string | null;
   actionNotice: string | null;
   actionError: string | null;
-  onCompleteAction: (
-    application: ApplicationCard,
-    reminder?: PendingAction,
-  ) => void;
+  onCompleteAction: (application: ApplicationCard, reminderId?: string) => void;
 };
 
 export function DashboardEmptySelectedPanel({ viewLabel }: { viewLabel: string }) {
@@ -48,12 +44,14 @@ export function DashboardApplicationEvidencePanel({
     .filter((reminder) => reminder.jobApplicationId === application.id)
     .filter((reminder) => reminder.status !== "Completed");
   const primaryCompletableReminder = nextAction.reminder ?? linkedReminders[0];
+  // The dashboard carries only its first six open reminders; the next action names its reminder
+  // even when that one is not among them.
+  const primaryReminderId =
+    primaryCompletableReminder?.id ?? application.nextAction.sourceReminderId ?? undefined;
   const canCompleteNextAction =
     nextAction.tone === "action" &&
-    (Boolean(primaryCompletableReminder) || application.status === "Oa Pending");
-  const primaryCompletionKey = `${application.id}:${
-    primaryCompletableReminder?.id ?? "stage"
-  }:Completed`;
+    (Boolean(primaryReminderId) || application.status === "Oa Pending");
+  const primaryCompletionKey = `${application.id}:${primaryReminderId ?? "stage"}:Completed`;
   const completingPrimaryAction = pendingCompletionKey === primaryCompletionKey;
   const otherReminders = linkedReminders.filter(
     (reminder) => reminder.id !== primaryCompletableReminder?.id,
@@ -103,7 +101,7 @@ export function DashboardApplicationEvidencePanel({
             type="button"
             className="btn btn-secondary btn-sm mt-2"
             disabled={pendingCompletionKey !== null}
-            onClick={() => onCompleteAction(application, primaryCompletableReminder)}
+            onClick={() => onCompleteAction(application, primaryReminderId)}
           >
             {completingPrimaryAction ? (
               <>
@@ -152,7 +150,7 @@ export function DashboardApplicationEvidencePanel({
                 type="button"
                 className="shrink-0 text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                 disabled={pendingCompletionKey !== null}
-                onClick={() => onCompleteAction(application, reminder)}
+                onClick={() => onCompleteAction(application, reminder.id)}
               >
                 {pendingCompletionKey === `${application.id}:${reminder.id}:Completed` ? "…" : "Done"}
               </button>

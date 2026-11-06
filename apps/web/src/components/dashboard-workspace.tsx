@@ -5,11 +5,14 @@ import { formatTimestampInTimeZone } from "@/lib/date-time";
 import dynamic from "next/dynamic";
 import { OnboardingHero, type OnboardingState } from "@/components/onboarding-hero";
 import { WelcomeToast } from "@/components/welcome-toast";
-import type { DashboardResponse, PendingAction } from "@/lib/dashboard";
 import type {
-  InboxAccountSetup,
-  InboxSetupResponse,
-} from "@/lib/inbox-accounts";
+  DashboardInboxCheckResponse,
+  DashboardResponse,
+  PendingAction,
+} from "@/lib/dashboard";
+import { isConnectedAccount } from "@/lib/inbox-account-status";
+import type { InboxSetupResponse } from "@/lib/inbox-accounts";
+import type { components } from "@/lib/api-schema";
 import { fetchWithInFlightDedup } from "@/lib/client-fetch";
 import {
   activeWorkspacePollingIntervalMs,
@@ -46,21 +49,8 @@ type DashboardWorkspaceProps = {
   agentReview?: React.ReactNode;
 };
 
-type DashboardInboxCheckResponse = {
-  cacheHit: boolean;
-  dashboard: DashboardResponse;
-};
-
-type SyncNowResponse = {
-  queued?: boolean;
-  attemptedAtUtc?: string;
-  retryAfterSeconds?: number;
-  error?: string;
-};
-
-function isConnectedAccount(account: InboxAccountSetup) {
-  return account.connectionStatus === "Connected";
-}
+type SyncNowResponse = components["schemas"]["SyncNowResponseDto"];
+type SyncNowBusyResponse = components["schemas"]["SyncNowBusyResponse"];
 
 function computeOnboardingState(
   dashboard: DashboardResponse,
@@ -176,12 +166,12 @@ function removePendingAction(
 
 async function readSyncErrorMessage(response: Response): Promise<string> {
   try {
-    const payload = (await response.json()) as SyncNowResponse;
+    // A 429 is a SyncNowBusyResponse; other failures carry at most an error message.
+    const payload = (await response.json()) as Partial<SyncNowBusyResponse>;
     if (payload.retryAfterSeconds) {
-      return `Sync is rate limited. Try again in ${payload.retryAfterSeconds}s.`;
-    }
-    if (payload.error === "sync_now_rate_limited") {
-      return "Sync is rate limited. Try again in 30s.";
+      return payload.error === "sync_now_busy"
+        ? `Sync is busy. Try again in ${payload.retryAfterSeconds}s.`
+        : `Sync is rate limited. Try again in ${payload.retryAfterSeconds}s.`;
     }
     if (payload.error) return payload.error;
   } catch {}

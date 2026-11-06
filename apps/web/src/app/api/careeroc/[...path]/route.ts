@@ -5,7 +5,8 @@ import {
   getCareerocBackendBaseUrl,
 } from "@/lib/careeroc-api-server";
 import { isDemoSnapshot } from "@/lib/demo";
-import { hasTrustedBrowserOrigin } from "@/lib/proxy-origin";
+import { hasTrustedBrowserOrigin, isCrossSiteRequest, resolveProxyPath } from "@/lib/proxy-origin";
+import { resolvePublicOrigin } from "@/lib/public-origin";
 import { readBodyWithin } from "@/lib/read-body";
 
 export const runtime = "nodejs";
@@ -62,7 +63,10 @@ async function proxyCareerocRequest(
     );
   }
 
-  if (mutatingMethods.has(request.method) && !hasTrustedBrowserOrigin(request)) {
+  if (
+    isCrossSiteRequest(request.headers) ||
+    (mutatingMethods.has(request.method) && !hasTrustedBrowserOrigin(request))
+  ) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
 
@@ -75,11 +79,11 @@ async function proxyCareerocRequest(
   }
 
   const { path } = await context.params;
-  if (path.length === 0 || path[0] !== "api") {
+  const pathAndQuery = resolveProxyPath(path, request.nextUrl.search);
+  if (!pathAndQuery) {
     return NextResponse.json({ error: "Unsupported careeroc path." }, { status: 404 });
   }
 
-  const pathAndQuery = `/${path.join("/")}${request.nextUrl.search}`;
   if (isDemoSnapshot) {
     const { demoSnapshotResponse } = await import("@/lib/demo-snapshot");
     return demoSnapshotResponse(request.method, pathAndQuery);
@@ -145,8 +149,10 @@ async function proxyCareerocRequest(
 
   const location = upstream.headers.get("location");
   if (location && upstream.status >= 300 && upstream.status < 400) {
+    // The API redirects to app paths such as /app/inbox; behind a container the request's own
+    // origin is the bind address, so relative ones resolve against the public origin.
     return NextResponse.redirect(
-      new URL(location, request.nextUrl.origin),
+      new URL(location, resolvePublicOrigin(request)),
       upstream.status,
     );
   }

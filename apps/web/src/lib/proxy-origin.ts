@@ -2,6 +2,24 @@ import type { NextRequest } from "next/server";
 
 let warnedAboutMissingProductionOrigin = false;
 
+// Every current browser sets Sec-Fetch-Site, and a page cannot forge it. No proxied route is meant
+// to be opened from another site, and GET .../gmail/oauth/start writes, so a cross-site navigation,
+// which still carries the Lax session cookie, is refused whatever its method.
+export function isCrossSiteRequest(headers: Headers) {
+  const site = headers.get("sec-fetch-site");
+  return site !== null && site !== "same-origin" && site !== "none";
+}
+
+// Next decodes each catch-all segment, so "..%2F" arrives as "../". Segments are encoded again and
+// the path normalized the way fetch will send it; anything that resolves outside /api/ is refused.
+export function resolveProxyPath(segments: string[], search: string): string | null {
+  const target = new URL(
+    `/${segments.map(encodeURIComponent).join("/")}${search}`,
+    "http://careeroc.invalid",
+  );
+  return target.pathname.startsWith("/api/") ? `${target.pathname}${target.search}` : null;
+}
+
 export function hasTrustedBrowserOrigin(request: NextRequest) {
   if (isProduction() && !hasConfiguredProductionOrigin()) {
     warnMissingProductionOrigin();

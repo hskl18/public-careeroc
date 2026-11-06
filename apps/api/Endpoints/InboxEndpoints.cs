@@ -47,14 +47,14 @@ public static class InboxEndpoints
                     if (memoryCache.TryGetValue(throttleKey, out _))
                     {
                         return Results.Json(
-                            new { error = "sync_now_rate_limited", retryAfterSeconds = 30 },
+                            new SyncNowBusyResponse("sync_now_rate_limited", 30),
                             statusCode: StatusCodes.Status429TooManyRequests);
                     }
 
                     if (!syncNowQueue.TryEnqueue(userEmail!))
                     {
                         return Results.Json(
-                            new { error = "sync_now_busy", retryAfterSeconds = 30 },
+                            new SyncNowBusyResponse("sync_now_busy", 30),
                             statusCode: StatusCodes.Status429TooManyRequests);
                     }
 
@@ -66,7 +66,7 @@ public static class InboxEndpoints
             .WithName("SyncInboxAccountsNow")
             .WithTags("Inbox")
             .Produces<SyncNowResponseDto>(StatusCodes.Status202Accepted)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<SyncNowBusyResponse>(StatusCodes.Status429TooManyRequests);
 
         endpoints
             .MapPost(

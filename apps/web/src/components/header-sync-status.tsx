@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fetchWithInFlightDedup } from "@/lib/client-fetch";
 import { formatTimestampInTimeZone } from "@/lib/date-time";
-import type { DashboardResponse } from "@/lib/dashboard";
+import type { DashboardInboxCheckResponse, DashboardResponse } from "@/lib/dashboard";
+import { isConnectedAccount } from "@/lib/inbox-account-status";
+import { getDashboardProgress } from "@/lib/mail-sync-progress";
 import {
   activeWorkspacePollingIntervalMs,
   idleWorkspacePollingIntervalMs,
@@ -24,10 +26,6 @@ type HeaderSyncStatusProps = {
   initialInboxSetup: InboxSetupResponse;
   inboxSetupSource: "api" | "fallback";
   timeZoneId: string;
-};
-
-type DashboardInboxCheckResponse = {
-  dashboard: DashboardResponse;
 };
 
 type LiveSources = {
@@ -53,19 +51,6 @@ const stableHydrationStatus = {
 
 function formatTimestamp(value: string | null, timeZoneId: string) {
   return formatTimestampInTimeZone(value, timeZoneId, "waiting");
-}
-
-function isConnectedAccount(account: InboxAccountSetup) {
-  return account.connectionStatus === "Connected";
-}
-
-function getDashboardProgress(dashboard: DashboardResponse) {
-  const syncedEmails = Math.max(0, dashboard.inbox.syncedEmails);
-  const processedEmails = Math.max(0, dashboard.inbox.processedEmails);
-  const total = Math.max(syncedEmails, processedEmails);
-  const processed = total === 0 ? 0 : Math.min(processedEmails, total);
-
-  return { processed, total };
 }
 
 function shouldRunInboxCheck(accounts: InboxAccountSetup[]) {

@@ -186,7 +186,7 @@ export function buildProgressEstimate(
   return {
     kind: "stalled",
     label: `Stalled at ${processed}/${total}`,
-    detail: `Analysis is stuck at ${processed}/${total}. No email finished processing for about ${formatElapsed(elapsedSeconds)}. ${buildAnalysisBacklogDetail(dashboard)} It retries automatically; if it stays stuck, check the queue on the Admin page.`,
+    detail: `Analysis is stuck at ${processed}/${total}. No email finished processing for about ${formatElapsed(elapsedSeconds)}. ${buildAnalysisBacklogDetail(dashboard)} It retries automatically.`,
   };
 }
 

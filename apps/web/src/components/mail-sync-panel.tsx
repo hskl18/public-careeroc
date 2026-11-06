@@ -3,7 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fetchWithInFlightDedup } from "@/lib/client-fetch";
 import { formatTimestampInTimeZone } from "@/lib/date-time";
-import type { DashboardResponse } from "@/lib/dashboard";
+import type { DashboardInboxCheckResponse, DashboardResponse } from "@/lib/dashboard";
 import {
   isConnectedAccount,
   isInvalidInboxMetadata,
@@ -36,10 +36,6 @@ type MailSyncPanelProps = {
   setup: InboxSetupResponse;
   inboxSetupSource: "api" | "fallback";
   timeZoneId: string;
-};
-
-type DashboardInboxCheckResponse = {
-  dashboard: DashboardResponse;
 };
 
 type MailSyncState = {

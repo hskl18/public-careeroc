@@ -142,6 +142,7 @@ export function ManualReviewWorkspace({
           company, role,
           actionRequired: fd.get("actionRequired") === "on",
           dueDateUtc,
+          clearDueDate: !dueDateValue,
           notes,
         }),
       });

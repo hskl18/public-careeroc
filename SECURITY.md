@@ -30,7 +30,7 @@ When reporting a bug, include:
 Identity and access:
 
 - Google sign-in or the demo provider in `apps/web`, with protected workspace routes and an email or domain allowlist enforced in both the web app and the API
-- a same-origin Next.js proxy for all browser-to-API traffic, with HMAC-signed user context using `CAREEROC_API_AUTH_SECRET` and an origin check on writes
+- a same-origin Next.js proxy for all browser-to-API traffic, with HMAC-signed user context using `CAREEROC_API_AUTH_SECRET`, an origin check on writes, a refusal of any cross-site request (`Sec-Fetch-Site`), and only paths under `/api/` forwarded
 - user-scoped ownership checks on every query and mutation
 - the Gmail OAuth callback reaches the API through the web app, signed as the signed-in user, and the API completes only a connection that same user started; return paths are limited to this site
 - secure Auth.js cookie settings in production (`secure`, `httpOnly` where appropriate, `sameSite=lax`)

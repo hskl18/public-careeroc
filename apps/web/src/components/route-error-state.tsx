@@ -5,14 +5,14 @@ import { useEffect } from "react";
 
 type RouteErrorStateProps = {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
   title?: string;
   description?: string;
 };
 
 export function RouteErrorState({
   error,
-  reset,
+  retry,
   title = "Something went wrong.",
   description,
 }: RouteErrorStateProps) {
@@ -32,7 +32,7 @@ export function RouteErrorState({
             <p className="text-xs text-[var(--text-tertiary)]">Error {error.digest}</p>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn btn-primary btn-sm" onClick={reset}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={retry}>
               Try again
             </button>
             <Link href="/app" className="btn btn-secondary btn-sm">
