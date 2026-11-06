@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using Careeroc.Application;
 using Careeroc.Application.Abstractions;
@@ -190,7 +191,7 @@ public sealed class ConfiguredInboxEmailSource : IInboxEmailSource
 
             return emails;
         }
-        catch (InvalidOperationException exception) when (IsGoogleAuthorizationFailure(exception))
+        catch (HttpRequestException exception) when (IsGoogleAuthorizationFailure(exception))
         {
             metadata.ConnectionStatus = "Reconnect required";
             metadata.NextStep = "Google rejected the stored Gmail authorization. Continue with Google again to refresh this inbox connection.";
@@ -212,11 +213,9 @@ public sealed class ConfiguredInboxEmailSource : IInboxEmailSource
         metadata.GmailProfileObservedAtUtc = _clock.UtcNow;
     }
 
-    private static bool IsGoogleAuthorizationFailure(InvalidOperationException exception)
+    private static bool IsGoogleAuthorizationFailure(HttpRequestException exception)
     {
-        return exception.Message.Contains("Google request failed with 400", StringComparison.Ordinal) ||
-               exception.Message.Contains("Google request failed with 401", StringComparison.Ordinal) ||
-               exception.Message.Contains("Google request failed with 403", StringComparison.Ordinal);
+        return exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden;
     }
 
     private DateTimeOffset? ResolveSyncWindowStartUtc(

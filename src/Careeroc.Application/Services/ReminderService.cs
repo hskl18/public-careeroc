@@ -87,7 +87,7 @@ public sealed class ReminderService
         var untilUtc = request.Until.NormalizeUtc();
         if (untilUtc <= _clock.UtcNow)
         {
-            throw new InvalidOperationException("Snooze time must be in the future.");
+            throw new UserFacingException("Snooze time must be in the future.");
         }
 
         var reminder = await _dbContext.Reminders
@@ -155,6 +155,6 @@ public sealed class ReminderService
             return parsed;
         }
 
-        throw new InvalidOperationException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
+        throw new UserFacingException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
     }
 }

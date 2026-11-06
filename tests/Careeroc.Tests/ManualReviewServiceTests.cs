@@ -67,7 +67,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -128,7 +128,7 @@ public sealed class ManualReviewServiceTests
         };
         dbContext.AddRange(user, inboxAccount, email);
         await dbContext.SaveChangesAsync();
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -189,7 +189,7 @@ public sealed class ManualReviewServiceTests
         dbContext.Reminders.Add(reminder);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -273,7 +273,7 @@ public sealed class ManualReviewServiceTests
         dbContext.Reminders.Add(reminder);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -347,7 +347,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -441,7 +441,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -526,7 +526,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -594,7 +594,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -666,7 +666,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),
@@ -751,7 +751,7 @@ public sealed class ManualReviewServiceTests
         dbContext.InboxEmails.Add(email);
         await dbContext.SaveChangesAsync();
 
-        var service = new ManualReviewService(
+        var service = TestServices.ManualReviewService(
             dbContext,
             new ApplicationWorkflowService(dbContext, clock),
             new Careeroc.Application.Services.Agents.FollowUpTaskAgentService(clock),

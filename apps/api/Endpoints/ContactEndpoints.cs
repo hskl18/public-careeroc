@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Api.Security;
 using Careeroc.Contracts.Contacts;
@@ -50,7 +51,7 @@ public static class ContactEndpoints
                             ? Results.NotFound()
                             : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         return Results.BadRequest(new { error = exception.Message });
                     }

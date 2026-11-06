@@ -199,7 +199,7 @@ public sealed class InboxSetupServiceTests
         var state = InboxAccountMetadataJson.Read(Assert.Single(dbContext.InboxAccounts), _ => new InboxAccountMetadata()).OAuthState!;
 
         // The attacker forwards the Google consent link; the victim consents while signed in as themselves.
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<UserFacingException>(
             () => service.CompleteGmailOAuthAsync(
                 state,
                 "victims-auth-code",
@@ -252,7 +252,7 @@ public sealed class InboxSetupServiceTests
             new TestClock(startedAt.AddMinutes(16)),
             gmailClient);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<UserFacingException>(
             () => expiredService.CompleteGmailOAuthAsync(
                 pendingMetadata.OAuthState!,
                 "auth-code",
@@ -694,7 +694,7 @@ public sealed class InboxSetupServiceTests
 
         var service = CreateService(dbContext, clock);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<UserFacingException>(
             () => service.DeleteImportedDataAsync(
                 inbox.Id,
                 new DeleteImportedInboxDataRequest("wrong@gmail.com"),
@@ -831,7 +831,7 @@ public sealed class InboxSetupServiceTests
 
         var service = CreateService(dbContext, clock);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<UserFacingException>(
             () => service.PurgeInboxAndImportedApplicationsAsync(
                 inbox.Id,
                 new DeleteInboxPurgeRequest("connected@gmail.com"),

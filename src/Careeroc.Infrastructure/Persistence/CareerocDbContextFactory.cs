@@ -1,3 +1,4 @@
+using Careeroc.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -14,6 +15,6 @@ public sealed class CareerocDbContextFactory : IDesignTimeDbContextFactory<Caree
             .UseNpgsql(connectionString)
             .UseSnakeCaseNamingConvention();
 
-        return new CareerocDbContext(optionsBuilder.Options);
+        return new CareerocDbContext(optionsBuilder.Options, new SystemClock());
     }
 }

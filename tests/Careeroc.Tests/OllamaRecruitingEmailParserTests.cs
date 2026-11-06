@@ -35,7 +35,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         "application/json")
                 });
         var client = new HttpClient(handler);
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             client,
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -83,7 +83,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         Encoding.UTF8,
                         "application/json")
                 });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -131,7 +131,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         Encoding.UTF8,
                         "application/json")
                 });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -186,7 +186,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         Encoding.UTF8,
                         "application/json")
                 });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -241,7 +241,7 @@ public sealed class OllamaRecruitingEmailParserTests
         var recorder = new RecordingModelCallEventRecorder();
         var handler = new StubHttpMessageHandler(
             _ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -306,7 +306,7 @@ public sealed class OllamaRecruitingEmailParserTests
             ## preference
             - target_stack: full-stack TypeScript
             """);
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -345,7 +345,7 @@ public sealed class OllamaRecruitingEmailParserTests
         var handler = new StubHttpMessageHandler(
             _ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
         var client = new HttpClient(handler);
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             client,
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -399,7 +399,7 @@ public sealed class OllamaRecruitingEmailParserTests
                 };
             });
         var client = new HttpClient(handler);
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             client,
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -445,7 +445,7 @@ public sealed class OllamaRecruitingEmailParserTests
             });
         var circuitBreaker = new OllamaModelCircuitBreaker(
             new TestClock(new DateTimeOffset(2026, 4, 24, 12, 0, 0, TimeSpan.Zero)));
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             options,
@@ -491,7 +491,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         "application/json")
                 };
             });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -534,7 +534,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         Encoding.UTF8,
                         "application/json")
                 });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(
@@ -578,7 +578,7 @@ public sealed class OllamaRecruitingEmailParserTests
                         Encoding.UTF8,
                         "application/json")
                 });
-        var parser = new OllamaRecruitingEmailParser(
+        var parser = TestServices.OllamaRecruitingEmailParser(
             new HttpClient(handler),
             new HeuristicRecruitingEmailParser(),
             Options.Create(

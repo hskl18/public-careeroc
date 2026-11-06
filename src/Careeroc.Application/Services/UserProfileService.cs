@@ -431,7 +431,7 @@ public sealed class UserProfileService
 
         if (!SupportedTimeZoneIds.Contains(timeZoneId))
         {
-            throw new InvalidOperationException("Unsupported time zone.");
+            throw new UserFacingException("Unsupported time zone.");
         }
 
         return timeZoneId;
@@ -450,7 +450,7 @@ public sealed class UserProfileService
 
         if (!SupportedProfileIcons.Contains(profileIcon))
         {
-            throw new InvalidOperationException($"Unsupported profile icon: {profileIcon}");
+            throw new UserFacingException($"Unsupported profile icon: {profileIcon}");
         }
 
         return profileIcon;
@@ -468,12 +468,12 @@ public sealed class UserProfileService
 
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new InvalidOperationException($"{fieldName} is required.");
+            throw new UserFacingException($"{fieldName} is required.");
         }
 
         if (normalized.Length > maxLength)
         {
-            throw new InvalidOperationException($"{fieldName} must be {maxLength} characters or fewer.");
+            throw new UserFacingException($"{fieldName} must be {maxLength} characters or fewer.");
         }
 
         return normalized;
@@ -489,7 +489,7 @@ public sealed class UserProfileService
 
         if (normalized.Length > maxLength)
         {
-            throw new InvalidOperationException($"{fieldName} must be {maxLength} characters or fewer.");
+            throw new UserFacingException($"{fieldName} must be {maxLength} characters or fewer.");
         }
 
         return normalized;
