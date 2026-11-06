@@ -107,14 +107,14 @@ public sealed class DemoWorkspaceServiceTests
         DemoOptions? options = null)
     {
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var intelligenceService = new EmailIntelligenceService(
+        var intelligenceService = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
             new ApplicationWorkflowService(dbContext, clock),
             clock,
             NullLogger<EmailIntelligenceService>.Instance);
-        var syncService = new EmailSyncService(
+        var syncService = TestServices.EmailSyncService(
             dbContext,
             new DemoInboxEmailSource(clock),
             queue,

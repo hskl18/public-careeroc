@@ -28,32 +28,6 @@ public sealed class EmailIntelligenceService
     private readonly IClock _clock;
     private readonly ILogger<EmailIntelligenceService> _logger;
 
-    internal EmailIntelligenceService(
-        ICareerocDbContext dbContext,
-        IEmailProcessingQueue emailProcessingQueue,
-        IRecruitingEmailParser recruitingEmailParser,
-        ApplicationWorkflowService applicationWorkflowService,
-        IClock clock,
-        ILogger<EmailIntelligenceService> logger,
-        ILeaseManager? leaseManager = null)
-        : this(
-            dbContext,
-            emailProcessingQueue,
-            new InboxTriageAgentService(),
-            new WorkflowExtractionAgentService(recruitingEmailParser),
-            new RecruiterIdentityAgentService(),
-            new ScamCheckerAgentService(),
-            new ReviewEvidenceAgentService(),
-            new FollowUpTaskAgentService(clock),
-            applicationWorkflowService,
-            new RecruitingContactGraphService(dbContext, clock),
-            clock,
-            logger,
-            leaseManager: leaseManager)
-    {
-    }
-
-    [ActivatorUtilitiesConstructor]
     public EmailIntelligenceService(
         ICareerocDbContext dbContext,
         IEmailProcessingQueue emailProcessingQueue,
@@ -67,8 +41,8 @@ public sealed class EmailIntelligenceService
         RecruitingContactGraphService recruitingContactGraphService,
         IClock clock,
         ILogger<EmailIntelligenceService> logger,
-        IModelCallEventRecorder? modelCallEventRecorder = null,
-        ILeaseManager? leaseManager = null)
+        IModelCallEventRecorder modelCallEventRecorder,
+        ILeaseManager leaseManager)
     {
         _dbContext = dbContext;
         _emailProcessingQueue = emailProcessingQueue;
@@ -80,8 +54,8 @@ public sealed class EmailIntelligenceService
         _followUpTaskAgentService = followUpTaskAgentService;
         _applicationWorkflowService = applicationWorkflowService;
         _recruitingContactGraphService = recruitingContactGraphService;
-        _modelCallEventRecorder = modelCallEventRecorder ?? NullModelCallEventRecorder.Instance;
-        _leaseManager = leaseManager ?? NoopLeaseManager.Instance;
+        _modelCallEventRecorder = modelCallEventRecorder;
+        _leaseManager = leaseManager;
         _clock = clock;
         _logger = logger;
     }
