@@ -128,7 +128,7 @@ public sealed class EmailSyncServiceTests
 
         var source = new CapturingInboxEmailSource();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             source,
             queue,
@@ -237,7 +237,7 @@ public sealed class EmailSyncServiceTests
             IsOutbound: true);
         var source = new FixedInboxEmailSource([outboundReply]);
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             source,
             queue,
@@ -302,7 +302,7 @@ public sealed class EmailSyncServiceTests
             IsOutbound: false);
         var source = new FixedInboxEmailSource([duplicateEmail, duplicateEmail]);
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             source,
             queue,
@@ -346,7 +346,7 @@ public sealed class EmailSyncServiceTests
                 clock.UtcNow.AddHours(-1),
                 IsOutbound: false)
         ]);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             source,
             new DatabaseEmailProcessingQueue(dbContext, clock),
@@ -396,7 +396,7 @@ public sealed class EmailSyncServiceTests
 
         var source = new CapturingInboxEmailSource();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             source,
             queue,
@@ -448,7 +448,7 @@ public sealed class EmailSyncServiceTests
         await dbContext.SaveChangesAsync();
 
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailSyncService(
+        var service = TestServices.EmailSyncService(
             dbContext,
             new ReconnectRequiredInboxEmailSource(),
             queue,

@@ -22,33 +22,6 @@ public sealed class ManualReviewService
     public ManualReviewService(
         ICareerocDbContext dbContext,
         ApplicationWorkflowService applicationWorkflowService,
-        IClock clock)
-        : this(
-            dbContext,
-            applicationWorkflowService,
-            new FollowUpTaskAgentService(clock),
-            NullRecruitingEmailGuidanceStore.Instance,
-            clock)
-    {
-    }
-
-    public ManualReviewService(
-        ICareerocDbContext dbContext,
-        ApplicationWorkflowService applicationWorkflowService,
-        FollowUpTaskAgentService followUpTaskAgentService,
-        IClock clock)
-        : this(
-            dbContext,
-            applicationWorkflowService,
-            followUpTaskAgentService,
-            NullRecruitingEmailGuidanceStore.Instance,
-            clock)
-    {
-    }
-
-    public ManualReviewService(
-        ICareerocDbContext dbContext,
-        ApplicationWorkflowService applicationWorkflowService,
         FollowUpTaskAgentService followUpTaskAgentService,
         IRecruitingEmailGuidanceStore guidanceStore,
         IClock clock)

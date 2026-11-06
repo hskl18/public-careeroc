@@ -23,33 +23,6 @@ public sealed class CareerOrchestratorService
     private readonly ICareerAgentGraphClient _agentGraphClient;
     private readonly IClock _clock;
 
-    public CareerOrchestratorService(ICareerocDbContext dbContext, IClock clock)
-        : this(dbContext, NullUserAgentContextSnapshotProvider.Instance, clock)
-    {
-    }
-
-    public CareerOrchestratorService(
-        ICareerocDbContext dbContext,
-        IUserAgentContextSnapshotProvider agentContextSnapshotProvider,
-        IClock clock)
-        : this(dbContext, agentContextSnapshotProvider, new ResumeMailboxContextBuilder(dbContext, clock), clock)
-    {
-    }
-
-    public CareerOrchestratorService(
-        ICareerocDbContext dbContext,
-        IUserAgentContextSnapshotProvider agentContextSnapshotProvider,
-        ResumeMailboxContextBuilder resumeMailboxContextBuilder,
-        IClock clock)
-        : this(
-            dbContext,
-            agentContextSnapshotProvider,
-            resumeMailboxContextBuilder,
-            NullCareerAgentGraphClient.Instance,
-            clock)
-    {
-    }
-
     public CareerOrchestratorService(
         ICareerocDbContext dbContext,
         IUserAgentContextSnapshotProvider agentContextSnapshotProvider,
