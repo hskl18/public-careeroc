@@ -5,8 +5,23 @@ import { fetchWithInFlightDedup } from "@/lib/client-fetch";
 import { formatTimestampInTimeZone } from "@/lib/date-time";
 import type { DashboardResponse } from "@/lib/dashboard";
 import {
+  isConnectedAccount,
+  isInvalidInboxMetadata,
+  isReconnectableGmailAccount,
+  needsGmailSetup,
+} from "@/lib/inbox-account-status";
+import {
+  buildMailSyncStatus,
+  buildProgressEstimate,
+  formatCount,
+  getDashboardProgress,
+  getPollingIntervalMs,
+  shouldAdvanceInboxProcessing,
+  updateProgressSamples,
+  type ProgressSample,
+} from "@/lib/mail-sync-progress";
+import {
   activeMailSyncPollingIntervalMs,
-  idleWorkspacePollingIntervalMs,
   isInboxAnalysisActive,
 } from "@/lib/workspace-polling";
 import { SvgAsset, mascotAssets } from "./svg-asset";
@@ -23,18 +38,6 @@ type MailSyncPanelProps = {
   timeZoneId: string;
 };
 
-type ProgressSample = {
-  processed: number;
-  total: number;
-  capturedAtMs: number;
-};
-
-type ProgressEstimate = {
-  kind: "estimating" | "moving" | "stalled";
-  label: string;
-  detail: string;
-};
-
 type DashboardInboxCheckResponse = {
   dashboard: DashboardResponse;
 };
@@ -44,220 +47,8 @@ type MailSyncState = {
   connectedAccountCount: number;
 };
 
-const stalledWindowMs = 120000;
-const progressWindowSize =
-  Math.ceil(stalledWindowMs / activeMailSyncPollingIntervalMs) + 2;
-const minimumMovingRate = 0.01;
-
 function formatTimestamp(value: string | null, timeZoneId: string) {
-  return formatTimestampInTimeZone(
-    value,
-    timeZoneId,
-    "Waiting for first sync",
-  );
-}
-
-function isConnectedGmailAccount(account: InboxAccountSetup) {
-  return account.provider === "gmail" && account.connectionStatus === "Connected";
-}
-
-function isInvalidInboxMetadata(account: InboxAccountSetup) {
-  return (
-    account.isValid === false ||
-    account.connectionStatus.toLowerCase() === "metadata invalid"
-  );
-}
-
-function isReconnectableGmailAccount(account: InboxAccountSetup) {
-  const status = account.connectionStatus.toLowerCase();
-
-  return (
-    account.provider === "gmail" &&
-    account.connectionStatus !== "Connected" &&
-    (isInvalidInboxMetadata(account) ||
-      status.includes("reconnect") ||
-      status.includes("not completed") ||
-      status.includes("missing") ||
-      status.includes("oauth"))
-  );
-}
-
-function isActionableGmailSetup(account: InboxAccountSetup) {
-  const status = account.connectionStatus.toLowerCase();
-  const nextStep = account.nextStep.toLowerCase();
-
-  return (
-    account.provider === "gmail" &&
-    account.connectionStatus !== "Connected" &&
-    !status.includes("imported data deleted") &&
-    !nextStep.includes("access was disconnected")
-  );
-}
-
-function getDashboardProgress(dashboard: DashboardResponse) {
-  const syncedEmails = Math.max(0, dashboard.inbox.syncedEmails);
-  const processedEmails = Math.max(0, dashboard.inbox.processedEmails);
-  const total = Math.max(syncedEmails, processedEmails);
-  const processed = total === 0 ? 0 : Math.min(processedEmails, total);
-
-  return {
-    processed,
-    total,
-    percent: total === 0 ? 0 : Math.round((processed / total) * 100),
-  };
-}
-
-function getPollingIntervalMs(
-  dashboard: DashboardResponse,
-  connectedAccountCount: number,
-) {
-  if (connectedAccountCount === 0) {
-    return null;
-  }
-
-  return isInboxAnalysisActive(dashboard)
-    ? activeMailSyncPollingIntervalMs
-    : idleWorkspacePollingIntervalMs;
-}
-
-function shouldAdvanceInboxProcessing(
-  dashboard: DashboardResponse,
-  connectedAccountCount: number,
-) {
-  return (
-    getPollingIntervalMs(dashboard, connectedAccountCount) ===
-    activeMailSyncPollingIntervalMs
-  );
-}
-
-function updateProgressSamples(
-  current: ProgressSample[],
-  dashboard: DashboardResponse,
-  capturedAtMs: number,
-) {
-  const { processed, total } = getDashboardProgress(dashboard);
-
-  if (total === 0 || processed >= total) {
-    return [];
-  }
-
-  const nextSample = { processed, total, capturedAtMs };
-  const previous = current.at(-1);
-
-  if (
-    !previous ||
-    processed < previous.processed ||
-    total < previous.total ||
-    capturedAtMs - previous.capturedAtMs < 1000
-  ) {
-    return [nextSample];
-  }
-
-  return [...current, nextSample].slice(-progressWindowSize);
-}
-
-function formatRemaining(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) {
-    return "~1 min remaining";
-  }
-
-  if (seconds < 60) {
-    const roundedSeconds = Math.max(5, Math.round(seconds / 5) * 5);
-    return `~${roundedSeconds} sec remaining`;
-  }
-
-  const roundedMinutes = Math.max(1, Math.round(seconds / 60));
-  return `~${roundedMinutes} min remaining`;
-}
-
-function formatRate(rate: number) {
-  return `${rate < 0.1 ? rate.toFixed(2) : rate.toFixed(1)} emails/s`;
-}
-
-function formatElapsed(seconds: number) {
-  if (seconds < 60) {
-    return `${Math.max(5, Math.round(seconds / 5) * 5)} sec`;
-  }
-
-  return `${Math.max(1, Math.round(seconds / 60))} min`;
-}
-
-function formatCount(value: number | null | undefined) {
-  return Math.max(0, value ?? 0);
-}
-
-function buildAnalysisBacklogDetail(dashboard: DashboardResponse) {
-  const pending = formatCount(dashboard.inbox.pendingAnalysisEmails);
-  const processing = formatCount(dashboard.inbox.processingAnalysisEmails);
-  const failed = formatCount(dashboard.inbox.failedAnalysisEmails);
-  const lastError = dashboard.inbox.lastAnalysisError?.trim();
-
-  if (failed > 0) {
-    return `${failed} analysis job${failed === 1 ? "" : "s"} failed.${lastError ? ` Latest error: ${lastError}` : ""}`;
-  }
-
-  if (processing > 0) {
-    return `${processing} email${processing === 1 ? " is" : "s are"} locked in analysis; the worker may be stuck if this count does not change.`;
-  }
-
-  if (pending > 0) {
-    return `${pending} email${pending === 1 ? " is" : "s are"} waiting for analysis; the worker may be idle or blocked.`;
-  }
-
-  return "No pending analysis job is visible, so the dashboard may be waiting on stale processing state.";
-}
-
-function buildProgressEstimate(
-  samples: ProgressSample[],
-  processed: number,
-  total: number,
-  dashboard: DashboardResponse,
-): ProgressEstimate | null {
-  if (total === 0 || processed >= total) {
-    return null;
-  }
-
-  const latest = samples.at(-1);
-  const oldest = samples[0];
-
-  if (!latest || !oldest || samples.length < 2) {
-    return {
-      kind: "estimating",
-      label: "Checking analysis worker...",
-      detail: `${total - processed} email${total - processed === 1 ? "" : "s"} remain. ${buildAnalysisBacklogDetail(dashboard)}`,
-    };
-  }
-
-  const elapsedSeconds = (latest.capturedAtMs - oldest.capturedAtMs) / 1000;
-  const processedDelta = latest.processed - oldest.processed;
-  const rate = elapsedSeconds > 0 ? processedDelta / elapsedSeconds : 0;
-  const remaining = Math.max(0, total - processed);
-
-  if (rate >= minimumMovingRate) {
-    return {
-      kind: "moving",
-      label: `${formatRemaining(remaining / rate)} · ${formatRate(rate)}`,
-      detail: `Analysis is moving. ${remaining} email${remaining === 1 ? "" : "s"} remain at ${formatRate(rate)}.`,
-    };
-  }
-
-  if (latest.capturedAtMs - oldest.capturedAtMs < stalledWindowMs) {
-    const processing = formatCount(dashboard.inbox.processingAnalysisEmails);
-
-    return {
-      kind: "estimating",
-      label: processing > 0 ? "Model analysis running..." : "Checking for progress...",
-      detail: processing > 0
-        ? `${remaining} email${remaining === 1 ? "" : "s"} remain. ${processing} email${processing === 1 ? " is" : "s are"} currently in analysis; model calls can take up to the configured timeout before falling back.`
-        : `${remaining} email${remaining === 1 ? "" : "s"} remain. No completed analysis has appeared in the latest samples yet.`,
-    };
-  }
-
-  return {
-    kind: "stalled",
-    label: `Stalled at ${processed}/${total}`,
-    detail: `Analysis is stuck at ${processed}/${total}. No email finished processing for about ${formatElapsed(elapsedSeconds)}. ${buildAnalysisBacklogDetail(dashboard)} It retries automatically; if it stays stuck, check the queue on the Admin page.`,
-  };
+  return formatTimestampInTimeZone(value, timeZoneId, "Waiting for first sync");
 }
 
 function SyncMetric({
@@ -289,6 +80,37 @@ function SyncMetric({
   );
 }
 
+function FinishSetupList({
+  accounts,
+  className = "",
+}: {
+  accounts: InboxAccountSetup[];
+  className?: string;
+}) {
+  return (
+    <div className={`info-tile border-[var(--border)] bg-[var(--yellow-soft)] ${className}`}>
+      <p className="eyebrow text-[var(--yellow)]">Finish setup</p>
+      <div className="mt-3 space-y-3">
+        {accounts.map((account) => (
+          <div
+            key={account.id}
+            className="grid gap-1 border-t border-[var(--border)] pt-3 first:border-t-0 first:pt-0"
+          >
+            <p className="break-all text-sm font-medium text-[var(--text-primary)]">
+              {account.emailAddress}
+            </p>
+            <p className="text-xs leading-5 text-[var(--text-secondary)]">
+              {isInvalidInboxMetadata(account)
+                ? "Reconnect Google to repair stored Gmail access metadata."
+                : account.nextStep}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MailSyncPanel({
   dashboard: initialDashboard,
   dashboardSource,
@@ -304,13 +126,15 @@ export function MailSyncPanel({
   const initialActivePollStarted = useRef(false);
   const setupLive = inboxSetupSource === "api";
   const dashboardLive = liveDashboardSource === "api";
-  const connectedAccounts = setup.accounts.filter(isConnectedGmailAccount);
+  const connectedAccounts = setup.accounts.filter(
+    (account) => account.provider === "gmail" && isConnectedAccount(account),
+  );
   const reconnectableAccounts = setup.accounts.filter(isReconnectableGmailAccount);
   const mailSyncStateRef = useRef<MailSyncState>({
     dashboard,
     connectedAccountCount: connectedAccounts.length,
   });
-  const attentionAccounts = setup.accounts.filter(isActionableGmailSetup);
+  const attentionAccounts = setup.accounts.filter(needsGmailSetup);
   const { processed, total, percent } = getDashboardProgress(dashboard);
   const remaining = Math.max(0, total - processed);
   const pendingAnalysis = formatCount(dashboard.inbox.pendingAnalysisEmails);
@@ -323,8 +147,16 @@ export function MailSyncPanel({
     dashboard,
   );
   const isStalled = progressEstimate?.kind === "stalled";
-  const progressDetail = progressEstimate?.detail ?? "Analysis is running.";
-  const analyzing = isInboxAnalysisActive(dashboard);
+  const status = buildMailSyncStatus({
+    setupLive,
+    dashboardLive,
+    connectedCount: connectedAccounts.length,
+    reconnectableCount: reconnectableAccounts.length,
+    setupNeededCount: attentionAccounts.length,
+    lastSyncAtUtc: dashboard.inbox.lastSyncAtUtc,
+    analyzing: isInboxAnalysisActive(dashboard),
+    estimate: progressEstimate,
+  });
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -340,77 +172,6 @@ export function MailSyncPanel({
       connectedAccountCount: connectedAccounts.length,
     };
   }, [connectedAccounts.length, dashboard]);
-
-  const status =
-    !setupLive
-      ? {
-          label: "API offline",
-          tone: "border-[var(--yellow)]/25 bg-[var(--yellow-soft)] text-[var(--yellow)]",
-          dot: "bg-[var(--yellow)]",
-          pulse: false,
-          detail: "Gmail setup status is unavailable right now.",
-        }
-      : connectedAccounts.length === 0 && reconnectableAccounts.length === 0
-        ? {
-            label: "Setup incomplete",
-            tone: "border-[var(--yellow)]/25 bg-[var(--yellow-soft)] text-[var(--yellow)]",
-            dot: "bg-[var(--yellow)]",
-            pulse: false,
-            detail: "Connect Gmail to start the first import.",
-          }
-        : reconnectableAccounts.length > 0
-          ? {
-              label: "Reconnect Gmail",
-              tone: "border-[var(--red)]/25 bg-[var(--red-soft)] text-[var(--red)]",
-              dot: "bg-[var(--red)]",
-              pulse: false,
-              detail: "Reconnect Google to resume sync.",
-            }
-        : !dashboardLive
-          ? {
-              label: "API offline",
-              tone: "border-[var(--yellow)]/25 bg-[var(--yellow-soft)] text-[var(--yellow)]",
-              dot: "bg-[var(--yellow)]",
-              pulse: false,
-              detail: "Live sync status is unavailable right now.",
-            }
-          : attentionAccounts.length > 0
-          ? {
-              label: "Finish setup",
-              tone: "border-[var(--red)]/25 bg-[var(--red-soft)] text-[var(--red)]",
-              dot: "bg-[var(--red)]",
-              pulse: false,
-              detail: `${attentionAccounts.length === 1 ? "1 Gmail connection needs" : `${attentionAccounts.length} Gmail connections need`} setup.`,
-            }
-          : dashboard.inbox.lastSyncAtUtc
-            ? {
-                label: analyzing
-                  ? isStalled
-                    ? "Analysis stalled"
-                    : "Analyzing mail"
-                  : "Synced",
-                tone: analyzing
-                  ? isStalled
-                    ? "border-[var(--yellow)]/25 bg-[var(--yellow-soft)] text-[var(--yellow)]"
-                    : "border-[var(--blue)]/25 bg-[var(--blue-soft)] text-[var(--blue)]"
-                  : "border-[var(--green)]/25 bg-[var(--green-soft)] text-[var(--green)]",
-                dot: analyzing
-                  ? isStalled
-                    ? "bg-[var(--yellow)]"
-                    : "bg-[var(--blue)]"
-                  : "bg-[var(--green)]",
-                pulse: analyzing && !isStalled,
-                detail: analyzing
-                  ? progressDetail
-                  : "Up to date.",
-              }
-            : {
-                label: "Waiting for first sync",
-                tone: "border-[var(--blue)]/25 bg-[var(--blue-soft)] text-[var(--blue)]",
-                dot: "bg-[var(--blue)]",
-                pulse: true,
-                detail: "Waiting for first sync.",
-              };
 
   const refreshDashboard = useEffectEvent(async () => {
     if (document.visibilityState === "hidden") {
@@ -540,59 +301,25 @@ export function MailSyncPanel({
           </summary>
           <div className="border-t border-[var(--border)] p-4">
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
-                <p className="eyebrow">Last sync</p>
-                <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
-                  {formatTimestamp(dashboard.inbox.lastSyncAtUtc, timeZoneId)}
-                </p>
-              </div>
-              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
-                <p className="eyebrow">Emails processed</p>
-                <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
-                  {total > 0 ? `${processed}/${total} emails analyzed` : "No synced mail yet"}
-                </p>
-              </div>
-              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
-                <p className="eyebrow">Sync queue</p>
-                <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
-                  {pendingAnalysis + processingAnalysis} active jobs
-                </p>
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                  {pendingAnalysis} pending · {processingAnalysis} processing
-                </p>
-              </div>
-              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3">
-                <p className="eyebrow">Issues</p>
-                <p
-                  className="mt-2 text-sm font-semibold"
-                  style={{ color: failedAnalysis > 0 ? "var(--red)" : "var(--green)" }}
-                >
-                  {failedAnalysis}
-                </p>
-              </div>
+              <SyncMetric label="Last sync" value={formatTimestamp(dashboard.inbox.lastSyncAtUtc, timeZoneId)} />
+              <SyncMetric
+                label="Emails processed"
+                value={total > 0 ? `${processed}/${total} emails analyzed` : "No synced mail yet"}
+              />
+              <SyncMetric
+                label="Sync queue"
+                value={`${pendingAnalysis + processingAnalysis} active jobs`}
+                hint={`${pendingAnalysis} pending · ${processingAnalysis} processing`}
+              />
+              <SyncMetric
+                label="Issues"
+                value={String(failedAnalysis)}
+                tone={failedAnalysis > 0 ? "bad" : "good"}
+              />
             </div>
 
             {attentionAccounts.length > 0 ? (
-              <div className="info-tile mt-3 border-[var(--border)] bg-[var(--yellow-soft)]">
-                <p className="eyebrow text-[var(--yellow)]">Finish setup</p>
-                <div className="mt-3 space-y-3">
-                  {attentionAccounts.map((account) => (
-                    <div
-                      key={account.id}
-                      className="grid gap-1 border-t border-[var(--border)] pt-3 first:border-t-0 first:pt-0"
-                    >
-                      <p className="break-all text-sm font-medium text-[var(--text-primary)]">
-                        {account.emailAddress}
-                      </p>
-                      <p className="text-xs leading-5 text-[var(--text-secondary)]">
-                        {isInvalidInboxMetadata(account)
-                          ? "Reconnect Google to repair stored Gmail access metadata."
-                          : account.nextStep}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <FinishSetupList accounts={attentionAccounts} className="mt-3" />
             ) : null}
           </div>
         </details>
@@ -684,28 +411,7 @@ export function MailSyncPanel({
           </div>
         </div>
 
-        {attentionAccounts.length > 0 ? (
-          <div className="info-tile border-[var(--border)] bg-[var(--yellow-soft)]">
-            <p className="eyebrow text-[var(--yellow)]">Finish setup</p>
-            <div className="mt-3 space-y-3">
-              {attentionAccounts.map((account) => (
-                <div
-                  key={account.id}
-                  className="grid gap-1 border-t border-[var(--border)] pt-3 first:border-t-0 first:pt-0"
-                >
-                  <p className="break-all text-sm font-medium text-[var(--text-primary)]">
-                    {account.emailAddress}
-                  </p>
-                      <p className="text-xs leading-5 text-[var(--text-secondary)]">
-                    {isInvalidInboxMetadata(account)
-                      ? "Reconnect Google to repair stored Gmail access metadata."
-                      : account.nextStep}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        {attentionAccounts.length > 0 ? <FinishSetupList accounts={attentionAccounts} /> : null}
       </div>
         </>
       )}
