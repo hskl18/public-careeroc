@@ -16,7 +16,7 @@ dependencies = [
   "opentelemetry-instrumentation-fastapi==0.66b1",
   "opentelemetry-instrumentation-httpx==0.66b1",
   "opentelemetry-sdk==1.45.1",
-  "psycopg[binary,pool]==3.3.6",
+  "psycopg[binary,pool]==3.3.7",
   "pydantic-settings==2.16.2",
   "uvicorn[standard]==0.54.0",
 ]
