@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- The release version; AGENTS.md "Releasing" lists every file that carries it. -->
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <!-- A log template and its arguments that disagree throw at runtime, inside whatever called the logger. -->
     <WarningsAsErrors>$(WarningsAsErrors);CA2017</WarningsAsErrors>
   </PropertyGroup>

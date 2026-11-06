@@ -88,7 +88,7 @@ docker compose --profile full up -d --wait
 ```
 
 Open http://localhost:3000 and choose **Open the demo**.
-Compose downloads the prebuilt images of the latest release for your CPU (amd64 or arm64), so nothing is compiled; set `CAREEROC_VERSION` (for example `1.2.0`) to pin a release, run `docker compose pull` to move to a newer one, or add `--build` to run this checkout.
+Compose downloads the prebuilt images of the latest release for your CPU (amd64 or arm64), so nothing is compiled; set `CAREEROC_VERSION` (for example `1.3.0`) to pin a release, run `docker compose pull` to move to a newer one, or add `--build` to run this checkout.
 Running, the four containers use about 600 MB of memory and almost no CPU.
 Their ports are published on 127.0.0.1 only.
 
