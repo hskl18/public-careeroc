@@ -47,8 +47,8 @@ public sealed class InboxSyncCoordinator
             cancellationToken);
 
         _logger.LogInformation(
-            "Inbox sync coordinator finished for user {UserEmail}. Created {EmailsCreated} emails, enqueued {JobsEnqueued} jobs, queued {StaleEmailsQueued} stale analysis jobs, processed {JobsProcessed} jobs, refreshed {RemindersRefreshed} reminders, updated {EmailsUpdated} source emails.",
-            userEmail ?? "(all users)",
+            "Inbox sync coordinator finished for user {UserKey}. Created {EmailsCreated} emails, enqueued {JobsEnqueued} jobs, queued {StaleEmailsQueued} stale analysis jobs, processed {JobsProcessed} jobs, refreshed {RemindersRefreshed} reminders, updated {EmailsUpdated} source emails.",
+            userEmail is null ? "(all users)" : CareerocTelemetry.UserKey(userEmail),
             sync.EmailsCreated,
             sync.JobsEnqueued,
             staleEmailsQueued,

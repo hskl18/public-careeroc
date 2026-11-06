@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Abstractions;
 using Careeroc.Application.Models;
 using Careeroc.Domain.Entities;
@@ -53,14 +54,14 @@ public sealed class DatabaseModelCallEventRecorder : IModelCallEventRecorder
             if (!string.Equals(modelCallEvent.Outcome, "success", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning(
-                    "Model call recorded with non-success outcome. Provider={Provider} Model={Model} Purpose={Purpose} Outcome={Outcome} ErrorType={ErrorType} StatusCode={StatusCode} UserEmail={UserEmail} InboxAccountId={InboxAccountId} InboxEmailId={InboxEmailId} RunId={RunId} CorrelationId={CorrelationId} LatencyMs={LatencyMs}.",
+                    "Model call recorded with non-success outcome. Provider={Provider} Model={Model} Purpose={Purpose} Outcome={Outcome} ErrorType={ErrorType} StatusCode={StatusCode} UserKey={UserKey} InboxAccountId={InboxAccountId} InboxEmailId={InboxEmailId} RunId={RunId} CorrelationId={CorrelationId} LatencyMs={LatencyMs}.",
                     modelCallEvent.Provider,
                     modelCallEvent.Model,
                     modelCallEvent.Purpose,
                     modelCallEvent.Outcome,
                     modelCallEvent.ErrorType,
                     modelCallEvent.StatusCode,
-                    modelCallEvent.UserEmail,
+                    CareerocTelemetry.UserKey(modelCallEvent.UserEmail),
                     modelCallEvent.InboxAccountId,
                     modelCallEvent.InboxEmailId,
                     modelCallEvent.RunId,

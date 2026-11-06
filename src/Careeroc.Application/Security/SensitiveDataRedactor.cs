@@ -21,9 +21,14 @@ public static partial class SensitiveDataRedactor
         redacted = KeyValueTokenRegex().Replace(redacted, $"$1{RedactedToken}");
         redacted = LongTokenRegex().Replace(redacted, RedactedToken);
         redacted = EmailRegex().Replace(redacted, RedactedEmail);
+        // A newline decoded from a request path or header would let the value forge a log line.
+        redacted = ControlCharacterRegex().Replace(redacted, " ");
 
         return redacted.Length <= maxLength ? redacted : redacted[..maxLength];
     }
+
+    [GeneratedRegex(@"\p{Cc}")]
+    private static partial Regex ControlCharacterRegex();
 
     [GeneratedRegex(@"(?i)\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b")]
     private static partial Regex EmailRegex();

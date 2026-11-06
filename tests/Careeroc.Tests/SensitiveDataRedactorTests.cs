@@ -40,4 +40,12 @@ public sealed class SensitiveDataRedactorTests
         Assert.NotNull(redacted);
         Assert.Equal(80, redacted!.Length);
     }
+
+    [Fact]
+    public void Redact_ReplacesControlCharactersSoAValueCannotForgeALogLine()
+    {
+        var redacted = SensitiveDataRedactor.Redact("/api/dashboard\r\nSecurityEvent api.forged accepted\u001b[0m");
+
+        Assert.Equal("/api/dashboard  SecurityEvent api.forged accepted [0m", redacted);
+    }
 }
