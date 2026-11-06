@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type {
   ApplicationCard,
   DashboardResponse,
@@ -175,6 +175,12 @@ export function AttentionSection({
     pendingActions.length === 0 && attentionAccounts.length === 0;
   // The reminder whose actions are swapped for snooze durations; one at a time.
   const [choosingSnoozeFor, setChoosingSnoozeFor] = useState<string | null>(null);
+  const snoozeButtons = useRef(new Map<string, HTMLButtonElement>());
+  // Closing the choice removes the focused button, so focus returns to that row's Snooze.
+  function closeSnoozeChoice(reminderId: string) {
+    setChoosingSnoozeFor(null);
+    requestAnimationFrame(() => snoozeButtons.current.get(reminderId)?.focus());
+  }
 
   return (
     <section className="card flex h-full min-h-0 flex-col p-0">
@@ -282,7 +288,7 @@ export function AttentionSection({
                       aria-label={`Snooze ${action.title} for`}
                       className="flex shrink-0 flex-wrap items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]"
                       onKeyDown={(event) => {
-                        if (event.key === "Escape") setChoosingSnoozeFor(null);
+                        if (event.key === "Escape") closeSnoozeChoice(action.id);
                       }}
                     >
                       {(["1h", "tomorrow", "next-week"] as const).map((preset, index) => (
@@ -293,7 +299,7 @@ export function AttentionSection({
                           className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                           disabled={reminderActionsDisabled}
                           onClick={() => {
-                            setChoosingSnoozeFor(null);
+                            closeSnoozeChoice(action.id);
                             onReminderSnooze(action, preset);
                           }}
                         >
@@ -303,7 +309,7 @@ export function AttentionSection({
                       <button
                         type="button"
                         className="hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6"
-                        onClick={() => setChoosingSnoozeFor(null)}
+                        onClick={() => closeSnoozeChoice(action.id)}
                       >
                         Cancel
                       </button>
@@ -332,6 +338,10 @@ export function AttentionSection({
                         type="button"
                         className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                         aria-label={`Snooze ${action.title}`}
+                        ref={(button) => {
+                          if (button) snoozeButtons.current.set(action.id, button);
+                          else snoozeButtons.current.delete(action.id);
+                        }}
                         onClick={() => setChoosingSnoozeFor(action.id)}
                         disabled={reminderActionsDisabled}
                       >

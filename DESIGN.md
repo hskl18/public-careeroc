@@ -333,6 +333,7 @@ They have no labeled eval of usefulness yet; see future work.
 ## Scaling
 
 - The API and the web app are stateless apart from caches and can scale out; email processing is safe across replicas.
+  The dashboard cache is per process, so the Helm chart turns it off when the API runs more than one replica.
 - With a checkpoint database the agent runtime keeps graph state in Postgres through a connection pool, so any replica can resume a thread; without one, keep one replica.
   Its A2A task store is in memory, which is fine for the current short, read-only skills, but A2A clients need one replica or session affinity; long-running skills need the SDK's database task store.
   A2A reviews run without checkpoints, since they never pause.

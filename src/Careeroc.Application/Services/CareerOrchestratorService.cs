@@ -59,9 +59,10 @@ public sealed class CareerOrchestratorService
             cancellationToken);
         // A superseded or overwritten review will never be decided, so its paused run is rejected
         // to free its checkpoints; best effort, since the review is already settled here.
+        // Not the request's token: a closed tab after the save must not leave a run paused for good.
         foreach (var threadId in releasedThreads)
         {
-            await _agentGraphClient.DecideReviewAsync(threadId, approved: false, cancellationToken);
+            await _agentGraphClient.DecideReviewAsync(threadId, approved: false, CancellationToken.None);
         }
 
         return review;
@@ -117,9 +118,24 @@ public sealed class CareerOrchestratorService
         };
         entry.Value = SerializeReview(decided);
         entry.UpdatedAtUtc = _clock.UtcNow;
-        await _dbContext.SaveOrAskToRetryAsync(
-            "This review changed while saving your decision. Reload and decide again.",
-            CancellationToken.None);
+        try
+        {
+            await _dbContext.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            // A newer review replaced this entry between the confirmation and this save, so these
+            // reminders were not created; the paused run is released, and the person reviews the
+            // newer one. Rare: two reviews have to finish around the same approval.
+            if (review.ThreadId is { Length: > 0 } replacedThread)
+            {
+                await _agentGraphClient.DecideReviewAsync(replacedThread, approved: false, CancellationToken.None);
+            }
+
+            throw new UserFacingException(
+                "A newer review replaced this one while your decision was saving, so its reminders were not created. Reload to see the newer review.",
+                exception);
+        }
 
         var outcome = review.ThreadId is { Length: > 0 } threadId
             ? await _agentGraphClient.DecideReviewAsync(threadId, approved, cancellationToken)

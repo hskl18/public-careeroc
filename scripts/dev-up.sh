@@ -25,8 +25,10 @@ export ConnectionStrings__Careeroc="${ConnectionStrings__Careeroc:-Host=localhos
 export AgentRuntime__Enabled=true
 export AgentRuntime__BaseUrl="${AgentRuntime__BaseUrl:-http://localhost:8123}"
 # The runtime container checks A2A tokens against the API, which runs on this host here. Docker
-# Desktop forwards host.docker.internal to the host's loopback; on Linux it is the bridge address,
-# where an API listening on localhost is not reachable, so A2A needs API_URLS=http://0.0.0.0:5114.
+# Desktop forwards host.docker.internal to the host's loopback; on Linux it is the Docker bridge
+# address, where an API on localhost is unreachable, so A2A there needs the API on that address too:
+# API_URLS="http://localhost:5114;http://172.17.0.1:5114". Never 0.0.0.0, which would expose the
+# Development API, and its public fallback signing secret, to the whole network.
 export AGENT_API_BASE_URL="${AGENT_API_BASE_URL:-http://host.docker.internal:${API_PORT}}"
 # The runtime container and the API must share this secret, or every review silently falls back.
 export AgentRuntime__SharedSecret="${AgentRuntime__SharedSecret:-local-compose-only-agent-shared-secret-01}"

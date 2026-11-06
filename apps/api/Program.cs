@@ -178,8 +178,10 @@ app.Use(
     async (context, next) =>
     {
         await next(context);
+        // /mcp and /agent only read, even when MCP sends its calls as POST.
         if (!HttpMethods.IsGet(context.Request.Method) &&
             !HttpMethods.IsHead(context.Request.Method) &&
+            !PersonalAccessTokenMiddleware.AppliesTo(context.Request.Path) &&
             context.Response.StatusCode < 400 &&
             RequestUserContext.GetUserEmail(context.Request) is { } writer)
         {
