@@ -387,6 +387,130 @@ public sealed class CareerOrchestratorServiceTests
         Assert.Equal((review.ThreadId!, true), graphClient.Decision);
     }
 
+    [Fact]
+    public async Task AnApprovalKeepsItsRemindersWhenTheRuntimeCallIsCancelled()
+    {
+        var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
+        await using var _ = dbContext;
+        var graphClient = ProposingClient(interview);
+        var service = CreateService(dbContext, graphClient, clock);
+        await service.ReviewResumeMailboxFitAsync(user.Email);
+        var resolved = await ConfirmPendingReviewAsync(dbContext, clock, user.Email);
+        graphClient.OnDecide = () => throw new OperationCanceledException();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => service.ApplyReviewDecisionAsync(resolved));
+
+        Assert.Equal(interview.Id, Assert.Single(dbContext.Reminders).JobApplicationId);
+        var stored = JsonSerializer.Deserialize<ResumeMailboxReviewDto>(
+            dbContext.UserMemoryEntries.Single(entry => entry.ConfirmationStatus == "confirmed").Value,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Equal(("completed", 1), (stored!.Status, stored.RemindersCreated));
+    }
+
+    [Fact]
+    public async Task ApprovalSkipsAnApplicationThatGainedAnOpenReminderSinceTheReview()
+    {
+        var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
+        await using var _ = dbContext;
+        var service = CreateService(dbContext, ProposingClient(interview), clock);
+        await service.ReviewResumeMailboxFitAsync(user.Email);
+        dbContext.Reminders.Add(
+            new Reminder
+            {
+                JobApplicationId = interview.Id,
+                Type = ReminderType.FollowUp,
+                Title = "Reply to the recruiter",
+                DueAtUtc = clock.UtcNow.AddDays(5),
+                Status = ReminderStatus.Open
+            });
+        await dbContext.SaveChangesAsync();
+
+        var decided = await service.ApplyReviewDecisionAsync(
+            await ConfirmPendingReviewAsync(dbContext, clock, user.Email));
+
+        Assert.Equal("Reply to the recruiter", Assert.Single(dbContext.Reminders).Title);
+        var stored = JsonSerializer.Deserialize<ResumeMailboxReviewDto>(
+            decided.Value,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Equal(0, stored!.RemindersCreated);
+    }
+
+    [Fact]
+    public async Task AReviewThatPassesTheGateSupersedesOneStillWaitingForADecision()
+    {
+        var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
+        await using var _ = dbContext;
+        await CreateService(dbContext, ProposingClient(interview), clock).ReviewResumeMailboxFitAsync(user.Email);
+        var passing = new StubCareerAgentGraphClient(
+            request => CareerAgentGraphRunOutcome.Succeeded(
+                new CareerAgentGraphReviewResponse(
+                    request.ThreadId,
+                    "completed",
+                    "langgraph.resume_mailbox_review.v1",
+                    "deterministic/evidence-v1",
+                    "Newer review.",
+                    [],
+                    [],
+                    false,
+                    0.9m,
+                    [])));
+
+        await CreateService(dbContext, passing, clock).ReviewResumeMailboxFitAsync(user.Email);
+
+        var reviews = dbContext.UserMemoryEntries
+            .Where(entry => entry.Key == "orchestrator.resume_mailbox_bridge")
+            .Select(entry => entry.ConfirmationStatus)
+            .OrderBy(status => status)
+            .ToList();
+        Assert.Equal(["confirmed", "rejected"], reviews);
+    }
+
+    private static async Task<(Careeroc.Infrastructure.Persistence.CareerocDbContext DbContext, User User, JobApplication Interview, TestClock Clock)> SeedOneApplicationAsync()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero));
+        var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var user = new User { Email = "alex@demo.careeroc.example", Name = "Alex Rivera" };
+        var interview = new JobApplication
+        {
+            User = user,
+            Company = "Kestrel AI",
+            Role = "Backend Engineer",
+            Status = ApplicationStatus.Interviewing,
+            LastActivityAtUtc = clock.UtcNow.AddDays(-2)
+        };
+        dbContext.AddRange(user, interview);
+        await dbContext.SaveChangesAsync();
+        return (dbContext, user, interview, clock);
+    }
+
+    private static StubCareerAgentGraphClient ProposingClient(JobApplication application) =>
+        new(
+            request => CareerAgentGraphRunOutcome.Succeeded(
+                new CareerAgentGraphReviewResponse(
+                    request.ThreadId,
+                    "review_required",
+                    "langgraph.resume_mailbox_review.v1",
+                    "deterministic/evidence-v1",
+                    "One reminder proposed.",
+                    [],
+                    [],
+                    true,
+                    0.8m,
+                    [],
+                    [new CareerAgentGraphReminderProposal(application.Id.ToString(), "Prepare for the next step", 2)])));
+
+    private static async Task<UserMemoryEntryDto> ConfirmPendingReviewAsync(
+        Careeroc.Infrastructure.Persistence.CareerocDbContext dbContext,
+        TestClock clock,
+        string userEmail)
+    {
+        var pending = dbContext.UserMemoryEntries.Single(entry => entry.ConfirmationStatus == "pending");
+        return (await new UserMemoryProposalService(dbContext, clock).ResolveProposalAsync(
+            pending.Id,
+            new ResolveUserMemoryProposalRequest("confirm"),
+            userEmail))!;
+    }
+
     private static CareerOrchestratorService CreateService(
         Careeroc.Infrastructure.Persistence.CareerocDbContext dbContext,
         ICareerAgentGraphClient graphClient,
@@ -422,13 +546,15 @@ public sealed class CareerOrchestratorServiceTests
 
         public (string ThreadId, bool Approved)? Decision { get; private set; }
 
+        public Func<CareerAgentGraphRunOutcome>? OnDecide { get; set; }
+
         public Task<CareerAgentGraphRunOutcome> DecideReviewAsync(
             string threadId,
             bool approved,
             CancellationToken cancellationToken = default)
         {
             Decision = (threadId, approved);
-            return Task.FromResult(CareerAgentGraphRunOutcome.Skipped());
+            return Task.FromResult(OnDecide?.Invoke() ?? CareerAgentGraphRunOutcome.Skipped());
         }
     }
 }

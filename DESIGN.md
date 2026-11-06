@@ -259,7 +259,7 @@ flowchart TB
 | Email content to models | Treated as untrusted; typed outputs, confidence gates, review queue | A wrong suggestion or a review item, not a write |
 
 Demo identities cannot connect Gmail or change backfill settings, demo workspaces are capped per hour, and each is removed from the product database after 24 hours.
-Its review checkpoints, which hold only the fictional snapshot, stay in the checkpoint database.
+The runtime deletes a review's checkpoints once the review finishes or fails; only a review waiting for a decision keeps them.
 Compose publishes its ports on 127.0.0.1, and its public fallback secrets are refused as soon as real accounts can sign in.
 More detail is in [SECURITY.md](SECURITY.md).
 
@@ -270,7 +270,7 @@ More detail is in [SECURITY.md](SECURITY.md).
 | Model provider down, slow, malformed, or under-confident | Extraction keeps the deterministic result |
 | An agent node hangs or errors | Each attempt has a timeout; a fast transient error gets one retry, a timed-out attempt does not, since the run's budget would end the retry; if the graph still fails, the API returns its deterministic review with status `completed_with_fallback` |
 | A model never returns the schema | The agent is cut off after four turns and gets one fresh attempt, then the same fallback |
-| A review takes longer than its budget | The runtime stops it at 100 seconds, before the API's 120-second timeout, so it never checkpoints a review the API did not store |
+| A review takes longer than its budget | The runtime stops it at 100 seconds, before the API's 120-second timeout, and deletes that run's checkpoints, so it keeps none for a review the API did not store |
 | Agent runtime down, or its checkpoint database down | The same fallback; the runtime's readiness check fails, so it leaves rotation without being restarted |
 | The runtime restarts while a review waits | With a checkpoint database the run resumes, which [a test](services/agent-runtime/tests/test_app.py) proves by deciding on a second app instance; without one the user's decision still applies and only the trace's last step is missing |
 | The user never decides on a gated review | The review stays pending, the last confirmed review stays in place, and nothing is written |

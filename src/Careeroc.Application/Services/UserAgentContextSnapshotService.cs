@@ -60,6 +60,9 @@ public sealed class UserAgentContextSnapshotService : IUserAgentContextSnapshotP
             .Where(entry =>
                 entry.UserId == userId &&
                 entry.ConfirmationStatus == "confirmed" &&
+                // A review is model output built partly from email text; the email models read this
+                // snapshot as trusted context, so it holds only what the user confirmed about themselves.
+                entry.Kind != "orchestrator" &&
                 (!entry.ExpiresAtUtc.HasValue || entry.ExpiresAtUtc > nowUtc))
             .OrderBy(entry => entry.Kind)
             .ThenBy(entry => entry.Key)

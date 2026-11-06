@@ -568,9 +568,17 @@ public sealed class ApiRoutingSecurityTests
     }
 
     [Fact]
-    public async Task RepeatedInvalidCredentialsAreThrottledBeforeAnyLookup()
+    public async Task RepeatedInvalidTokensAreThrottledWithoutLockingOutAValidOne()
     {
         await using var factory = new CareerocApiFactory();
+        var seed = await factory.SeedTwoUsersAsync();
+        string validToken;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var tokens = scope.ServiceProvider.GetRequiredService<PersonalAccessTokenService>();
+            validToken = (await tokens.CreateAsync(seed.StudentEmail, new CreatePersonalAccessTokenRequest("Test assistant", 1))).Token;
+        }
+
         using var client = factory.CreateClient();
 
         async Task<HttpStatusCode> SendBadTokenAsync()
@@ -588,6 +596,11 @@ public sealed class ApiRoutingSecurityTests
         }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await SendBadTokenAsync());
+
+        // A2A callers all reach the API from the agent runtime's address, like this test client.
+        using var valid = new HttpRequestMessage(HttpMethod.Get, "/agent/v1/pipeline-summary");
+        valid.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", validToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(valid)).StatusCode);
     }
 
     [Fact]

@@ -90,7 +90,7 @@ Gmail push notifications are not implemented.
 Memory lives in the database, not in prompt files.
 Each `UserMemoryEntry` has a source, a confidence, a confirmation state, and timestamps.
 Agents and the mailbox may propose memory, but only the user's own edits and confirmations are authoritative, and model inferences stay pending until confirmed.
-`memory.md` is rendered from those rows when an agent needs compact context, and `/app/memory` lets the user inspect, confirm, reject, or clear them.
+`memory.md` is rendered from those rows, leaving out the orchestrator's own reviews, when an agent needs compact context, and `/app/memory` lets the user inspect, confirm, reject, or clear them.
 
 Recruiting-email guidance for the optional model pass is a markdown playbook in [agent-memory/recruiting-email-playbook.md](agent-memory/recruiting-email-playbook.md), plus an optional, untracked feedback file of the user's corrections (`Ollama__UserFeedbackFilePath`, on by default only in Development).
 The file is shared by everyone on an install, so leave it unset when several people or demo visitors use one install.
@@ -100,7 +100,7 @@ Guidance is developer-owned context; email content can never override it.
 
 `CareerOrchestratorService` builds a bounded snapshot and calls the LangGraph runtime through `ICareerAgentGraphClient`.
 The graph can propose follow-up reminders; a review that proposes any, or that fails the evidence gate, pauses on an interrupt and is stored as pending memory.
-When the user approves it, the API creates the reminders itself, after checking each application belongs to the user, writes the decision back to the stored review, and resumes the paused graph so its trace ends with the decision.
+When the user approves it, the API creates the reminders itself, after checking each application belongs to the user and still has no open reminder, writes the decision back to the stored review, and resumes the paused graph so its trace ends with the decision.
 A pending review never replaces the last confirmed one until the user approves it, and earlier reviews are not fed back to the agents as facts about the user.
 The graph, its human-review interrupt, and the A2A endpoint are described in [DESIGN.md](../DESIGN.md#multi-agent-review) and [backend/agentic-workflow-engine-decision.md](backend/agentic-workflow-engine-decision.md).
 The MCP server (`apps/api/Mcp`) and the `/agent/v1/*` endpoints are read-only and authorized by personal access tokens through `PersonalAccessTokenMiddleware`.

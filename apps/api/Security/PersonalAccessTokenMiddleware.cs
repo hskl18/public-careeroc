@@ -33,17 +33,19 @@ internal sealed class PersonalAccessTokenMiddleware
             return;
         }
 
-        if (await failedAuthThrottle.RejectIfExhaustedAsync(context))
-        {
-            return;
-        }
-
         var header = context.Request.Headers.Authorization.ToString();
         var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : null;
         var identity = await tokenService.AuthenticateAsync(token, context.RequestAborted);
         // A token outlives allowlist changes, so access is rechecked on every call.
         if (identity is null || !configuredUserAccess.IsAllowed(identity.Email))
         {
+            // Only failures are throttled, after the lookup: every A2A caller reaches the API from the
+            // agent runtime's one address, so a stranger's bad tokens must not lock out valid ones.
+            if (await failedAuthThrottle.RejectIfExhaustedAsync(context))
+            {
+                return;
+            }
+
             failedAuthThrottle.RecordFailure(context);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.Headers.WWWAuthenticate = "Bearer realm=\"careeroc\"";

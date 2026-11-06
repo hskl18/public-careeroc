@@ -208,13 +208,16 @@ async def test_a_caller_without_the_secret_gets_401_before_the_body_is_read() ->
     assert non_ascii.status_code == 401
 
 
-async def test_a_reused_thread_is_refused_instead_of_mixing_two_runs() -> None:
+async def test_a_reused_paused_thread_is_refused_instead_of_restarting_the_review() -> None:
+    from careeroc_agent_runtime.deterministic import DeterministicAgentSuite
+
     app = create_app(
-        settings=AgentRuntimeSettings(shared_secret="test-secret"),
-        suite=FakeAgentSuite(),
+        settings=AgentRuntimeSettings(provider="deterministic", shared_secret="test-secret"),
+        suite=DeterministicAgentSuite(),
         checkpointer=InMemorySaver(),
     )
-    payload = build_request("review:reused-001").model_dump(mode="json", by_alias=True)
+    paused = build_request("review:reused-001").model_copy(update={"latest_resume": None})
+    payload = paused.model_dump(mode="json", by_alias=True)
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             first = await client.post("/v1/resume-mailbox-review", headers=SECRET, json=payload)
@@ -222,3 +225,52 @@ async def test_a_reused_thread_is_refused_instead_of_mixing_two_runs() -> None:
 
     assert first.status_code == 200
     assert second.status_code == 409
+
+
+async def test_finished_decided_and_failed_reviews_keep_no_checkpoints() -> None:
+    from careeroc_agent_runtime.deterministic import DeterministicAgentSuite
+
+    class FailingSuite(FakeAgentSuite):
+        async def synthesize(self, request, analyses):  # type: ignore[override]
+            raise RuntimeError("model outage")
+
+    async def threads_after(suite, requests, decide: str | None = None) -> list[bool]:
+        app = create_app(
+            settings=AgentRuntimeSettings(provider="deterministic", shared_secret="test-secret"),
+            suite=suite,
+            checkpointer=InMemorySaver(),
+        )
+        async with app.router.lifespan_context(app):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                for request in requests:
+                    await client.post(
+                        "/v1/resume-mailbox-review",
+                        headers=SECRET,
+                        json=request.model_dump(mode="json", by_alias=True),
+                    )
+                if decide:
+                    await client.post(
+                        f"/v1/resume-mailbox-review/{decide}/decision",
+                        headers=SECRET,
+                        json={"approved": True},
+                    )
+            graph = app.state.graph
+            return [
+                bool(
+                    (
+                        await graph.aget_state({"configurable": {"thread_id": request.thread_id}})
+                    ).values
+                )
+                for request in requests
+            ]
+
+    # FakeAgentSuite finishes without a person; the deterministic suite proposes a reminder and
+    # pauses for one.
+    finished, failed = build_request("review:forget-001"), build_request("review:forget-002")
+    paused, decided = build_request("review:forget-003"), build_request("review:forget-004")
+
+    assert await threads_after(FakeAgentSuite(), [finished]) == [False]
+    assert await threads_after(FailingSuite(), [failed]) == [False]
+    assert await threads_after(DeterministicAgentSuite(), [paused]) == [True]
+    assert await threads_after(DeterministicAgentSuite(), [decided], decided.thread_id) == [False]

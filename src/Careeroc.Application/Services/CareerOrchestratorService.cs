@@ -92,26 +92,34 @@ public sealed class CareerOrchestratorService
             return resolvedEntry;
         }
 
+        // The decision is already saved, so its reminders and status are saved before the runtime
+        // call and without the request's token: a slow runtime or a closed tab must not lose them.
         var entry = await _dbContext.UserMemoryEntries
-            .FirstAsync(candidate => candidate.Id == resolvedEntry.Id, cancellationToken);
+            .FirstAsync(candidate => candidate.Id == resolvedEntry.Id, CancellationToken.None);
         var approved = resolvedEntry.ConfirmationStatus == "confirmed";
         int? remindersCreated = approved
-            ? await CreateApprovedRemindersAsync(entry.UserId, review.ProposedReminders ?? [], cancellationToken)
+            ? await CreateApprovedRemindersAsync(entry.UserId, review.ProposedReminders ?? [], CancellationToken.None)
             : null;
+        var decided = review with
+        {
+            Status = approved ? "completed" : "rejected",
+            RequiresHumanReview = false,
+            RemindersCreated = remindersCreated
+        };
+        entry.Value = SerializeReview(decided);
+        entry.UpdatedAtUtc = _clock.UtcNow;
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
+
         var outcome = review.ThreadId is { Length: > 0 } threadId
             ? await _agentGraphClient.DecideReviewAsync(threadId, approved, cancellationToken)
             : CareerAgentGraphRunOutcome.Skipped();
+        if (outcome.Response is { } resumed)
+        {
+            entry.Value = SerializeReview(decided with { Trace = BuildGraphTrace(resumed) });
+            entry.UpdatedAtUtc = _clock.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
-        entry.Value = SerializeReview(
-            review with
-            {
-                Status = approved ? "completed" : "rejected",
-                RequiresHumanReview = false,
-                Trace = outcome.Response is { } resumed ? BuildGraphTrace(resumed) : review.Trace,
-                RemindersCreated = remindersCreated
-            });
-        entry.UpdatedAtUtc = _clock.UtcNow;
-        await _dbContext.SaveChangesAsync(cancellationToken);
         return resolvedEntry with { Value = entry.Value, UpdatedAtUtc = entry.UpdatedAtUtc };
     }
 
@@ -124,12 +132,17 @@ public sealed class CareerOrchestratorService
         var applications = await _dbContext.JobApplications
             .Where(application => application.UserId == userId && applicationIds.Contains(application.Id))
             .ToListAsync(cancellationToken);
+        // The same rule the gate applied when it proposed them: a reminder that opened since then
+        // must not be retitled by the agent's proposal.
+        var withOpenReminder = await LoadApplicationsWithOpenRemindersAsync(userId, cancellationToken);
         var workflow = new ApplicationWorkflowService(_dbContext, _clock);
         var created = 0;
         foreach (var proposal in proposals)
         {
             var application = applications.FirstOrDefault(candidate => candidate.Id == proposal.ApplicationId);
-            if (application is null || ApplicationWorkflowService.IsTerminalStatus(application.Status))
+            if (application is null ||
+                ApplicationWorkflowService.IsTerminalStatus(application.Status) ||
+                withOpenReminder.Contains(application.Id))
             {
                 continue;
             }
@@ -518,6 +531,25 @@ public sealed class CareerOrchestratorService
                     candidate.ConfirmationStatus == confirmationStatus)
             .OrderByDescending(candidate => candidate.UpdatedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (confirmationStatus == "confirmed")
+        {
+            // A newer review that passed the gate supersedes any review still waiting for a decision;
+            // approving the old one from an open tab would copy it over this one.
+            var superseded = await _dbContext.UserMemoryEntries
+                .Where(
+                    candidate =>
+                        candidate.UserId == userId &&
+                        candidate.Kind == ReviewMemoryKind &&
+                        candidate.Key == ReviewMemoryKey &&
+                        candidate.ConfirmationStatus == "pending")
+                .ToListAsync(cancellationToken);
+            foreach (var pending in superseded)
+            {
+                pending.ConfirmationStatus = "rejected";
+                pending.UpdatedAtUtc = nowUtc;
+            }
+        }
 
         if (entry is null)
         {

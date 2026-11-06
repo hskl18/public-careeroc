@@ -19,6 +19,25 @@ def _first(limit: int) -> BeforeValidator:
     return BeforeValidator(cut)
 
 
+def _clamped(low: int, high: int) -> BeforeValidator:
+    # A model that proposes 45 days should get 30, not spend a retry on a rejected answer.
+    def clamp(value: Any) -> Any:
+        return (
+            max(low, min(high, value))
+            if isinstance(value, int) and not isinstance(value, bool)
+            else value
+        )
+
+    return BeforeValidator(clamp)
+
+
+def _shortened(limit: int) -> BeforeValidator:
+    def cut(value: Any) -> Any:
+        return value.strip()[:limit] if isinstance(value, str) else value
+
+    return BeforeValidator(cut)
+
+
 class ApplicationEvidence(ContractModel):
     id: str = Field(min_length=1, max_length=64)
     company: str = Field(min_length=1, max_length=200)
@@ -90,8 +109,8 @@ class SpecialistAnalysis(ContractModel):
 
 class ReminderProposal(ContractModel):
     application_id: str = Field(min_length=1, max_length=64)
-    title: str = Field(min_length=1, max_length=160)
-    due_in_days: int = Field(ge=1, le=30)
+    title: Annotated[str, _shortened(160)] = Field(min_length=1, max_length=160)
+    due_in_days: Annotated[int, _clamped(1, 30)] = Field(ge=1, le=30)
 
 
 class SynthesizedReview(ContractModel):
