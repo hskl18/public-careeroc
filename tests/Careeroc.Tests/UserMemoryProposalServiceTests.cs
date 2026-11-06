@@ -152,7 +152,7 @@ public sealed class UserMemoryProposalServiceTests
             ApplicationDefaults.DefaultUserEmail);
         Assert.Equal(read.Id, changed.Id);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<UserFacingException>(
             () => service.ResolveProposalAsync(
                 read.Id,
                 new ResolveUserMemoryProposalRequest("confirm", read.UpdatedAtUtc),

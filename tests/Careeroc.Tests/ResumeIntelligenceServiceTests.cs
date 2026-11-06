@@ -144,7 +144,7 @@ public sealed class ResumeIntelligenceServiceTests
         await using var dbContext = TestDbContextFactory.Create(databaseName);
         var service = new ResumeIntelligenceService(dbContext, new TestClock(new DateTimeOffset(2026, 4, 26, 12, 0, 0, TimeSpan.Zero)));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<UserFacingException>(
             () => service.CreateResumeAsync(
                 new CreateResumeRequest("Short", "text", "too short"),
                 ApplicationDefaults.DefaultUserEmail));

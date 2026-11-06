@@ -56,7 +56,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -127,7 +127,7 @@ public sealed class EmailIntelligenceServiceTests
         await dbContext.SaveChangesAsync();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(email.Id);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -177,7 +177,7 @@ public sealed class EmailIntelligenceServiceTests
         dbContext.AddRange(user, inboxAccount, interview, offer);
         await dbContext.SaveChangesAsync();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -261,7 +261,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -336,7 +336,7 @@ public sealed class EmailIntelligenceServiceTests
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(first.Id);
         await queue.EnqueueAsync(reply.Id);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -394,7 +394,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -469,7 +469,7 @@ public sealed class EmailIntelligenceServiceTests
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -551,7 +551,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -627,7 +627,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -690,7 +690,7 @@ public sealed class EmailIntelligenceServiceTests
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
         var localDueDate = new DateTimeOffset(2026, 4, 12, 9, 30, 0, TimeSpan.FromHours(-7));
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -782,7 +782,7 @@ public sealed class EmailIntelligenceServiceTests
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
         var localDueDate = new DateTimeOffset(2026, 4, 4, 9, 0, 0, TimeSpan.FromHours(-7));
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -863,7 +863,7 @@ public sealed class EmailIntelligenceServiceTests
         await dbContext.SaveChangesAsync();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(email.Id);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -936,7 +936,7 @@ public sealed class EmailIntelligenceServiceTests
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(assessment.Id);
         var deadline = new DateTimeOffset(2026, 4, 10, 9, 0, 0, TimeSpan.Zero);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -1004,7 +1004,7 @@ public sealed class EmailIntelligenceServiceTests
         await dbContext.SaveChangesAsync();
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         await queue.EnqueueAsync(scam.Id);
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -1075,7 +1075,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1159,7 +1159,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -1230,7 +1230,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1298,7 +1298,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new ThrowingRecruitingEmailParser(),
@@ -1361,7 +1361,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1429,7 +1429,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1505,7 +1505,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1583,7 +1583,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new StubRecruitingEmailParser(
@@ -1663,7 +1663,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),
@@ -1730,7 +1730,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new ThrowingRecruitingEmailParser(),
@@ -1793,7 +1793,7 @@ public sealed class EmailIntelligenceServiceTests
         await queue.EnqueueAsync(email.Id);
         var workflowService = new ApplicationWorkflowService(dbContext, clock);
 
-        var service = new EmailIntelligenceService(
+        var service = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new ThrowingRecruitingEmailParser(),

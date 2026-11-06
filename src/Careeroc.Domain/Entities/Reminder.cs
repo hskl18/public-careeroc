@@ -10,7 +10,7 @@ public sealed class Reminder
     public string Title { get; set; } = string.Empty;
     public DateTimeOffset DueAtUtc { get; set; }
     public ReminderStatus Status { get; set; } = ReminderStatus.Open;
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? EvidenceRefreshedAtUtc { get; set; }
     public JobApplication JobApplication { get; set; } = null!;
 }

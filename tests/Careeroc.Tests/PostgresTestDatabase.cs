@@ -1,3 +1,4 @@
+using Careeroc.Infrastructure.Time;
 using Careeroc.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -51,7 +52,8 @@ internal sealed class PostgresTestDatabase : IAsyncDisposable
             new DbContextOptionsBuilder<CareerocDbContext>()
                 .UseNpgsql(ConnectionString)
                 .UseSnakeCaseNamingConvention()
-                .Options);
+                .Options,
+            new SystemClock());
     }
 
     public async ValueTask DisposeAsync()

@@ -21,23 +21,6 @@ public sealed class EmailSyncService
         ICareerocDbContext dbContext,
         IInboxEmailSource inboxEmailSource,
         IEmailProcessingQueue emailProcessingQueue,
-        IClock clock,
-        ILogger<EmailSyncService> logger)
-        : this(
-            dbContext,
-            inboxEmailSource,
-            emailProcessingQueue,
-            NoopLeaseManager.Instance,
-            clock,
-            logger)
-    {
-    }
-
-    [ActivatorUtilitiesConstructor]
-    public EmailSyncService(
-        ICareerocDbContext dbContext,
-        IInboxEmailSource inboxEmailSource,
-        IEmailProcessingQueue emailProcessingQueue,
         ILeaseManager leaseManager,
         IClock clock,
         ILogger<EmailSyncService> logger)

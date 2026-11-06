@@ -1,3 +1,4 @@
+using Careeroc.Api.Background;
 using Careeroc.Application;
 using Careeroc.Application.Models;
 using Careeroc.Application.Services;
@@ -37,11 +38,9 @@ public static class InboxEndpoints
                 "/api/inbox-accounts/sync-now",
                 (
                     HttpRequest request,
-                    IServiceScopeFactory scopeFactory,
+                    SyncNowQueue syncNowQueue,
                     IMemoryCache memoryCache,
-                    IHostApplicationLifetime applicationLifetime,
-                    IClock clock,
-                    ILoggerFactory loggerFactory) =>
+                    IClock clock) =>
                 {
                     var userEmail = RequestUserContext.GetUserEmail(request);
                     var throttleKey = $"inbox-sync-now:{userEmail}";
@@ -52,31 +51,15 @@ public static class InboxEndpoints
                             statusCode: StatusCodes.Status429TooManyRequests);
                     }
 
+                    if (!syncNowQueue.TryEnqueue(userEmail!))
+                    {
+                        return Results.Json(
+                            new { error = "sync_now_busy", retryAfterSeconds = 30 },
+                            statusCode: StatusCodes.Status429TooManyRequests);
+                    }
+
                     var attemptedAtUtc = clock.UtcNow;
                     memoryCache.Set(throttleKey, true, TimeSpan.FromSeconds(30));
-                    var logger = loggerFactory.CreateLogger("InboxSyncNow");
-                    _ = Task.Run(
-                        async () =>
-                        {
-                            try
-                            {
-                                using var scope = scopeFactory.CreateScope();
-                                var coordinator = scope.ServiceProvider.GetRequiredService<InboxSyncCoordinator>();
-                                await coordinator.RunForUserAsync(userEmail, applicationLifetime.ApplicationStopping);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                            }
-                            catch (Exception exception)
-                            {
-                                logger.LogWarning(
-                                    exception,
-                                    "User-triggered inbox sync failed for {UserEmail}.",
-                                    userEmail);
-                            }
-                        },
-                        CancellationToken.None);
-
                     return Results.Accepted(
                         value: new SyncNowResponseDto(true, attemptedAtUtc));
                 })
@@ -114,7 +97,7 @@ public static class InboxEndpoints
                             request.EmailAddress);
                         return Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
@@ -169,7 +152,7 @@ public static class InboxEndpoints
 
                         return Results.Redirect(authorizationUrl);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogOAuthEventAsync(
                             request,
@@ -242,7 +225,7 @@ public static class InboxEndpoints
 
                         return Results.Redirect(BuildReturnUrl(completed.ReturnUrl, completed));
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         var rejected = new GmailOAuthCompletionResult(
                             "/app/inbox#mail-sync",
@@ -291,7 +274,7 @@ public static class InboxEndpoints
                             request.BackfillMonths?.ToString());
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
@@ -367,7 +350,7 @@ public static class InboxEndpoints
 
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             request,
@@ -414,7 +397,7 @@ public static class InboxEndpoints
 
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             request,
@@ -445,7 +428,7 @@ public static class InboxEndpoints
         if (!Uri.TryCreate(publicWebBaseUrl, UriKind.Absolute, out var configuredWebBaseUrl) ||
             !IsHttpUrl(configuredWebBaseUrl))
         {
-            throw new InvalidOperationException(
+            throw new UserFacingException(
                 "Gmail sign-in needs the web app's public URL. Set NEXT_PUBLIC_SITE_URL on the API.");
         }
 
@@ -464,7 +447,7 @@ public static class InboxEndpoints
             });
     }
 
-    private static string ToOAuthCallbackErrorMessage(InvalidOperationException exception)
+    private static string ToOAuthCallbackErrorMessage(UserFacingException exception)
     {
         return exception.Message.Contains(
             "No pending Gmail authorization session",

@@ -1,3 +1,5 @@
+using Careeroc.Infrastructure.Time;
+using Careeroc.Application.Abstractions;
 using Careeroc.Application.Models;
 using Careeroc.Infrastructure.Email;
 using Careeroc.Infrastructure.Persistence;
@@ -13,6 +15,7 @@ public sealed class DatabaseModelCallEventRecorderTests
     public async Task RecordAsync_PersistsModelCallEvent()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IClock>(new SystemClock());
         var databaseName = $"{nameof(DatabaseModelCallEventRecorderTests)}-{Guid.NewGuid()}";
         services.AddDbContext<CareerocDbContext>(
             options => options.UseInMemoryDatabase(databaseName));

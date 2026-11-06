@@ -287,14 +287,14 @@ public sealed class DashboardInboxCheckServiceTests
     {
         var queue = new DatabaseEmailProcessingQueue(dbContext, clock);
         var applicationWorkflowService = new ApplicationWorkflowService(dbContext, clock);
-        var emailSyncService = new EmailSyncService(
+        var emailSyncService = TestServices.EmailSyncService(
             dbContext,
             source,
             queue,
             clock,
             NullLogger<EmailSyncService>.Instance);
         var emailAnalysisMaintenanceService = new EmailAnalysisMaintenanceService(dbContext, queue);
-        var emailIntelligenceService = new EmailIntelligenceService(
+        var emailIntelligenceService = TestServices.EmailIntelligenceService(
             dbContext,
             queue,
             new HeuristicRecruitingEmailParser(),

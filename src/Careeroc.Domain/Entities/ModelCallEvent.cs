@@ -3,7 +3,7 @@ namespace Careeroc.Domain.Entities;
 public sealed class ModelCallEvent
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public DateTimeOffset OccurredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset OccurredAtUtc { get; set; }
     public string Provider { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public string Purpose { get; set; } = string.Empty;
