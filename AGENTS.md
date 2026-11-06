@@ -136,6 +136,7 @@ Browsers go through the same-origin proxy at `/api/careeroc/*`, which signs each
 - The Gmail OAuth callback reaches the API through the web app, signed as the user who started the connection.
 - Every `/api/*` route needs a signed user; a route that must work without one needs an exemption in `ApiUserContextMiddleware` and a partition in the global rate limiter in `Program.cs`.
 - Never log OAuth tokens, secrets, or email bodies.
+  Name a person in logs and spans by `CareerocTelemetry.UserKey`, not their email address, and pass request values through `SensitiveDataRedactor`.
 
 After changing auth, signing, proxy routes, OAuth, tokens, rate limiting, or user scoping, rerun the full test loop and walk sign-in, review, and application detail end to end.
 

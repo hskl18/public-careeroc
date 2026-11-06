@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Application.Abstractions;
 
@@ -113,8 +114,8 @@ public sealed class InboxSyncWorker : BackgroundService
         var result = await inboxSyncCoordinator.RunForUserAsync(userEmail, cancellationToken);
 
         _logger.LogInformation(
-            "Automatic inbox sync finished for user {UserEmail} in {ElapsedMs}ms.",
-            userEmail ?? "(all users)",
+            "Automatic inbox sync finished for user {UserKey} in {ElapsedMs}ms.",
+            userEmail is null ? "(all users)" : CareerocTelemetry.UserKey(userEmail),
             (_clock.UtcNow - startedAtUtc).TotalMilliseconds);
 
         return new WorkerUserSyncResult(

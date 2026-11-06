@@ -1,4 +1,5 @@
 using Careeroc.Api.Endpoints;
+using Careeroc.Application;
 using Careeroc.Application.Security;
 using Careeroc.Domain.Entities;
 using Careeroc.Infrastructure.Persistence;
@@ -25,35 +26,35 @@ internal sealed class ApiSecurityEventLogger
         _logger.LogWarning(
             "SecurityEvent {EventType} rejected request {Method} {Path} from {RemoteIp}. Error={Error} UserAgent={UserAgent}",
             "api.request_signature_rejected",
-            context.Request.Method,
-            context.Request.Path,
+            NormalizeValue(context.Request.Method),
+            NormalizeValue(context.Request.Path.Value),
             ApiRateLimitPartitioner.GetRemoteIp(context),
-            error,
+            NormalizeValue(error),
             NormalizeValue(context.Request.Headers.UserAgent.ToString()));
     }
 
     public void LogRateLimitRejected(HttpContext context, string partitionKey, TimeSpan? retryAfter)
     {
         _logger.LogWarning(
-            "SecurityEvent {EventType} rate limited request {Method} {Path} from {RemoteIp}. Partition={PartitionKey} RetryAfterSeconds={RetryAfterSeconds} UserEmail={UserEmail}",
+            "SecurityEvent {EventType} rate limited request {Method} {Path} from {RemoteIp}. Partition={PartitionKey} RetryAfterSeconds={RetryAfterSeconds} UserKey={UserKey}",
             "api.rate_limited",
-            context.Request.Method,
-            context.Request.Path,
+            NormalizeValue(context.Request.Method),
+            NormalizeValue(context.Request.Path.Value),
             ApiRateLimitPartitioner.GetRemoteIp(context),
-            partitionKey,
+            NormalizeValue(partitionKey),
             retryAfter is null ? null : Math.Ceiling(retryAfter.Value.TotalSeconds),
-            NormalizeValue(RequestUserContext.GetUserEmail(context.Request)));
+            LogUserKey(RequestUserContext.GetUserEmail(context.Request)));
     }
 
     public async Task LogAccessDeniedAsync(HttpContext context, string userEmail)
     {
         _logger.LogWarning(
-            "SecurityEvent {EventType} rejected request {Method} {Path} from {RemoteIp}. UserEmail={UserEmail}",
+            "SecurityEvent {EventType} rejected request {Method} {Path} from {RemoteIp}. UserKey={UserKey}",
             "api.access_denied",
-            context.Request.Method,
-            context.Request.Path,
+            NormalizeValue(context.Request.Method),
+            NormalizeValue(context.Request.Path.Value),
             ApiRateLimitPartitioner.GetRemoteIp(context),
-            NormalizeValue(userEmail));
+            LogUserKey(userEmail));
 
         await PersistAuditEventAsync(
             new AuditEvent
@@ -77,14 +78,14 @@ internal sealed class ApiSecurityEventLogger
         string? detail = null)
     {
         _logger.LogInformation(
-            "AuditEvent {EventType} {Outcome} resource {ResourceType}/{ResourceId} for {UserEmail}. Method={Method} Path={Path} RemoteIp={RemoteIp} Detail={Detail}",
-            eventType,
-            outcome,
-            resourceType,
+            "AuditEvent {EventType} {Outcome} resource {ResourceType}/{ResourceId} for {UserKey}. Method={Method} Path={Path} RemoteIp={RemoteIp} Detail={Detail}",
+            NormalizeValue(eventType),
+            NormalizeValue(outcome),
+            NormalizeValue(resourceType),
             resourceId,
-            NormalizeValue(userEmail),
-            request.Method,
-            request.Path,
+            LogUserKey(userEmail),
+            NormalizeValue(request.Method),
+            NormalizeValue(request.Path.Value),
             ApiRateLimitPartitioner.GetRemoteIp(request.HttpContext),
             NormalizeValue(detail));
 
@@ -112,13 +113,13 @@ internal sealed class ApiSecurityEventLogger
         string? detail = null)
     {
         _logger.LogInformation(
-            "AuditEvent {EventType} {Outcome} for {UserEmail}. TargetEmail={TargetEmail} Method={Method} Path={Path} RemoteIp={RemoteIp} Detail={Detail}",
-            eventType,
-            outcome,
-            NormalizeValue(userEmail),
-            NormalizeValue(targetEmail),
-            request.Method,
-            request.Path,
+            "AuditEvent {EventType} {Outcome} for {UserKey}. TargetKey={TargetKey} Method={Method} Path={Path} RemoteIp={RemoteIp} Detail={Detail}",
+            NormalizeValue(eventType),
+            NormalizeValue(outcome),
+            LogUserKey(userEmail),
+            LogUserKey(targetEmail),
+            NormalizeValue(request.Method),
+            NormalizeValue(request.Path.Value),
             ApiRateLimitPartitioner.GetRemoteIp(request.HttpContext),
             NormalizeValue(detail));
 
@@ -136,9 +137,17 @@ internal sealed class ApiSecurityEventLogger
             });
     }
 
+    // Every value in a log line goes through the redactor: it drops email addresses and tokens, and
+    // control characters that could forge a line.
     private static string NormalizeValue(string? value)
     {
         return SensitiveDataRedactor.Redact(value, maxLength: 500) ?? "n/a";
+    }
+
+    // Logs name a person by the same hashed key as spans; the audit_events row keeps the address.
+    private static string LogUserKey(string? email)
+    {
+        return string.IsNullOrWhiteSpace(email) ? "n/a" : CareerocTelemetry.UserKey(email);
     }
 
     private async Task PersistAuditEventAsync(AuditEvent auditEvent)
