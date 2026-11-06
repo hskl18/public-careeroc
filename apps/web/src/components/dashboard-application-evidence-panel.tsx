@@ -8,6 +8,7 @@ import { hasUnknownRole as parserHasUnknownRole } from "@/lib/parser-quality";
 import type {
   ApplicationCard,
   DashboardResponse,
+  PendingAction,
   RecentActivity,
 } from "@/lib/dashboard";
 import { deriveNextAction, describePriority, nextActionToneClass } from "@/lib/application-display";
@@ -30,6 +31,10 @@ export function DashboardEmptySelectedPanel({ viewLabel }: { viewLabel: string }
   return (
     <p className="text-sm text-[var(--text-tertiary)]">Nothing in {viewLabel}.</p>
   );
+}
+
+function isAssessmentDeadline(reminder: PendingAction) {
+  return reminder.source === "Assessment Deadline";
 }
 
 export function DashboardApplicationEvidencePanel({
@@ -56,11 +61,12 @@ export function DashboardApplicationEvidencePanel({
     nextAction.tone === "action" &&
     (Boolean(primaryReminderId) || application.status === "Oa Pending");
   const primaryCompletionKey = `${application.id}:${primaryReminderId ?? "stage"}:Completed`;
-  // Finishing the assessment, or the stage itself when no task is attached, moves an assessment
-  // stage back to Applied; any other task leaves it. A reminder outside the dashboard's six has no
-  // known type, so it leaves the stage too.
+  // Finishing the assessment reminder, or the stage itself when no task is attached, moves an
+  // assessment stage back to Applied; any other task leaves it. The reminder's own type decides:
+  // taskType also says "assessment" for a follow-up whose evidence email is the OA invitation. A
+  // reminder outside the dashboard's six has no known type, so it leaves the stage too.
   const primaryCompletesStage = primaryCompletableReminder
-    ? primaryCompletableReminder.taskType === "assessment"
+    ? isAssessmentDeadline(primaryCompletableReminder)
     : !primaryReminderId;
   const completingPrimaryAction = pendingCompletionKey === primaryCompletionKey;
   const otherReminders = linkedReminders.filter(
@@ -160,7 +166,7 @@ export function DashboardApplicationEvidencePanel({
                 type="button"
                 className="shrink-0 text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                 disabled={pendingCompletionKey !== null}
-                onClick={() => onCompleteAction(application, reminder.id, reminder.taskType === "assessment")}
+                onClick={() => onCompleteAction(application, reminder.id, isAssessmentDeadline(reminder))}
               >
                 {pendingCompletionKey === `${application.id}:${reminder.id}:Completed` ? "…" : "Done"}
               </button>
