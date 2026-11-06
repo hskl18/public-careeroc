@@ -3,7 +3,7 @@ namespace Careeroc.Domain.Entities;
 public sealed class AuditEvent
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public DateTimeOffset OccurredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset OccurredAtUtc { get; set; }
     public string EventType { get; set; } = string.Empty;
     public string Outcome { get; set; } = string.Empty;
     public string? UserEmail { get; set; }

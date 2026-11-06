@@ -1,3 +1,4 @@
+using Careeroc.Infrastructure.Time;
 using Careeroc.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,6 @@ internal static class TestDbContextFactory
             .UseInMemoryDatabase(databaseName)
             .Options;
 
-        return new CareerocDbContext(options);
+        return new CareerocDbContext(options, new SystemClock());
     }
 }

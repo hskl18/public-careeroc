@@ -15,8 +15,8 @@ public sealed class JobApplication
     public string? SeniorityLevel { get; set; }
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Applied;
     public int Priority { get; set; } = 3;
-    public DateTimeOffset LastActivityAtUtc { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset LastActivityAtUtc { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public User User { get; set; } = null!;
     public ICollection<InboxEmail> Emails { get; set; } = new List<InboxEmail>();
     public ICollection<JobApplicationEvent> Events { get; set; } = new List<JobApplicationEvent>();
