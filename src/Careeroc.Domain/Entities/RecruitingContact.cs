@@ -13,9 +13,9 @@ public sealed class RecruitingContact
     public RecruitingContactType? ContactType { get; set; }
     public decimal? Confidence { get; set; }
     public int MessageCount { get; set; }
-    public DateTimeOffset FirstSeenAtUtc { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset LastSeenAtUtc { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset FirstSeenAtUtc { get; set; }
+    public DateTimeOffset LastSeenAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
     public User User { get; set; } = null!;
     public ICollection<InboxEmail> Emails { get; set; } = new List<InboxEmail>();
 }

@@ -159,7 +159,7 @@ After changing auth, signing, proxy routes, OAuth, tokens, rate limiting, or use
 
 ### Backend
 
-- Inject `IClock` instead of calling `DateTime.UtcNow`; persisted timestamps are UTC with `*AtUtc` names.
+- Inject `IClock` instead of calling `DateTime.UtcNow`; persisted timestamps are UTC with `*AtUtc` names. Entities have no wall-clock defaults: `CareerocDbContext` stamps a new row's unset timestamps from `IClock` when it saves.
 - Every persisted entity has an EF configuration class in `Infrastructure/Persistence/Configurations`; column names stay snake_case through the context's convention.
 - Do not edit a migration that has shipped; add a new one.
 - Do not swallow exceptions; on parser or model failure, log a warning or error and use the deterministic path.

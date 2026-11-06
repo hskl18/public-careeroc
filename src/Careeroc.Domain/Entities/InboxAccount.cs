@@ -10,7 +10,7 @@ public sealed class InboxAccount
     public string? AccessTokenEncrypted { get; set; }
     public string? RefreshTokenEncrypted { get; set; }
     public DateTimeOffset? LastSyncedAtUtc { get; set; }
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public User User { get; set; } = null!;
     public ICollection<InboxEmail> Emails { get; set; } = new List<InboxEmail>();
 }

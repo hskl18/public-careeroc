@@ -6,9 +6,12 @@ namespace Careeroc.Infrastructure.Persistence;
 
 public sealed class CareerocDbContext : DbContext, ICareerocDbContext
 {
-    public CareerocDbContext(DbContextOptions<CareerocDbContext> options)
+    private readonly IClock _clock;
+
+    public CareerocDbContext(DbContextOptions<CareerocDbContext> options, IClock clock)
         : base(options)
     {
+        _clock = clock;
     }
 
     public DbSet<User> Users => Set<User>();
@@ -31,5 +34,36 @@ public sealed class CareerocDbContext : DbContext, ICareerocDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CareerocDbContext).Assembly);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampNewRows();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampNewRows();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    // Entities carry no wall-clock defaults: a new row's timestamps that a service left unset take
+    // the clock's time here, so tests with a fixed clock see the same times as the code under test.
+    private void StampNewRows()
+    {
+        var now = _clock.UtcNow;
+        foreach (var entry in ChangeTracker.Entries().Where(entry => entry.State == EntityState.Added))
+        {
+            foreach (var property in entry.Properties)
+            {
+                if (property.Metadata.ClrType == typeof(DateTimeOffset) &&
+                    property.CurrentValue is DateTimeOffset value &&
+                    value == default)
+                {
+                    property.CurrentValue = now;
+                }
+            }
+        }
     }
 }

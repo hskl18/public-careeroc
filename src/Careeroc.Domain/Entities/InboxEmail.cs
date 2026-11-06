@@ -33,7 +33,7 @@ public sealed class InboxEmail
     public string? ProcessingNotes { get; set; }
     public string? ProcessingTraceJson { get; set; }
     public DateTimeOffset? ProcessedAtUtc { get; set; }
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public InboxAccount InboxAccount { get; set; } = null!;
     public JobApplication? JobApplication { get; set; }
     public RecruitingContact? RecruitingContact { get; set; }
