@@ -19,7 +19,11 @@ type DashboardApplicationEvidencePanelProps = {
   pendingCompletionKey: string | null;
   actionNotice: string | null;
   actionError: string | null;
-  onCompleteAction: (application: ApplicationCard, reminderId?: string) => void;
+  onCompleteAction: (
+    application: ApplicationCard,
+    reminderId: string | undefined,
+    completesStage: boolean,
+  ) => void;
 };
 
 export function DashboardEmptySelectedPanel({ viewLabel }: { viewLabel: string }) {
@@ -101,7 +105,7 @@ export function DashboardApplicationEvidencePanel({
             type="button"
             className="btn btn-secondary btn-sm mt-2"
             disabled={pendingCompletionKey !== null}
-            onClick={() => onCompleteAction(application, primaryReminderId)}
+            onClick={() => onCompleteAction(application, primaryReminderId, true)}
           >
             {completingPrimaryAction ? (
               <>
@@ -150,7 +154,7 @@ export function DashboardApplicationEvidencePanel({
                 type="button"
                 className="shrink-0 text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                 disabled={pendingCompletionKey !== null}
-                onClick={() => onCompleteAction(application, reminder.id)}
+                onClick={() => onCompleteAction(application, reminder.id, false)}
               >
                 {pendingCompletionKey === `${application.id}:${reminder.id}:Completed` ? "…" : "Done"}
               </button>

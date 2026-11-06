@@ -94,7 +94,7 @@ function ApplicationRow({
   const parserError = application.requiresReview;
   // Relative times depend on the current time, so they appear once the page has hydrated.
   const hydrated = useHydrated();
-  const due = hydrated ? describeDue(nextAction.due) : null;
+  const due = hydrated ? describeDue(nextAction.due, timeZoneId) : null;
   const dueRelative = due?.relative ?? null;
   const duePill = due?.pill ?? null;
 

@@ -203,12 +203,18 @@ function nextActionFromReminder(reminder: PendingAction): ApplicationNextAction 
   };
 }
 
+export type CompletedAction = {
+  applicationId: string;
+  reminderId?: string;
+  // Only finishing the application's main task moves an assessment stage back to Applied.
+  completesStage: boolean;
+};
+
 // What the dashboard shows after a task is marked done, until the refreshed one arrives: the
-// reminder is gone, an assessment stage moves back to Applied, and the next action is recomputed.
+// reminder is gone, the stage moves if the main task was done, and the next action is recomputed.
 export function completeApplicationActionLocally(
   dashboard: DashboardResponse,
-  applicationId: string,
-  reminderId?: string,
+  { applicationId, reminderId, completesStage }: CompletedAction,
   now = new Date().toISOString(),
 ): DashboardResponse {
   const pendingActions = reminderId
@@ -221,7 +227,8 @@ export function completeApplicationActionLocally(
       return application;
     }
 
-    const status = application.status === "Oa Pending" ? "Applied" : application.status;
+    const status =
+      completesStage && application.status === "Oa Pending" ? "Applied" : application.status;
     const remainingReminder = pendingActions.find(
       (action) => action.jobApplicationId === application.id,
     );

@@ -104,7 +104,11 @@ describe("completeApplicationActionLocally", () => {
     const application = card("a", { status: "Oa Pending", actionRequired: true });
     const dashboard = dashboardWith([application], [reminder("r1", "a")], 1);
 
-    const next = completeApplicationActionLocally(dashboard, "a", "r1", "2026-11-05T12:00:00Z");
+    const next = completeApplicationActionLocally(
+      dashboard,
+      { applicationId: "a", reminderId: "r1", completesStage: true },
+      "2026-11-05T12:00:00Z",
+    );
 
     expect(next.pendingActions).toEqual([]);
     expect(next.metrics.needsAction).toBe(0);
@@ -120,9 +124,27 @@ describe("completeApplicationActionLocally", () => {
     const application = card("a", { actionRequired: true });
     const dashboard = dashboardWith([application], [reminder("r1", "a"), reminder("r2", "a")], 1);
 
-    const next = completeApplicationActionLocally(dashboard, "a", "r1");
+    const next = completeApplicationActionLocally(dashboard, {
+      applicationId: "a",
+      reminderId: "r1",
+      completesStage: true,
+    });
 
     expect(next.metrics.needsAction).toBe(1);
     expect(next.applications[0].nextAction).toMatchObject({ sourceReminderId: "r2", tone: "action" });
   });
+
+  it("keeps an assessment stage when another task on the application is done", () => {
+    const application = card("a", { status: "Oa Pending", actionRequired: true });
+    const dashboard = dashboardWith([application], [reminder("r1", "a"), reminder("r2", "a")], 1);
+
+    const next = completeApplicationActionLocally(dashboard, {
+      applicationId: "a",
+      reminderId: "r2",
+      completesStage: false,
+    });
+
+    expect(next.applications[0].status).toBe("Oa Pending");
+  });
 });
+

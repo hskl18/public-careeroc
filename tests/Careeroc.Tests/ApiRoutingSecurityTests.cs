@@ -694,6 +694,35 @@ public sealed class ApiRoutingSecurityTests
     }
 
     [Fact]
+    public async Task AWriteMakesTheWritersCachedDashboardFresh()
+    {
+        await using var factory = new CareerocApiFactory();
+        var seed = await factory.SeedTwoUsersAsync();
+        using var client = factory.CreateClient();
+
+        async Task<string?> StudentApplicationStatusAsync()
+        {
+            using var response = await SendSignedAsync(client, HttpMethod.Get, "/api/dashboard?view=all", seed.StudentEmail);
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return document.RootElement.GetProperty("applications").EnumerateArray()
+                .Single(application => application.GetProperty("id").GetGuid() == seed.StudentApplicationId)
+                .GetProperty("status").GetString();
+        }
+
+        // The first read fills the 20-second cache.
+        Assert.Equal("Interviewing", await StudentApplicationStatusAsync());
+        using var update = await SendSignedJsonAsync(
+            client,
+            $"/api/applications/{seed.StudentApplicationId}/status",
+            new { status = "Offer", priority = 1 },
+            seed.StudentEmail,
+            HttpMethod.Patch);
+        Assert.True(update.IsSuccessStatusCode);
+
+        Assert.Equal("Offer", await StudentApplicationStatusAsync());
+    }
+
+    [Fact]
     public async Task AccessTokensStopWorkingWhenTheOwnerLeavesTheAllowlist()
     {
         await using var factory = new CareerocApiFactory(

@@ -77,7 +77,7 @@ In Development the sync worker runs every 300 seconds; hosted deployments should
 The web app can ask for a bounded inbox check, but it never owns the pipeline.
 The Sync inbox button puts the user on a bounded queue that `SyncNowWorker` drains four users at a time, and a full queue answers 429.
 A user stays on it until their sync finishes, so a click during a sync asks for one more run after it instead of a second one beside it.
-Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`, and a refresh after a change reloads the whole dashboard once.
+Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`; any successful write by that user starts a fresh cache, so a refresh after a change reloads the whole dashboard once and shows it.
 Gmail push notifications are not implemented.
 
 ## Resume intelligence

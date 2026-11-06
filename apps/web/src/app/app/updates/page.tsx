@@ -70,7 +70,8 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
             </nav>
             <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
               <span className="tabular-nums text-[var(--text-tertiary)]">
-                {filteredActivity.length} of the latest {dashboard.recentActivity.length} updates
+                {filteredActivity.length} of the latest {dashboard.recentActivity.length} update
+                {dashboard.recentActivity.length === 1 ? "" : "s"}
               </span>
             </div>
           </div>
