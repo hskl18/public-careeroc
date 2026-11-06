@@ -65,19 +65,34 @@ export type DueDescription = {
   pill: { label: string; className: string } | null;
 };
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+// The calendar day of a moment in the profile's time zone, as a day number, so "today" means the
+// same day as the timestamps shown beside it.
+function dayNumber(date: Date, timeZoneId: string) {
+  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZoneId,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(date)
+    .split("-")
+    .map(Number);
+  return Date.UTC(year, month - 1, day) / 86_400_000;
 }
 
-// The row's "tomorrow" and its "Due today" pill come from one count of calendar days in the
-// viewer's time, so they can never disagree.
-export function describeDue(value: string | null, now = new Date()): DueDescription {
+// The row's "tomorrow" and its "Due today" pill come from one count of calendar days, so they can
+// never disagree.
+export function describeDue(
+  value: string | null,
+  timeZoneId: string,
+  now = new Date(),
+): DueDescription {
   const target = value ? new Date(value) : null;
   if (!target || Number.isNaN(target.getTime())) {
     return { relative: null, pill: null };
   }
 
-  const days = Math.round((startOfDay(target) - startOfDay(now)) / 86_400_000);
+  const days = dayNumber(target, timeZoneId) - dayNumber(now, timeZoneId);
   const relative =
     days === 0
       ? "today"

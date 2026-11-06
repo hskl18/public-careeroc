@@ -14,6 +14,7 @@ using Careeroc.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -172,6 +173,21 @@ app.UseWhen(
     context => PersonalAccessTokenMiddleware.AppliesTo(context.Request.Path),
     branch => branch.UseMiddleware<PersonalAccessTokenMiddleware>());
 app.UseRateLimiter();
+// A successful write makes the writer's cached dashboard stale; see DashboardCacheGeneration.
+app.Use(
+    async (context, next) =>
+    {
+        await next(context);
+        if (!HttpMethods.IsGet(context.Request.Method) &&
+            !HttpMethods.IsHead(context.Request.Method) &&
+            context.Response.StatusCode < 400 &&
+            RequestUserContext.GetUserEmail(context.Request) is { } writer)
+        {
+            DashboardCacheGeneration.Advance(
+                context.RequestServices.GetRequiredService<IMemoryCache>(),
+                writer);
+        }
+    });
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithName("HealthCheck");
 app.MapGet(
     "/health/ready",

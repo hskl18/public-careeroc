@@ -1,5 +1,8 @@
+"use client";
+
 import type { Route } from "next";
 import Link from "next/link";
+import { useState } from "react";
 import type {
   ApplicationCard,
   DashboardResponse,
@@ -170,6 +173,8 @@ export function AttentionSection({
 }) {
   const isCompletelyEmpty =
     pendingActions.length === 0 && attentionAccounts.length === 0;
+  // The reminder whose actions are swapped for snooze durations; one at a time.
+  const [choosingSnoozeFor, setChoosingSnoozeFor] = useState<string | null>(null);
 
   return (
     <section className="card flex h-full min-h-0 flex-col p-0">
@@ -269,60 +274,79 @@ export function AttentionSection({
                       ? action.role
                       : `${action.company} · ${action.role}`}
                   </p>
-                  <div className="flex shrink-0 items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]">
-                    {action.gmailUrl ? (
-                      <a
-                        href={action.gmailUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6"
-                      >
-                        Gmail
-                      </a>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
-                      onClick={() => onReminderAction(action, "Completed")}
-                      disabled={reminderActionsDisabled}
+                  {choosingSnoozeFor === action.id ? (
+                    // Shown in place of the row's actions, so nothing floats over the next row
+                    // or is clipped by the card; a select that acted on change snoozed on an arrow key.
+                    <div
+                      role="group"
+                      aria-label={`Snooze ${action.title} for`}
+                      className="flex shrink-0 flex-wrap items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]"
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") setChoosingSnoozeFor(null);
+                      }}
                     >
-                      {completing ? "…" : "Done"}
-                    </button>
-                    {/* A select that acts on change snoozes as soon as a keyboard user presses an
-                        arrow key; this opens a menu, and only a chosen duration snoozes. */}
-                    <details className="relative">
-                      <summary
+                      {(["1h", "tomorrow", "next-week"] as const).map((preset, index) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          autoFocus={index === 0}
+                          className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
+                          disabled={reminderActionsDisabled}
+                          onClick={() => {
+                            setChoosingSnoozeFor(null);
+                            onReminderSnooze(action, preset);
+                          }}
+                        >
+                          {getSnoozePresetLabel(preset)}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className="hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6"
+                        onClick={() => setChoosingSnoozeFor(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]">
+                      {action.gmailUrl ? (
+                        <a
+                          href={action.gmailUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6"
+                        >
+                          Gmail
+                        </a>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
+                        onClick={() => onReminderAction(action, "Completed")}
+                        disabled={reminderActionsDisabled}
+                      >
+                        {completing ? "…" : "Done"}
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                         aria-label={`Snooze ${action.title}`}
-                        className="cursor-pointer list-none hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6 [&::-webkit-details-marker]:hidden"
+                        onClick={() => setChoosingSnoozeFor(action.id)}
+                        disabled={reminderActionsDisabled}
                       >
                         {snoozing ? "…" : "Snooze"}
-                      </summary>
-                      <div className="absolute right-0 z-10 mt-1 grid min-w-28 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-1">
-                        {(["1h", "tomorrow", "next-week"] as const).map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            className="rounded px-2 py-1 text-left hover:bg-[var(--surface-overlay)] hover:text-[var(--text-primary)] disabled:opacity-50"
-                            disabled={reminderActionsDisabled}
-                            onClick={(event) => {
-                              event.currentTarget.closest("details")?.removeAttribute("open");
-                              onReminderSnooze(action, preset);
-                            }}
-                          >
-                            {getSnoozePresetLabel(preset)}
-                          </button>
-                        ))}
-                      </div>
-                    </details>
-                    <button
-                      type="button"
-                      className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
-                      onClick={() => onReminderAction(action, "Dismissed")}
-                      disabled={reminderActionsDisabled}
-                    >
-                      {dismissing ? "…" : "Dismiss"}
-                    </button>
-                  </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
+                        onClick={() => onReminderAction(action, "Dismissed")}
+                        disabled={reminderActionsDisabled}
+                      >
+                        {dismissing ? "…" : "Dismiss"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             );

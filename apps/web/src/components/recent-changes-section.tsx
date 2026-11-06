@@ -342,7 +342,7 @@ export function RecentChangesSection({
             href="/app/updates"
             className="max-sm:inline-flex max-sm:min-h-6 max-sm:items-center text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline"
           >
-            All activity
+            Latest activity
           </Link>
         ) : null}
       </div>

@@ -13,7 +13,7 @@ New workspace pages go under `/app/*`; top-level aliases such as `/analytics` an
 | `/app/applications` | Application explorer |
 | `/app/applications/[applicationId]` | Evidence-first application detail |
 | `/app/review` | Review queue for blocked automation |
-| `/app/updates` | Activity timeline |
+| `/app/updates` | The 50 newest updates |
 | `/app/analytics` | Funnel and outcome analytics |
 | `/app/resume` | Pasted resume text, what careeroc read from it, and its evaluation |
 | `/app/memory` | Reusable facts and preferences |

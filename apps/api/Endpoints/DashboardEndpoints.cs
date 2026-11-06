@@ -47,7 +47,10 @@ public static class DashboardEndpoints
                         configuration.GetValue("Dashboard:ResponseCacheSeconds", 20),
                         0,
                         120);
-                    var cacheKey = BuildDashboardCacheKey(userEmail, queryOptions);
+                    var cacheKey = BuildDashboardCacheKey(
+                        userEmail,
+                        DashboardCacheGeneration.Current(memoryCache, userEmail),
+                        queryOptions);
                     var bypassCache = !string.IsNullOrWhiteSpace(fresh);
                     if (!bypassCache &&
                         responseCacheSeconds > 0 &&
@@ -121,12 +124,13 @@ public static class DashboardEndpoints
             : null;
     }
 
-    private static string BuildDashboardCacheKey(string userEmail, DashboardQueryOptions options)
+    private static string BuildDashboardCacheKey(string userEmail, long generation, DashboardQueryOptions options)
     {
         return string.Join(
             '|',
             "dashboard",
             userEmail.Trim().ToLowerInvariant(),
+            generation.ToString(System.Globalization.CultureInfo.InvariantCulture),
             options.View?.Trim().ToLowerInvariant() ?? "",
             options.Limit?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",
             options.CursorOffset?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",

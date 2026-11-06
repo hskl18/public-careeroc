@@ -19,6 +19,7 @@ import { readErrorMessage } from "@/lib/client-fetch";
 import {
   completeApplicationActionLocally,
   sortApplications,
+  type CompletedAction,
   type SortColumn,
   type SortState,
 } from "@/lib/dashboard-workflow";
@@ -129,7 +130,7 @@ export function DashboardWorkflowExplorer({
   // already reflects them, so the list belongs to the dashboard it was made against.
   const [completed, setCompleted] = useState<{
     base: DashboardResponse;
-    actions: Array<{ applicationId: string; reminderId?: string }>;
+    actions: CompletedAction[];
   }>({ base: dashboard, actions: [] });
   const [pendingCompletionKey, setPendingCompletionKey] = useState<string | null>(
     null,
@@ -140,7 +141,7 @@ export function DashboardWorkflowExplorer({
     () =>
       (completed.base === dashboard ? completed.actions : []).reduce(
         (current, action) =>
-          completeApplicationActionLocally(current, action.applicationId, action.reminderId),
+          completeApplicationActionLocally(current, action),
         dashboard,
       ),
     [completed, dashboard],
@@ -219,8 +220,12 @@ export function DashboardWorkflowExplorer({
     setSelectedApplicationId(applicationId);
   }
 
-  async function completeApplicationAction(application: ApplicationCard, reminderId?: string) {
-    const shouldMoveOaToApplied = application.status === "Oa Pending";
+  async function completeApplicationAction(
+    application: ApplicationCard,
+    reminderId: string | undefined,
+    completesStage: boolean,
+  ) {
+    const shouldMoveOaToApplied = completesStage && application.status === "Oa Pending";
     if (!reminderId && !shouldMoveOaToApplied) {
       setActionNotice("No open task is attached to this action.");
       return;
@@ -269,7 +274,7 @@ export function DashboardWorkflowExplorer({
         base: dashboard,
         actions: [
           ...(current.base === dashboard ? current.actions : []),
-          { applicationId: application.id, reminderId },
+          { applicationId: application.id, reminderId, completesStage },
         ],
       }));
       setActionNotice(`Marked done: ${application.company}.`);
