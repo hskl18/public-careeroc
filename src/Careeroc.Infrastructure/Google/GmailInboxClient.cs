@@ -818,7 +818,11 @@ public sealed class GmailInboxClient : IGmailInboxClient
             return Task.CompletedTask;
         }
 
-        throw new InvalidOperationException($"Google request failed with {(int)response.StatusCode}.");
+        // The status travels on the exception, so callers decide by code instead of by message text.
+        throw new HttpRequestException(
+            $"Google request failed with {(int)response.StatusCode}.",
+            inner: null,
+            response.StatusCode);
     }
 
     private async Task<GmailAuthorizationResult> ParseAuthorizationResultAsync(

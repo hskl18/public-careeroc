@@ -27,7 +27,7 @@ public static class ApplicationDefaults
     {
         if (string.IsNullOrWhiteSpace(userEmail))
         {
-            throw new InvalidOperationException("Authenticated user email is required.");
+            throw new UserFacingException("Authenticated user email is required.");
         }
 
         var normalized = userEmail.Trim().ToLowerInvariant();
@@ -37,7 +37,7 @@ public static class ApplicationDefaults
             string.IsNullOrWhiteSpace(parsed.Host) ||
             !parsed.Host.Contains('.', StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Authenticated user email is invalid.");
+            throw new UserFacingException("Authenticated user email is invalid.");
         }
 
         return normalized;

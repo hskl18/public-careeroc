@@ -1,3 +1,4 @@
+using System.Net;
 using Careeroc.Application;
 using Careeroc.Application.Abstractions;
 using Careeroc.Application.Models;
@@ -155,6 +156,44 @@ public sealed class ConfiguredInboxEmailSourceTests
         Assert.Contains("could not be decrypted", metadata.NextStep, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public async Task GetRecentEmailsAsync_MarksReconnectRequired_WhenGoogleRejectsTheAuthorization(HttpStatusCode status)
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 23, 18, 0, 0, TimeSpan.Zero));
+        var source = new ConfiguredInboxEmailSource(
+            new DemoInboxEmailSource(clock),
+            new FakeGmailInboxClient { FailWith = status },
+            NoopInboxAccountTokenProtector.Instance,
+            clock);
+        var inboxAccount = CreateConnectedGmailAccount(clock);
+
+        var emails = await source.GetRecentEmailsAsync(inboxAccount, cancellationToken: CancellationToken.None);
+
+        var metadata = InboxAccountMetadataJson.Read(inboxAccount, _ => new InboxAccountMetadata());
+        Assert.Empty(emails);
+        Assert.Equal("Reconnect required", metadata.ConnectionStatus);
+    }
+
+    [Fact]
+    public async Task GetRecentEmailsAsync_LetsAGoogleOutageFailTheSync()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 23, 18, 0, 0, TimeSpan.Zero));
+        var source = new ConfiguredInboxEmailSource(
+            new DemoInboxEmailSource(clock),
+            new FakeGmailInboxClient { FailWith = HttpStatusCode.ServiceUnavailable },
+            NoopInboxAccountTokenProtector.Instance,
+            clock);
+        var inboxAccount = CreateConnectedGmailAccount(clock);
+
+        // An outage is retried by the next sync; it must not ask the person to reconnect.
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => source.GetRecentEmailsAsync(inboxAccount, cancellationToken: CancellationToken.None));
+        var metadata = InboxAccountMetadataJson.Read(inboxAccount, _ => new InboxAccountMetadata());
+        Assert.Equal("Connected", metadata.ConnectionStatus);
+    }
+
     private static InboxAccount CreateConnectedGmailAccount(TestClock clock)
     {
         var account = new InboxAccount
@@ -201,6 +240,7 @@ public sealed class ConfiguredInboxEmailSourceTests
         public GmailProfile Profile { get; set; } = new("alex.personal@example.com", "history-profile");
         public IReadOnlyList<ExternalInboxEmail> SearchResult { get; set; } = [];
         public GmailHistorySyncResult IncrementalResult { get; set; } = new([], "history-profile");
+        public HttpStatusCode? FailWith { get; set; }
 
         public string BuildAuthorizationUrl(string state, string codeChallenge, string redirectUri, string? loginHint)
         {
@@ -249,6 +289,11 @@ public sealed class ConfiguredInboxEmailSourceTests
         {
             LastAccessToken = accessToken;
             SearchCalled = true;
+            if (FailWith is { } status)
+            {
+                throw new HttpRequestException("Google request failed.", inner: null, status);
+            }
+
             return Task.FromResult(SearchResult);
         }
 
