@@ -46,7 +46,7 @@ function buildEmptyDashboard(user: CareerocApiUser): DashboardResponse {
       scannedCount: 0,
       totalEstimate: null,
       recognizedApplications: 0,
-      backfillStatus: null,
+      backfillStatus: "idle",
     },
     applications: [],
     pendingActions: [],

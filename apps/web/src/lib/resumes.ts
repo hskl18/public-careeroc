@@ -1,157 +1,24 @@
-import type { UserMemoryEntry } from "./profile";
+import type { components } from "./api-schema";
 
-export type ResumeWorkspace = {
-  documents: ResumeDocument[];
-  readiness: ResumeReadiness;
-};
+type Schemas = components["schemas"];
 
-export type ResumeDocument = {
-  id: string;
-  title: string;
-  sourceKind: string;
-  sourceFileName: string | null;
-  rawSourceCharacterCount: number;
-  createdAtUtc: string;
-  updatedAtUtc: string;
-  latestVersion: ResumeVersion | null;
-  latestEvaluation: ResumeEvaluation | null;
-  memoryProposals?: UserMemoryEntry[] | null;
-};
-
-export type ResumeVersion = {
-  id: string;
-  resumeDocumentId: string;
-  summary: string;
-  skills: string[];
-  projectHighlights: string[];
-  structuredData?: ResumeStructuredData | null;
-  extractionMetadata: ResumeExtractionMetadata;
-  experienceCount: number;
-  projectCount: number;
-  createdAtUtc: string;
-};
-
-export type ResumeStructuredData = {
-  contact: ResumeContact;
-  experience: ResumeExperience[];
-  education: ResumeEducation[];
-  skills: ResumeSkillGroups;
-  projects: ResumeProject[];
-};
-
-export type ResumeContact = {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  links: ResumeLink[];
-};
-
-export type ResumeLink = {
-  label: string;
-  url: string;
-};
-
-export type ResumeExperience = {
-  company: string;
-  title: string;
-  location: string;
-  dateRange: string;
-  bullets: string[];
-};
-
-export type ResumeEducation = {
-  school: string;
-  degree: string;
-  field: string;
-  dateRange: string;
-  gpa: string;
-  notes: string[];
-};
-
-export type ResumeSkillGroups = {
-  technical: string[];
-  languages: string[];
-  other: string[];
-};
-
-export type ResumeProject = {
-  name: string;
-  description: string;
-  tech: string[];
-  links: string[];
-  bullets: string[];
-};
-
-export type ResumeEvaluation = {
-  id: string;
-  resumeVersionId: string;
-  score: number;
-  headline: string;
-  verdict: string;
-  strengths: string[];
-  gaps: string[];
-  nextActions: string[];
-  sectionReviews: ResumeSectionReview[];
-  evidence: ResumeEvaluationEvidence;
-  createdAtUtc: string;
-};
-
-export type ResumeFit = {
-  jobApplicationId: string;
-  resumeVersionId: string | null;
-  matchScore: number;
-  strengths: string[];
-  gaps: string[];
-  rationale: string | null;
-};
-
-export type ResumeExtractionMetadata = {
-  sourceKind: string;
-  sourceFileName: string | null;
-  rawSourceCharacterCount: number;
-  extractionMethod: string;
-  extractedAtUtc: string;
-  contactFieldCount: number;
-  experienceCount: number;
-  educationCount: number;
-  projectCount: number;
-  skillCount: number;
-  promptVersion: string | null;
-};
-
-export type ResumeSectionReview = {
-  section: string;
-  score: number;
-  strengths: string[];
-  weaknesses: string[];
-  suggestions: string[];
-};
-
-export type ResumeEvaluationEvidence = {
-  skillCount: number;
-  experienceCount: number;
-  projectCount: number;
-  hasEducation: boolean;
-  hasContact: boolean;
-  hasLinks: boolean;
-  applicationCount: number;
-  interviewOrOfferCount: number;
-  targetRole: string | null;
-};
-
-export type ResumeReadiness = {
-  hasResume: boolean;
-  summary: string;
-  nextActions: string[];
-};
-
-export type CreateResumeRequest = {
-  title: string | null;
-  sourceKind: string | null;
-  sourceText: string;
-  sourceFileName?: string | null;
-};
+export type ResumeWorkspace = Schemas["ResumeWorkspaceDto"];
+export type ResumeDocument = Schemas["ResumeDocumentDto"];
+export type ResumeVersion = Schemas["ResumeVersionDto"];
+export type ResumeStructuredData = Schemas["ResumeStructuredDataDto"];
+export type ResumeContact = Schemas["ResumeContactDto"];
+export type ResumeLink = Schemas["ResumeLinkDto"];
+export type ResumeExperience = Schemas["ResumeExperienceDto"];
+export type ResumeEducation = Schemas["ResumeEducationDto"];
+export type ResumeSkillGroups = Schemas["ResumeSkillGroupsDto"];
+export type ResumeProject = Schemas["ResumeProjectDto"];
+export type ResumeEvaluation = Schemas["ResumeEvaluationDto"];
+export type ResumeFit = Schemas["ResumeFitDto"];
+export type ResumeExtractionMetadata = Schemas["ResumeExtractionMetadataDto"];
+export type ResumeSectionReview = Schemas["ResumeSectionReviewDto"];
+export type ResumeEvaluationEvidence = Schemas["ResumeEvaluationEvidenceDto"];
+export type ResumeReadiness = Schemas["ResumeReadinessDto"];
+export type CreateResumeRequest = Schemas["CreateResumeRequest"];
 
 export const fallbackResumeWorkspace: ResumeWorkspace = {
   documents: [],

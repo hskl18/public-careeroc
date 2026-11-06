@@ -1,7 +1,10 @@
 import type { ProposedReminder, ResumeMailboxReview, UserMemoryEntry } from "./profile";
 
 // A review waiting for approval is a pending memory entry; deciding on it goes through that entry.
+// parseStoredReview fills in the fields an older stored review may lack.
 export type AgentReview = ResumeMailboxReview & {
+  confidence: number | null;
+  proposedReminders: ProposedReminder[];
   pendingEntryId: string | null;
   pendingUpdatedAtUtc: string | null;
 };

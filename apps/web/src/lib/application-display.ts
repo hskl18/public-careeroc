@@ -5,7 +5,7 @@ import type { ApplicationCard, PendingAction } from "@/lib/dashboard";
 export type DerivedNextAction = {
   text: string;
   due: string | null;
-  tone: "action" | "waiting" | "review" | "muted";
+  tone: string;
   reminder?: PendingAction;
 };
 

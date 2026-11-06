@@ -180,6 +180,8 @@ After changing auth, signing, proxy routes, OAuth, tokens, rate limiting, or use
 
 When adding or changing a read endpoint, chain `.Produces<ResponseType>()` and return `TypedResults.Ok<T>(...)` so the schema lands in `/swagger/v1/swagger.json`.
 Then run `pnpm --dir apps/web gen:api` against the running API, and `pnpm --dir apps/web check:api` in CI.
+Web response types in `apps/web/src/lib` are aliases of `components["schemas"]`; never hand-write a response shape.
+The document states nullability and required fields from the C# records: a constructor parameter without a default is required, and `?` marks it nullable, so give a contract field a default only when it is truly optional.
 
 ### Testing
 

@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fetchWithInFlightDedup, readErrorMessage } from "@/lib/client-fetch";
 import { formatTimestampInTimeZone } from "@/lib/date-time";
-import {
-  mapRecruitingContact,
-  type RecruitingContact,
-  type UpdateRecruitingContactRequest,
+import type {
+  RecruitingContact,
+  UpdateRecruitingContactRequest,
 } from "@/lib/recruiting-contacts";
 
 type RecruitingContactHistoryPanelProps = {
@@ -46,7 +45,12 @@ export function RecruitingContactHistoryPanel({
 }: RecruitingContactHistoryPanelProps) {
   const [contacts, setContacts] = useState(initialContacts);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<UpdateRecruitingContactRequest>({});
+  const [draft, setDraft] = useState<UpdateRecruitingContactRequest>({
+    displayName: null,
+    companyHint: null,
+    roleHint: null,
+    contactType: null,
+  });
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,10 +103,7 @@ export function RecruitingContactHistoryPanel({
         throw new Error(await readErrorMessage(response));
       }
 
-      const updated = mapRecruitingContact(await response.json());
-      if (!updated) {
-        throw new Error("Contact update returned an invalid response.");
-      }
+      const updated = (await response.json()) as RecruitingContact;
 
       setContacts((current) => {
         const sourceRecentEmails =
