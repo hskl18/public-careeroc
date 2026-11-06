@@ -30,11 +30,15 @@ public sealed class ApplicationWorkflowService
         bool allowAutoCreate,
         CancellationToken cancellationToken = default)
     {
-        if (currentApplicationId.HasValue)
+        // Callers check ownership first; the filter keeps a future caller from writing to another
+        // user's application, and a removed one falls through to matching instead of a 500.
+        var current = currentApplicationId.HasValue
+            ? await _dbContext.JobApplications.FirstOrDefaultAsync(
+                application => application.Id == currentApplicationId.Value && application.UserId == userId,
+                cancellationToken)
+            : null;
+        if (current is not null)
         {
-            var current = await _dbContext.JobApplications
-                .FirstAsync(application => application.Id == currentApplicationId.Value, cancellationToken);
-
             return new ApplicationMatchResult(current, false, 1.00m, null);
         }
 

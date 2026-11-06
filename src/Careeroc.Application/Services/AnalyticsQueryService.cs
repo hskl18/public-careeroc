@@ -82,21 +82,31 @@ public sealed class AnalyticsQueryService
             .Where(@event => applicationIds.Contains(@event.JobApplicationId))
             .ToListAsync(cancellationToken);
 
+        // Only what analytics reads; the full rows carried both copies of every email body.
         var linkedEmails = await _dbContext.InboxEmails
             .AsNoTracking()
-            .Include(email => email.InboxAccount)
             .Where(email => email.JobApplicationId.HasValue && applicationIds.Contains(email.JobApplicationId.Value))
+            .Select(
+                email => new AnalyticsEmailRecord(
+                    email.JobApplicationId!.Value,
+                    email.InboxAccountId,
+                    email.InboxAccount.Provider,
+                    email.Subject,
+                    email.Sender,
+                    email.ParsedBody,
+                    email.ExtractedCompany,
+                    email.ReceivedAtUtc))
             .ToListAsync(cancellationToken);
 
         var visibleInboxAccountIds = user.InboxAccounts
             .Select(account => account.Id)
             .ToHashSet();
         var applicationIdsWithAnyLinkedEmail = linkedEmails
-            .Select(email => email.JobApplicationId!.Value)
+            .Select(email => email.JobApplicationId)
             .ToHashSet();
         var visibleApplicationIds = linkedEmails
             .Where(email => visibleInboxAccountIds.Contains(email.InboxAccountId))
-            .Select(email => email.JobApplicationId!.Value)
+            .Select(email => email.JobApplicationId)
             .ToHashSet();
 
         applications = applications
@@ -113,7 +123,7 @@ public sealed class AnalyticsQueryService
 
         applicationIds = applications.Select(application => application.Id).ToList();
         linkedEmails = linkedEmails
-            .Where(email => applicationIds.Contains(email.JobApplicationId!.Value))
+            .Where(email => applicationIds.Contains(email.JobApplicationId))
             .ToList();
         events = events
             .Where(@event => applicationIds.Contains(@event.JobApplicationId))
@@ -124,15 +134,15 @@ public sealed class AnalyticsQueryService
             .ToDictionary(group => group.Key, group => group.ToList());
 
         var providersByApplicationId = linkedEmails
-            .GroupBy(email => email.JobApplicationId!.Value)
+            .GroupBy(email => email.JobApplicationId)
             .ToDictionary(
                 group => group.Key,
                 group => (IReadOnlySet<string>)group
-                    .Select(email => email.InboxAccount.Provider)
+                    .Select(email => email.Provider)
                     .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase));
         var linkedEmailsByApplicationId = linkedEmails
-            .GroupBy(email => email.JobApplicationId!.Value)
+            .GroupBy(email => email.JobApplicationId)
             .ToDictionary(group => group.Key, group => group.ToList());
 
         var snapshots = applications
@@ -145,7 +155,7 @@ public sealed class AnalyticsQueryService
                         : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     var applicationEmails = linkedEmailsByApplicationId.TryGetValue(application.Id, out var emails)
                         ? emails
-                        : new List<InboxEmail>();
+                        : new List<AnalyticsEmailRecord>();
 
                     return CreateSnapshot(application, applicationEvents, providers, applicationEmails);
                 })
@@ -200,7 +210,7 @@ public sealed class AnalyticsQueryService
         JobApplication application,
         IReadOnlyList<JobApplicationEvent> events,
         IReadOnlySet<string> providers,
-        IReadOnlyList<InboxEmail> linkedEmails)
+        IReadOnlyList<AnalyticsEmailRecord> linkedEmails)
     {
         return new AnalyticsSnapshot(
             application,
@@ -216,7 +226,7 @@ public sealed class AnalyticsQueryService
             providers);
     }
 
-    private static IEnumerable<string> BuildCompanyEvidence(IEnumerable<InboxEmail> linkedEmails)
+    private static IEnumerable<string> BuildCompanyEvidence(IEnumerable<AnalyticsEmailRecord> linkedEmails)
     {
         foreach (var email in linkedEmails.OrderByDescending(email => email.ReceivedAtUtc))
         {
@@ -225,11 +235,6 @@ public sealed class AnalyticsQueryService
             if (!string.IsNullOrWhiteSpace(email.ParsedBody))
             {
                 yield return email.ParsedBody;
-            }
-
-            if (!string.IsNullOrWhiteSpace(email.RawBody))
-            {
-                yield return email.RawBody;
             }
 
             yield return email.Sender;
@@ -559,4 +564,14 @@ public sealed class AnalyticsQueryService
         bool HasRejection,
         decimal? HoursToFirstResponse,
         IReadOnlySet<string> Providers);
+
+    private sealed record AnalyticsEmailRecord(
+        Guid JobApplicationId,
+        Guid InboxAccountId,
+        string Provider,
+        string Subject,
+        string Sender,
+        string? ParsedBody,
+        string? ExtractedCompany,
+        DateTimeOffset ReceivedAtUtc);
 }

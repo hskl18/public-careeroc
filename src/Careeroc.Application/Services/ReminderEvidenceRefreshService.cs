@@ -20,20 +20,6 @@ public sealed class ReminderEvidenceRefreshService
         ICareerocDbContext dbContext,
         IExplicitDueDateExtractor explicitDueDateExtractor,
         ApplicationWorkflowService applicationWorkflowService,
-        IClock clock)
-        : this(
-            dbContext,
-            explicitDueDateExtractor,
-            applicationWorkflowService,
-            clock,
-            NullLogger<ReminderEvidenceRefreshService>.Instance)
-    {
-    }
-
-    public ReminderEvidenceRefreshService(
-        ICareerocDbContext dbContext,
-        IExplicitDueDateExtractor explicitDueDateExtractor,
-        ApplicationWorkflowService applicationWorkflowService,
         IClock clock,
         ILogger<ReminderEvidenceRefreshService> logger)
     {
@@ -151,12 +137,9 @@ public sealed class ReminderEvidenceRefreshService
             if (!emailsByApplicationId.TryGetValue(reminder.JobApplicationId, out var applicationEmails))
             {
                 _logger.LogInformation(
-                    "Reminder evidence refresh found no linked emails for reminder {ReminderId} ({Title}) on application {ApplicationId} ({Company} / {Role}).",
+                    "Reminder evidence refresh found no linked emails for reminder {ReminderId} on application {ApplicationId}.",
                     reminder.Id,
-                    reminder.Title,
-                    reminder.JobApplicationId,
-                    reminder.JobApplication.Company,
-                    reminder.JobApplication.Role);
+                    reminder.JobApplicationId);
                 reminder.EvidenceRefreshedAtUtc = refreshStartedAtUtc;
                 continue;
             }
@@ -171,9 +154,8 @@ public sealed class ReminderEvidenceRefreshService
             if (evidence.Email is null || !evidence.DueDateUtc.HasValue)
             {
                 _logger.LogInformation(
-                    "Reminder evidence refresh found no deadline for reminder {ReminderId} ({Title}) on application {ApplicationId} after scanning {ScannedCandidateCount} candidate emails from {LinkedEmailCount} linked emails.",
+                    "Reminder evidence refresh found no deadline for reminder {ReminderId} on application {ApplicationId} after scanning {ScannedCandidateCount} candidate emails from {LinkedEmailCount} linked emails.",
                     reminder.Id,
-                    reminder.Title,
                     reminder.JobApplicationId,
                     evidence.ScannedCandidateCount,
                     applicationEmails.Count);

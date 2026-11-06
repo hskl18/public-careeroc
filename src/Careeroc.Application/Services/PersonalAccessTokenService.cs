@@ -34,13 +34,13 @@ public sealed class PersonalAccessTokenService
         var name = request.Name?.Trim() ?? string.Empty;
         if (name.Length is < 1 or > 80)
         {
-            throw new ArgumentException("Token name must be between 1 and 80 characters.", nameof(request));
+            throw new UserFacingException("Token name must be between 1 and 80 characters.");
         }
 
         var lifetimeDays = request.ExpiresInDays ?? DefaultLifetimeDays;
         if (lifetimeDays is < 1 or > MaxLifetimeDays)
         {
-            throw new ArgumentException($"Token lifetime must be between 1 and {MaxLifetimeDays} days.", nameof(request));
+            throw new UserFacingException($"Token lifetime must be between 1 and {MaxLifetimeDays} days.");
         }
 
         var user = await FindUserAsync(userEmail, cancellationToken)

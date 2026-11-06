@@ -4,6 +4,7 @@ using Careeroc.Application.Services;
 using Careeroc.Application.Services.Agents;
 using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Careeroc.Tests;
 
@@ -163,7 +164,7 @@ public sealed class BackendProductTodoTests
         dbContext.ResumeDocuments.Add(document);
         await dbContext.SaveChangesAsync();
 
-        var fit = await new ResumeFitService(dbContext, Clock).GetFitAsync(
+        var fit = await new ResumeFitService(dbContext, Clock, NullLogger<ResumeFitService>.Instance).GetFitAsync(
             application.Id,
             user.Email);
 

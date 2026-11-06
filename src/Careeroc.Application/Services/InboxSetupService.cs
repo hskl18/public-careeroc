@@ -23,18 +23,6 @@ public sealed class InboxSetupService
     public InboxSetupService(
         ICareerocDbContext dbContext,
         IGmailInboxClient gmailInboxClient,
-        IClock clock)
-        : this(
-            dbContext,
-            gmailInboxClient,
-            NoopInboxAccountTokenProtector.Instance,
-            clock)
-    {
-    }
-
-    public InboxSetupService(
-        ICareerocDbContext dbContext,
-        IGmailInboxClient gmailInboxClient,
         IInboxAccountTokenProtector tokenProtector,
         IClock clock)
     {

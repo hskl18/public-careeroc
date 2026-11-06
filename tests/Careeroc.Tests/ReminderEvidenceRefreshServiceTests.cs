@@ -4,6 +4,7 @@ using Careeroc.Domain.Entities;
 using Careeroc.Domain.Enums;
 using Careeroc.Infrastructure.Email;
 using Careeroc.Infrastructure.Persistence;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Careeroc.Tests;
 
@@ -206,7 +207,8 @@ public sealed class ReminderEvidenceRefreshServiceTests
             dbContext,
             new HeuristicDueDateExtractor(new HeuristicRecruitingEmailParser()),
             new ApplicationWorkflowService(dbContext, clock),
-            clock);
+            clock,
+            NullLogger<ReminderEvidenceRefreshService>.Instance);
     }
 
     private static async Task<ReminderScenario> SeedScenarioAsync(
