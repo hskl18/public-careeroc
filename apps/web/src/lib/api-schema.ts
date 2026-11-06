@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EnsureDemoWorkspace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inbox-accounts": {
         parameters: {
             query?: never;
@@ -938,6 +954,54 @@ export interface components {
             traceSummary?: components["schemas"]["AgentTraceSummaryDto"];
             agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
         };
+        CareerAgentGraphApplicationEvidence: {
+            /** Format: uuid */
+            id?: string;
+            company?: string | null;
+            role?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            lastActivityAtUtc?: string;
+            hasOpenReminder?: boolean;
+        };
+        CareerAgentGraphEvidence: {
+            /** Format: int32 */
+            resumeVersions?: number;
+            /** Format: int32 */
+            latestResumeScore?: number;
+            /** Format: int32 */
+            totalApplications?: number;
+            /** Format: int32 */
+            interviewOrOfferApplications?: number;
+            /** Format: int32 */
+            rejectedApplications?: number;
+            /** Format: uuid */
+            resumeVersionLinkedToOutcome?: string | null;
+        };
+        CareerAgentGraphResumeEvidence: {
+            title?: string | null;
+            summary?: string | null;
+            /** Format: int32 */
+            score?: number;
+            skills?: string[] | null;
+            projectHighlights?: string[] | null;
+        };
+        CareerAgentGraphReviewRequest: {
+            threadId?: string | null;
+            /** Format: date-time */
+            requestedAtUtc?: string;
+            baselineSummary?: string | null;
+            baselineFindings?: string[] | null;
+            baselineNextActions?: string[] | null;
+            evidence?: components["schemas"]["CareerAgentGraphEvidence"];
+            latestResume?: components["schemas"]["CareerAgentGraphResumeEvidence"];
+            applications?: components["schemas"]["CareerAgentGraphApplicationEvidence"][] | null;
+            topTargetRoles?: string[] | null;
+            positiveOutcomes?: string[] | null;
+            repeatedRejections?: string[] | null;
+            latestActionSignals?: string[] | null;
+            confirmedMemoryFacts?: string[] | null;
+        };
         CorrectApplicationRequest: {
             kind?: string | null;
             notes?: string | null;
@@ -1011,8 +1075,49 @@ export interface components {
         DeleteImportedInboxDataRequest: {
             confirmation?: string | null;
         };
+        DeleteImportedInboxDataResponse: {
+            /** Format: uuid */
+            inboxAccountId?: string;
+            emailAddress?: string | null;
+            /** Format: int32 */
+            deletedEmails?: number;
+            /** Format: int32 */
+            deletedProcessingJobs?: number;
+            /** Format: int32 */
+            unlinkedEvents?: number;
+            /** Format: int32 */
+            preservedApplications?: number;
+        };
         DeleteInboxPurgeRequest: {
             confirmation?: string | null;
+        };
+        DeleteInboxPurgeResponse: {
+            /** Format: uuid */
+            inboxAccountId?: string;
+            emailAddress?: string | null;
+            /** Format: int32 */
+            deletedEmails?: number;
+            /** Format: int32 */
+            deletedProcessingJobs?: number;
+            /** Format: int32 */
+            deletedApplications?: number;
+            /** Format: int32 */
+            deletedReminders?: number;
+            /** Format: int32 */
+            deletedEvents?: number;
+            /** Format: int32 */
+            unlinkedEvents?: number;
+            /** Format: int32 */
+            deletedInboxAccounts?: number;
+        };
+        DemoWorkspaceDto: {
+            created?: boolean;
+            /** Format: int32 */
+            emailsImported?: number;
+            /** Format: int32 */
+            applicationsCreated?: number;
+            /** Format: int32 */
+            remindersCreated?: number;
         };
         EmailProcessingResult: {
             /** Format: int32 */
@@ -1701,7 +1806,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CareerAgentGraphReviewRequest"];
+                };
             };
         };
     };
@@ -2033,6 +2140,40 @@ export interface operations {
             };
         };
     };
+    EnsureDemoWorkspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoWorkspaceDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GetInboxAccounts: {
         parameters: {
             query?: never;
@@ -2098,7 +2239,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InboxSetupResponse"];
+                };
             };
         };
     };
@@ -2166,7 +2309,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InboxSetupResponse"];
+                };
             };
         };
     };
@@ -2186,7 +2331,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InboxSetupResponse"];
+                };
             };
         };
     };
@@ -2210,7 +2357,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DeleteImportedInboxDataResponse"];
+                };
             };
         };
     };
@@ -2234,7 +2383,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DeleteInboxPurgeResponse"];
+                };
             };
         };
     };

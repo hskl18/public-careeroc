@@ -129,6 +129,7 @@ public static class InboxEndpoints
                 })
             .WithName("RegisterGmailInboxAccount")
             .WithTags("Inbox")
+            .Produces<InboxSetupResponse>()
             .RejectDemoIdentities();
 
         endpoints
@@ -305,6 +306,7 @@ public static class InboxEndpoints
                 })
             .WithName("UpdateGmailInboxBackfill")
             .WithTags("Inbox")
+            .Produces<InboxSetupResponse>()
             .RejectDemoIdentities();
 
         endpoints
@@ -332,7 +334,8 @@ public static class InboxEndpoints
                     return response is null ? Results.NotFound() : Results.Ok(response);
                 })
             .WithName("DeleteInboxAccount")
-            .WithTags("Inbox");
+            .WithTags("Inbox")
+            .Produces<InboxSetupResponse>();
 
         endpoints
             .MapDelete(
@@ -378,7 +381,8 @@ public static class InboxEndpoints
                     }
                 })
             .WithName("DeleteImportedInboxData")
-            .WithTags("Inbox");
+            .WithTags("Inbox")
+            .Produces<DeleteImportedInboxDataResponse>();
 
         endpoints
             .MapDelete(
@@ -424,7 +428,8 @@ public static class InboxEndpoints
                     }
                 })
             .WithName("PurgeInboxAccount")
-            .WithTags("Inbox");
+            .WithTags("Inbox")
+            .Produces<DeleteInboxPurgeResponse>();
 
         return endpoints;
     }

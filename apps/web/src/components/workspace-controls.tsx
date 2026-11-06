@@ -19,21 +19,18 @@ export function WorkspaceMetricTile({
 }) {
   const content = (
     <>
-      <p className="eyebrow text-[0.64rem] sm:text-[0.72rem]">{label}</p>
-      <p
-        className="mt-0.5 text-base font-semibold tabular-nums sm:mt-1 sm:text-lg"
-        style={{ color: tone }}
-      >
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="metric-tile-value" style={{ color: tone }}>
         {value}
-      </p>
+      </span>
     </>
   );
-  const classes = `rounded-md border px-3 py-2 text-left transition sm:py-2.5 ${
+  const classes = `metric-tile ${
     selected
-      ? "border-[var(--accent)] bg-[var(--surface-strong)] ring-2 ring-[var(--accent)]"
+      ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
       : highlighted
-        ? "border-[var(--accent-soft)] bg-[rgba(255,255,255,0.42)] ring-1 ring-[var(--accent-soft)] hover:bg-[rgba(255,255,255,0.62)]"
-        : "border-[var(--border)] bg-[rgba(255,255,255,0.36)] hover:bg-[rgba(255,255,255,0.55)]"
+        ? "ring-1 ring-[var(--accent-soft)]"
+        : ""
   } ${className}`;
 
   if (!onClick) {

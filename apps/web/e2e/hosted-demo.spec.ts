@@ -26,11 +26,13 @@ test.describe("hosted read-only demo", () => {
     await page.getByRole("button", { name: "Open the demo" }).click();
     await page.waitForURL("**/app");
 
-    await expect(page.getByText("Multi-agent review", { exact: true })).toBeVisible();
-    await expect(page.getByText("Recorded run", { exact: true })).toBeVisible();
-    await expect(page.getByText(/^ollama\//)).toBeVisible();
-    await expect(page.getByText("deterministic evidence gate", { exact: true })).toBeVisible();
-    await expect(page.getByText("Waiting for your approval")).toBeVisible();
+    // The dashboard shows the review as one row; its trace and decision open in a dialog.
+    await page.getByRole("button", { name: /Multi-agent review/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Multi-agent review" });
+    await expect(dialog.getByText("Recorded run", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(/^ollama\//)).toBeVisible();
+    await expect(dialog.getByText("deterministic evidence gate", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Waiting for your approval")).toBeVisible();
 
     // Approval replays locally; the demo must not attempt a write.
     const writes: string[] = [];
@@ -40,17 +42,19 @@ test.describe("hosted read-only demo", () => {
         if (!path.endsWith("/dashboard/inbox-check")) writes.push(path);
       }
     });
-    await page.getByRole("button", { name: "Approve" }).click();
-    await expect(page.getByText("human reviewer", { exact: true })).toBeVisible();
-    await expect(page.getByText("Replayed in this read-only demo. Nothing was saved.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Approve" }).click();
+    await expect(dialog.getByText("human reviewer", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Replayed in this read-only demo. Nothing was saved.")).toBeVisible();
+    // Two of the three recorded proposals are for rejected applications, which the API skips.
+    await expect(dialog.getByText(/it added 1 reminder\./)).toBeVisible();
     expect(writes).toEqual([]);
 
     await page.reload();
-    await expect(page.getByText("Waiting for your approval")).toBeVisible();
+    await expect(page.getByText("Needs your approval", { exact: true })).toBeVisible();
 
     await page.goto("/app/inbox");
-    await expect(page.getByText("Demo inbox is connected")).toBeVisible();
-    await expect(page.getByText("No Gmail inbox connected yet")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Demo inbox" })).toBeVisible();
+    await expect(page.getByText("Connect Gmail", { exact: true })).toHaveCount(0);
 
     for (const route of [
       "/app/applications",

@@ -65,7 +65,7 @@ public sealed class EmailSyncService
         using var correlationScope = CareerocTelemetry.BeginCorrelationScope(runId: Guid.NewGuid().ToString("N"));
         using var activity = CareerocTelemetry.ActivitySource.StartActivity("email.sync_run");
         CareerocTelemetry.TagCurrentActivity();
-        activity?.SetTag("user.email", userEmail);
+        activity?.SetTag("careeroc.user", CareerocTelemetry.UserKey(userEmail));
         activity?.SetTag("sync.minimum_interval_seconds", minimumSyncInterval?.TotalSeconds);
 
         var inboxAccounts = await GetInboxAccountsAsync(userEmail, cancellationToken);
@@ -203,7 +203,8 @@ public sealed class EmailSyncService
 
             return new EmailSyncResult(createdEmails.Count, jobsEnqueued);
         }
-        catch (Exception exception)
+        // Shutdown is not a failed sync; let the cancellation reach the worker.
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             // The next inbox in this run shares the context and must not resave this inbox's rows.
             _dbContext.ChangeTracker.DiscardPendingChanges();

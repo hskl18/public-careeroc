@@ -66,8 +66,8 @@ Every step is a narrow, typed decision, not a free-form agent, so a wrong result
   Receipts, thank-you notes, and security codes never go there.
   A correction reruns the same workflow rules as automation.
 - **Reminders** are work, not a log.
-  Terminal applications keep no open reminders, far-future and stale reminders stay out of "needs attention", and duplicates refresh instead of multiplying.
-- **Idempotency**: importing or processing the same message updates or skips; it never duplicates applications, events, or reminders, and an admin can retry a failed job.
+  Terminal applications keep no open reminders, far-future and stale reminders stay out of the dashboard's "To do", and duplicates refresh instead of multiplying.
+- **Idempotency**: importing or processing the same message updates or skips; it never duplicates applications, events, or reminders.
 - **One bad email stays one failure**: header values are clipped to their columns, a failed save discards its pending changes before the failure is recorded, and a job that times out on its last attempt is marked failed so it shows up for retry.
 
 ## Background work and freshness
@@ -138,7 +138,7 @@ Hydration must be stable: render the same navigation and text on server and clie
 ## Observability
 
 Every API response carries `X-Careeroc-Correlation-Id`, and processing jobs and model calls store bounded run and correlation IDs.
-Setting `OTEL_EXPORTER_OTLP_ENDPOINT` turns on OTLP/HTTP tracing in all three services; spans cover dashboard queries, sync, email processing, attachment import, model calls, and each agent node.
+Setting `OTEL_EXPORTER_OTLP_ENDPOINT` turns on OTLP/HTTP tracing in all three services; spans cover dashboard queries, sync, email processing, model calls, and each agent node.
 Maintenance rules for sync, reminders, and company names are in [backend/evidence-pipeline-maintenance.md](backend/evidence-pipeline-maintenance.md).
 
 ## Change checklist

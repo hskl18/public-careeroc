@@ -9,9 +9,11 @@ class AgentRuntimeSettings(BaseSettings):
         extra="ignore",
     )
 
-    provider: str = "ollama"
+    # No model by default, like Compose and Helm; set ollama or openai to use one.
+    provider: str = "deterministic"
     model: str = "gemma4:31b-cloud"
-    base_url: str = "http://host.docker.internal:11434"
+    # Unset uses the provider's own default; Compose and Helm pass a URL when a model is used.
+    base_url: str | None = None
     api_key: str | None = None
     checkpoint_database_url: str | None = None
     shared_secret: str | None = None

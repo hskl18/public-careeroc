@@ -121,29 +121,6 @@ public static class DashboardEndpoints
             : null;
     }
 
-    private static DashboardQueryOptions BuildDashboardQueryOptions(
-        string? view,
-        int? limit,
-        string? cursor,
-        string? q,
-        string? company,
-        string? roleCanonical,
-        string? source,
-        string? location,
-        string? sort = null)
-    {
-        return new DashboardQueryOptions(
-            view,
-            NormalizeLimit(limit),
-            NormalizeCursor(cursor),
-            q,
-            company,
-            roleCanonical,
-            source,
-            location,
-            sort);
-    }
-
     private static string BuildDashboardCacheKey(string userEmail, DashboardQueryOptions options)
     {
         return string.Join(

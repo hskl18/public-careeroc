@@ -26,16 +26,18 @@ New workspace pages go under `/app/*`; top-level aliases such as `/analytics` an
 ## API
 
 Browsers call the same-origin proxy at `/api/careeroc/*`, which signs the user context and forwards to the .NET API.
-The API's user-scoped endpoints are grouped by product noun:
+The API's user-scoped endpoints are grouped by product noun; this lists the groups, and the OpenAPI document at `/swagger` has every route:
 
 ```text
 /api/dashboard, /api/dashboard/inbox-check
-/api/inbox-accounts
+/api/inbox-accounts/*
 /api/applications/*
+/api/reminders/*
+/api/emails/{id}/correction
 /api/review
 /api/analytics
-/api/profile, /api/profile/memory, /api/profile/memory/proposals, /api/profile/access-tokens
-/api/recruiting-contacts
+/api/profile/*
+/api/recruiting-contacts/*
 /api/resumes
 /api/orchestrator/resume-mailbox-review
 /api/demo/workspace          (only when Demo:Enabled)

@@ -42,7 +42,7 @@ export function DemoReadOnlyGuard() {
       className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex justify-center px-4 sm:bottom-5"
     >
       {showNotice ? (
-        <p className="rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] shadow-[0_18px_48px_rgba(15,23,42,0.14)]">
+        <p className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] shadow-lg">
           {demoReadOnlyMessage}
         </p>
       ) : null}

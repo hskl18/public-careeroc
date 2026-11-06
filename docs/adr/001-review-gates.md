@@ -9,7 +9,8 @@ An incorrect automatic update can hide a real next action or create a false one.
 
 ## Decision
 
-Careeroc routes model-backed changes and risky deterministic changes to an explicit review item before canonical state mutation.
+careeroc routes risky changes (weak company matches, agencies that hide the employer, likely scams) to an explicit review item before they change the pipeline.
+A model pass is kept only when it is confident, and the same review gates apply to its result as to the rules'.
 The review item retains bounded evidence, confidence, matching context, and the proposed typed change.
 
 ## Consequences

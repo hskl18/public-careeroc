@@ -11,7 +11,6 @@ Email text is untrusted input, and a model that reads it can be steered by it.
 ## Decision
 
 The API keeps each message body, cut to `Gmail:BodyCharacterLimit` (12,000 characters by default), so the pipeline and the review queue can show their evidence.
-Attachments become evidence cards; their raw bytes are not stored.
 Everything that leaves the API for an agent is a bounded snapshot built by the API: application company, role, status, and dates, resume summary and skills, counts, and confirmed memory.
 Snapshots never contain email bodies, OAuth tokens, or credentials, and the agent runtime has no access to careeroc's database.
 

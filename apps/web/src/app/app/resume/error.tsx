@@ -14,7 +14,7 @@ export default function ResumeErrorBoundary({
       error={error}
       reset={reset}
       title="Resume intelligence could not load."
-      description="Retry the resume view. Imports, corrections, and analysis can resume after the route recovers."
+      description="Your data is unchanged."
     />
   );
 }

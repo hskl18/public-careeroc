@@ -3,6 +3,7 @@
 Every target runs the same three images with the same service names: `web` (port 3000), `api` (port 8080), and `agent-runtime` (port 8123), plus PostgreSQL 17.
 Only `web` must be public.
 Expose `api` too if assistants should reach `/mcp`, and `agent-runtime` if other agents should reach `/a2a`.
+Expose `api` only behind a proxy or ingress that sets `X-Forwarded-For`; if clients reach it directly, set `ForwardedHeaders__Enabled=false`, or they can choose the address that the per-address limits count.
 
 | Target | Where | How it is verified |
 |---|---|---|
@@ -27,7 +28,7 @@ Generate each with `openssl rand -hex 32`, and never reuse the local fallbacks f
 - **Demo**: set `DEMO_MODE=true` on web and `Demo__Enabled=true` on the API, and allow the demo domain with `ACCESS_ALLOWED_DOMAINS=demo.careeroc.example`.
   No Google client is needed.
 - **Google sign-in and Gmail**: set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` on web and `Google__ClientId` and `Google__ClientSecret` on the API, and set `ACCESS_ALLOWED_EMAILS` or `ACCESS_ALLOWED_DOMAINS`.
-  Register `https://<web host>/api/inbox-accounts/gmail/oauth/callback` as the redirect URI and set `NEXT_PUBLIC_SITE_URL` on the API to the web URL.
+  Register `https://<web host>/api/auth/callback/google` (sign-in) and `https://<web host>/api/inbox-accounts/gmail/oauth/callback` (Gmail) as redirect URIs and set `NEXT_PUBLIC_SITE_URL` on the API to the web URL.
   The callback goes through the web app so it reaches the API signed as the user who started the connection; without that URL, Gmail sign-in is refused.
 
 ## Agent checkpoints

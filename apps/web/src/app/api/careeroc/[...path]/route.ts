@@ -100,7 +100,6 @@ async function proxyCareerocRequest(
   if (requestBody === null) {
     return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
   }
-  const requestBodyForSignature = requestBody?.toString("utf8") ?? "";
 
   const headers = buildCareerocApiAuthHeaders(
     {
@@ -110,7 +109,7 @@ async function proxyCareerocRequest(
     {
       method: request.method,
       pathAndQuery,
-      body: requestBodyForSignature,
+      body: requestBody ?? "",
     },
   );
 

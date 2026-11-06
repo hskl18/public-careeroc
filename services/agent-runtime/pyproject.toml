@@ -1,11 +1,12 @@
 [project]
 name = "careeroc-agent-runtime"
-version = "0.1.0"
+version = "1.2.0"
 description = "Durable LangGraph multi-agent runtime for careeroc workflows"
 requires-python = ">=3.11"
 dependencies = [
   "a2a-sdk[fastapi]==1.2.3",
   "fastapi==0.162.0",
+  "httpx>=0.28.1,<0.29",
   "langchain==1.4.7",
   "langchain-ollama==1.1.0",
   "langchain-openai==1.7.3",
@@ -22,7 +23,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "httpx>=0.28.1,<0.29",
   "pytest>=9.1.1,<10",
   "pytest-asyncio>=1.4.1,<2",
   "ruff>=0.17.3,<0.18",

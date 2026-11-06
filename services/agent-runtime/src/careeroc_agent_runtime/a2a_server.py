@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import uuid
 from collections.abc import Callable
+from importlib.metadata import version
 from typing import Any
 
 import httpx
@@ -34,10 +36,12 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from careeroc_agent_runtime.contracts import ResumeMailboxReviewRequest
+from careeroc_agent_runtime.graph import count_reminders
 
 logger = logging.getLogger(__name__)
 
-REVIEW_KEYWORDS = ("review", "strategy", "advice", "advise", "next step", "should i", "improve")
+# Word starts, so "preview" stays a status question while "reviews" and "improvements" still match.
+REVIEW_KEYWORDS = re.compile(r"\b(review|strategy|advice|advise|next step|should i|improve)")
 SECURITY_SCHEME = "careerocToken"
 
 
@@ -49,7 +53,7 @@ def build_agent_card(public_url: str) -> AgentCard:
             "Read-only career agent for one person's job search: pipeline status from "
             "their recruiting inbox, and a multi-agent review of resume and outcomes."
         ),
-        version="1.0.0",
+        version=version("careeroc-agent-runtime"),
         supported_interfaces=[
             AgentInterface(url=f"{base}/a2a", protocol_binding="JSONRPC", protocol_version="1.0")
         ],
@@ -89,12 +93,7 @@ def build_agent_card(public_url: str) -> AgentCard:
 
 
 def select_skill(text: str) -> str:
-    lowered = text.casefold()
-    return (
-        "career_review"
-        if any(keyword in lowered for keyword in REVIEW_KEYWORDS)
-        else "pipeline_status"
-    )
+    return "career_review" if REVIEW_KEYWORDS.search(text.casefold()) else "pipeline_status"
 
 
 def describe_pipeline(summary: dict[str, Any]) -> str:
@@ -138,11 +137,23 @@ class CallerAuthMiddleware:
         token = _bearer_token(headers)
         try:
             owner = await self._resolve_owner(token) if token else None
-        except httpx.HTTPError:
-            logger.warning("Could not reach the careeroc API to authenticate an A2A caller.")
-            await JSONResponse({"error": "careeroc is unavailable."}, status_code=503)(
-                scope, receive, send
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
+            # 403 means the API no longer allows this account; anything else is an outage or a
+            # malformed answer.
+            forbidden = (
+                isinstance(exc, httpx.HTTPStatusError)
+                and exc.response.status_code == httpx.codes.FORBIDDEN
             )
+            if not forbidden:
+                logger.warning("Could not authenticate an A2A caller with the careeroc API.")
+            await JSONResponse(
+                {
+                    "error": "This account no longer has access to careeroc."
+                    if forbidden
+                    else "careeroc is unavailable."
+                },
+                status_code=403 if forbidden else 503,
+            )(scope, receive, send)
             return
 
         if owner is None:
@@ -259,8 +270,8 @@ class CareerocAgentExecutor(AgentExecutor):
             await TaskUpdater(event_queue, task.id, task.context_id).cancel()
 
     async def _run_review(self, payload: dict[str, Any]) -> dict[str, Any]:
-        # A fresh checkpoint thread per run: callers choose context IDs, and a shared thread would
-        # accumulate another caller's specialist outputs through the graph's list reducers.
+        # A fresh thread ID per run satisfies the request contract; the A2A graph keeps no
+        # checkpoints, so nothing from one caller's run reaches another's.
         payload["threadId"] = f"a2a:{uuid.uuid4()}"
         # Tokens are read-only, so an A2A caller cannot approve anything; see describe_review.
         payload["humanReviewAvailable"] = False
@@ -282,7 +293,7 @@ def describe_review(review: dict[str, Any]) -> str:
         return review["summary"]
     proposals = len(review.get("proposedReminders", []))
     pending = (
-        f"It proposes {proposals} reminders, which only you can approve in careeroc."
+        f"It proposes {count_reminders(proposals)}, which only you can approve in careeroc."
         if proposals
         else "The evidence gate wants a person to confirm it in careeroc before it is kept."
     )

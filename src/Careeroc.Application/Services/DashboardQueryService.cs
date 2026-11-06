@@ -40,7 +40,7 @@ public sealed class DashboardQueryService
         CancellationToken cancellationToken = default)
     {
         using var activity = CareerocTelemetry.ActivitySource.StartActivity("dashboard.query");
-        activity?.SetTag("user.email", userEmail);
+        activity?.SetTag("careeroc.user", CareerocTelemetry.UserKey(userEmail));
         activity?.SetTag("dashboard.view", options?.View);
 
         options ??= DashboardQueryOptions.Empty;

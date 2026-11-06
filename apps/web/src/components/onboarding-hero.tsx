@@ -56,9 +56,9 @@ function StepRail({ steps }: { steps: Step[] }) {
         const isLast = index === steps.length - 1;
         const dotTone =
           step.status === "done"
-            ? "bg-[var(--green)] text-white border-[var(--green)]"
+            ? "bg-[var(--green)] text-[var(--on-accent)] border-[var(--green)]"
             : step.status === "current"
-              ? "bg-[var(--accent)] text-white border-[var(--accent-ink)] shadow-[0_0_0_4px_rgba(37,99,235,0.18)]"
+              ? "bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent-ink)]"
               : "bg-[var(--surface-elevated)] text-[var(--text-tertiary)] border-[var(--border)]";
         const labelTone =
           step.status === "upcoming"
@@ -68,7 +68,7 @@ function StepRail({ steps }: { steps: Step[] }) {
         return (
           <li key={step.label} className="flex items-center gap-2">
             <span
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold ${dotTone}`}
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${dotTone}`}
               aria-hidden="true"
             >
               {step.status === "done" ? (
@@ -128,13 +128,13 @@ function ProgressBar({
 
   return (
     <div className="mt-5">
-      <div className="flex items-center justify-between text-[11px] font-medium text-[var(--text-tertiary)]">
+      <div className="flex items-center justify-between text-xs font-medium text-[var(--text-tertiary)]">
         <span>
           {hasEstimate
             ? `${processed} of ${total} emails analyzed`
             : `${processed} emails scanned`}
         </span>
-        <span className="font-mono">{hasEstimate ? `${percent}%` : "scanning"}</span>
+        <span>{hasEstimate ? `${percent}%` : "scanning"}</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--surface-overlay)]">
         <div
@@ -148,7 +148,7 @@ function ProgressBar({
         </span>
         <div className="min-w-0">
           <p className="font-medium text-[var(--text-primary)]">
-            {recognizedApplications.toLocaleString()} application
+            {recognizedApplications.toLocaleString("en-US")} application
             {recognizedApplications === 1 ? "" : "s"} recognized so far
           </p>
           {tickerItems.length > 0 ? (
@@ -159,12 +159,7 @@ function ProgressBar({
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="mt-1 text-[var(--text-tertiary)]">
-              New applications and reminders will appear here as the worker
-              finishes each batch.
-            </p>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -175,17 +170,11 @@ function HeroCopy({ state }: { state: OnboardingState }) {
   if (state.kind === "connect-gmail") {
     return (
       <>
-        <p className="eyebrow">Get started</p>
-        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
-          Connect Gmail to turn your inbox into a pipeline
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+          Connect Gmail to start
         </h2>
-        <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-secondary)]">
-          careeroc reads your recruiting mail, extracts the company, role, stage,
-          and follow-ups, and keeps everything in sync. Nothing is sent until you sign
-          in with Google.
-        </p>
-        <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-          Takes about 2 minutes &middot; you can pick how far back to backfill
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          Reads recruiting mail only. About 2 minutes.
         </p>
       </>
     );
@@ -194,16 +183,11 @@ function HeroCopy({ state }: { state: OnboardingState }) {
   if (state.kind === "waiting-first-sync") {
     return (
       <>
-        <p className="eyebrow">Almost there</p>
-        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
-          Your first sync is about to start
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+          First sync starting
         </h2>
-        <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-secondary)]">
-          {state.emailAddress
-            ? `${state.emailAddress} is connected.`
-            : "Gmail is connected."}{" "}
-          We are queuing the first backfill now. Leave this page open &mdash; the
-          dashboard fills in automatically once the worker picks it up.
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          {state.emailAddress ?? "Gmail"} is connected. This page fills in by itself.
         </p>
       </>
     );
@@ -211,16 +195,11 @@ function HeroCopy({ state }: { state: OnboardingState }) {
 
   return (
     <>
-      <p className="eyebrow">Syncing now</p>
-      <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
-        Analyzing your recruiting history
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">
+        Reading your mail
       </h2>
-      <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-secondary)]">
-        {state.emailAddress
-          ? `Reading ${state.emailAddress} and classifying each message.`
-          : "Classifying synced messages."}{" "}
-        This usually takes a few minutes. You will see applications, events, and
-        reminders appear here as they land.
+      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+        Applications appear here as they are found. Usually a few minutes.
       </p>
     </>
   );
@@ -236,9 +215,6 @@ function HeroCta({ state }: { state: OnboardingState }) {
         >
           Connect Gmail
         </Link>
-        <p className="text-[11px] text-[var(--text-tertiary)]">
-          Opens the setup panel in Inbox
-        </p>
       </div>
     );
   }
@@ -246,11 +222,8 @@ function HeroCta({ state }: { state: OnboardingState }) {
   return (
     <div className="flex flex-col items-start gap-2 sm:items-end">
       <Link href="/app/inbox#mail-sync" className="btn btn-secondary">
-        View sync status
+        Sync status
       </Link>
-      <p className="text-[11px] text-[var(--text-tertiary)]">
-        Auto-refreshes every 30s
-      </p>
     </div>
   );
 }
@@ -261,14 +234,6 @@ export function OnboardingHero({ state, recentActivity }: OnboardingHeroProps) {
 
   return (
     <section className="card relative overflow-hidden p-6">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          background:
-            "rgba(248,251,255,0.88)",
-        }}
-      />
       <div className="relative">
         <StepRail steps={steps} />
 

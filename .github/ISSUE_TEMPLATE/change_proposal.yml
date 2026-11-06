@@ -1,0 +1,18 @@
+name: Change proposal
+description: Propose a feature or a larger change before writing it.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or impossible today, and for whom.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The change, and the layer that would own it (web, API, agent runtime, deploy).
+    validations:
+      required: true

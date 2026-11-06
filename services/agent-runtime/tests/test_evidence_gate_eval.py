@@ -111,6 +111,36 @@ CASES = {
         {"company": INJECTION},
         ("review_required", 0, 0, [KNOWN_APPLICATION]),
     ),
+    # The gate checks grounding, not intent: quoting the injected text is grounded, and the
+    # proposal still waits for a person.
+    "quoting injected text is grounded but cannot skip approval": (
+        [INJECTION],
+        1.0,
+        [KNOWN_APPLICATION],
+        {"company": INJECTION},
+        ("review_required", 1, 1.0, [KNOWN_APPLICATION]),
+    ),
+    "a labelled number taken from another field is dropped": (
+        ["Roblox · interviewing", "totalApplications:84"],
+        0.9,
+        [],
+        {},
+        ("review_required", 1, 0.45, []),
+    ),
+    "timestamp digits do not vouch for a number": (
+        ["totalApplications:2026", "Roblox 2026"],
+        0.9,
+        [],
+        {},
+        ("review_required", 0, 0, []),
+    ),
+    "a reminder for a rejected application is dropped": (
+        ["Roblox · Software Engineer"],
+        0.9,
+        [KNOWN_APPLICATION],
+        {"status": "Rejected"},
+        ("completed", 1, 0.9, []),
+    ),
 }
 
 

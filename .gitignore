@@ -30,3 +30,5 @@ coverage/
 apps/web/node_modules/
 apps/web/.next/
 
+# Vercel CLI link, created when deploying from the repository root.
+.vercel/

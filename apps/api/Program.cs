@@ -89,14 +89,6 @@ builder.Services.AddRateLimiter(
                     return RateLimitPartition.GetNoLimiter("non-api");
                 }
 
-                if (ApiRateLimitPartitioner.IsOAuthCallback(httpContext.Request))
-                {
-                    return CreateFixedWindowPartition(
-                        ApiRateLimitPartitioner.ResolvePartitionKey(httpContext),
-                        apiRateLimitOptions.OAuthCallbackPermitLimit,
-                        apiRateLimitOptions);
-                }
-
                 var partitionKey = ApiRateLimitPartitioner.ResolvePartitionKey(httpContext);
                 var permitLimit = partitionKey.StartsWith("user:", StringComparison.Ordinal)
                     ? apiRateLimitOptions.UserPermitLimit
@@ -104,6 +96,17 @@ builder.Services.AddRateLimiter(
 
                 return CreateFixedWindowPartition(partitionKey, permitLimit, apiRateLimitOptions);
             });
+        // A review runs the agent graph, with model calls, for up to two minutes.
+        options.AddPolicy(
+            AgentReviewRateLimit.PolicyName,
+            httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                ApiRateLimitPartitioner.ResolvePartitionKey(httpContext),
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = AgentReviewRateLimit.PermitLimit,
+                    Window = AgentReviewRateLimit.Window,
+                    QueueLimit = 0
+                }));
     });
 
 var app = builder.Build();
@@ -456,13 +459,11 @@ static bool HasConfiguredValues(IConfiguration configuration, string sectionKey,
            !string.IsNullOrWhiteSpace(configuration[environmentKey]);
 }
 
+// Not ASPNETCORE_FORWARDEDHEADERS_ENABLED: that variable makes ASP.NET add its own middleware too, and
+// a second pass would consume one more X-Forwarded-For entry, which the client controls.
 static bool ShouldUseForwardedHeaders(IConfiguration configuration)
 {
-    return configuration.GetValue<bool>("ForwardedHeaders:Enabled") ||
-           string.Equals(
-               Environment.GetEnvironmentVariable("ASPNETCORE_FORWARDEDHEADERS_ENABLED"),
-               "true",
-               StringComparison.OrdinalIgnoreCase);
+    return configuration.GetValue<bool>("ForwardedHeaders:Enabled");
 }
 
 static bool ShouldApplyMigrationsOnStartup(IConfiguration configuration, IHostEnvironment environment)

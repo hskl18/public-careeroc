@@ -22,6 +22,8 @@ ENV NEXT_OUTPUT=standalone \
 RUN pnpm --dir apps/web build
 
 FROM node:26-alpine AS runtime
+LABEL org.opencontainers.image.source="https://github.com/hskl18/public-careeroc" \
+      org.opencontainers.image.licenses="MIT"
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

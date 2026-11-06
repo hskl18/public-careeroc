@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { LocalTime } from "@/components/local-time";
+import { SvgAsset, mascotAssets } from "@/components/svg-asset";
 import type { UserMemoryEntry } from "@/lib/profile";
+import { formatConfidence, formatEnumLabel } from "@/lib/labels";
 
 const kindLabels: Record<string, string> = {
   preference: "Preferences",
@@ -28,7 +30,7 @@ function formatSource(sourceType: string | null | undefined): string {
   return sourceLabels[sourceType] ?? sourceType.replace(/_/g, " ");
 }
 
-export function tryFormatMemoryJson(value: string): { isJson: boolean; preview: string; pretty: string } {
+function tryFormatMemoryJson(value: string): { isJson: boolean; preview: string; pretty: string } {
   const trimmed = value.trim();
   if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
     return { isJson: false, preview: value, pretty: value };
@@ -54,63 +56,39 @@ function formatMemoryDate(value: string | null | undefined) {
   return value && Number.isFinite(Date.parse(value)) ? <LocalTime value={value} /> : "Not recorded";
 }
 
-export function MemoryCountTile({
-  label,
-  value,
-  tone = "var(--text-tertiary)",
-}: {
-  label: string;
-  value: number;
-  tone?: string;
-}) {
-  return (
-    <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] px-3 py-2">
-      <p className="eyebrow">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums" style={{ color: tone }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
 export function MemorySectionShell({
-  eyebrow,
   title,
   count,
   empty,
+  action,
   children,
 }: {
-  eyebrow: string;
   title: string;
   count: number;
   empty: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="card app-workspace-panel p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">{eyebrow}</p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
-            {title}
-          </h2>
-        </div>
-        <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-          {count}
-        </span>
+    <section className="card flex min-h-0 flex-col p-0">
+      <div className="flex min-h-10 shrink-0 items-center gap-2 px-4 pt-3">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">{title}</h2>
+        <span className="text-xs tabular-nums text-[var(--text-tertiary)]">{count}</span>
+        <div className="ml-auto">{action}</div>
       </div>
-      <div className="mt-4 space-y-3">
+      <div className="workspace-scroll-region flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4 pt-2">
         {count > 0 ? children : <MemoryEmptyState message={empty} />}
       </div>
     </section>
   );
 }
 
-export function MemoryEmptyState({ message }: { message: string }) {
+function MemoryEmptyState({ message }: { message: string }) {
   return (
-    <p className="rounded-md border border-dashed border-[var(--border)] bg-[rgba(255,255,255,0.28)] p-4 text-sm leading-6 text-[var(--text-secondary)]">
-      {message}
-    </p>
+    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
+      <SvgAsset src={mascotAssets.resumeBuddyCard} decorative className="h-16 w-16" />
+      <p className="text-sm text-[var(--text-tertiary)]">{message}</p>
+    </div>
   );
 }
 
@@ -137,7 +115,7 @@ export function PendingProposalCard({
           </p>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">
             {formatMemoryKind(entry.kind)} · {formatSource(entry.sourceType)} ·{" "}
-            {Math.round(entry.confidence * 100)}%
+            {formatConfidence(entry.confidence)}
           </p>
         </div>
         <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">
@@ -163,7 +141,7 @@ export function PendingProposalCard({
               {existingFormatted?.preview ?? existing.value}
             </p>
           </div>
-          <div className="rounded-md border border-[var(--accent)]/30 bg-[rgba(80,160,255,0.08)] p-3">
+          <div className="rounded-md border border-[var(--accent)]/30 bg-[var(--blue-soft)] p-3">
             <p className="eyebrow">Proposed</p>
             <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
               {formatted.preview}
@@ -217,7 +195,7 @@ export function MemoryEntryCard({
         onClick={onToggle}
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+          <p className="line-clamp-2 text-sm font-medium text-[var(--text-primary)]">
             {entry.summary || entry.key}
           </p>
           <p className="mt-0.5 truncate text-xs text-[var(--text-tertiary)]">
@@ -227,7 +205,7 @@ export function MemoryEntryCard({
         <span className="shrink-0 text-right text-xs text-[var(--text-tertiary)]">
           {formatSource(entry.sourceType)}
           <br />
-          {Math.round(entry.confidence * 100)}%
+          {formatConfidence(entry.confidence)}
         </span>
       </button>
 
@@ -244,7 +222,7 @@ export function MemoryEntryCard({
           )}
           <div className="grid gap-2 text-xs text-[var(--text-tertiary)] sm:grid-cols-3">
             <p>Updated {formatMemoryDate(entry.updatedAtUtc)}</p>
-            <p>Status {entry.confirmationStatus || "confirmed"}</p>
+            <p>Status {formatEnumLabel(entry.confirmationStatus || "confirmed")}</p>
             <p>Key {entry.key}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -268,14 +246,15 @@ export function MemoryArchiveItem({
   referenceTimeMs,
 }: {
   entry: UserMemoryEntry;
-  referenceTimeMs: number;
+  referenceTimeMs: number | null;
 }) {
   const formatted = tryFormatMemoryJson(entry.value);
   const expiresAt = entry.expiresAtUtc ? Date.parse(entry.expiresAtUtc) : Number.NaN;
-  const expired = Number.isFinite(expiresAt) && expiresAt < referenceTimeMs;
+  const expired =
+    referenceTimeMs !== null && Number.isFinite(expiresAt) && expiresAt < referenceTimeMs;
 
   return (
-    <article className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
+    <article className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-[var(--text-primary)]">
@@ -286,84 +265,15 @@ export function MemoryArchiveItem({
           </p>
         </div>
         <span className="badge bg-[var(--red-soft)] text-[var(--red)]">
-          {expired ? "Expired" : entry.confirmationStatus || "Rejected"}
+          {expired ? "Expired" : formatEnumLabel(entry.confirmationStatus || "rejected")}
         </span>
       </div>
       <p className="mt-3 line-clamp-3 text-xs leading-5 text-[var(--text-secondary)]">
         {formatted.preview}
       </p>
-      <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">
+      <p className="mt-2 text-xs text-[var(--text-tertiary)]">
         Updated {formatMemoryDate(entry.updatedAtUtc)}
       </p>
     </article>
-  );
-}
-
-export function SourceEvidencePanel({ entries }: { entries: UserMemoryEntry[] }) {
-  const sources = Array.from(
-    entries.reduce((buckets, entry) => {
-      const source = entry.sourceType || "unknown";
-      const bucket = buckets.get(source) ?? [];
-      bucket.push(entry);
-      buckets.set(source, bucket);
-      return buckets;
-    }, new Map<string, UserMemoryEntry[]>()),
-  ).sort((a, b) => b[1].length - a[1].length);
-
-  return (
-    <section className="card app-workspace-panel p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Source evidence</p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
-            Memory provenance
-          </h2>
-        </div>
-        <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-          {entries.length}
-        </span>
-      </div>
-
-      {entries.length === 0 ? (
-        <MemoryEmptyState message="No memory evidence metadata is available yet." />
-      ) : (
-        <div className="mt-4 space-y-3">
-          {sources.map(([source, sourceEntries]) => (
-            <article
-              key={source}
-              className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {formatSource(source)}
-                </p>
-                <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                  {sourceEntries.length}
-                </span>
-              </div>
-              <ul className="mt-3 space-y-2">
-                {sourceEntries.slice(0, 4).map((entry) => (
-                  <li key={entry.id} className="text-xs leading-5 text-[var(--text-secondary)]">
-                    <span className="font-medium text-[var(--text-primary)]">
-                      {entry.summary || entry.key}
-                    </span>
-                  <br />
-                  {entry.confirmationStatus || "confirmed"} ·{" "}
-                  {Math.round(entry.confidence * 100)}% ·{" "}
-                  {formatMemoryDate(entry.updatedAtUtc)}
-                  {entry.sourceId ? (
-                    <>
-                      <br />
-                      Source ID {entry.sourceId}
-                    </>
-                  ) : null}
-                </li>
-              ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }

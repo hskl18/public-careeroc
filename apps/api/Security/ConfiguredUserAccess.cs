@@ -1,7 +1,5 @@
 using Careeroc.Domain;
 using Careeroc.Domain.Entities;
-using Careeroc.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace Careeroc.Api.Security;
 

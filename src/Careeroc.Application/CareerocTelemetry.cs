@@ -38,15 +38,6 @@ public static class CareerocTelemetry
         ApplyCurrentTags();
     }
 
-    public static ModelCallContext AttachCorrelation(ModelCallContext context)
-    {
-        return context with
-        {
-            RunId = NormalizeTraceValue(context.RunId) ?? CurrentRunId,
-            CorrelationId = NormalizeTraceValue(context.CorrelationId) ?? CurrentCorrelationId
-        };
-    }
-
     private static void ApplyCurrentTags()
     {
         var state = CurrentState.Value;
@@ -96,4 +87,11 @@ public static class CareerocTelemetry
             _disposed = true;
         }
     }
+
+    // Spans leave the process (OTLP), so they carry this opaque key instead of the email. It is the
+    // same key the A2A runtime uses as the task owner, so the two can be correlated.
+    public static string UserKey(string? email) =>
+        Convert.ToHexStringLower(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes((email ?? string.Empty).Trim().ToLowerInvariant())));
 }

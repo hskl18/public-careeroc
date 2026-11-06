@@ -1,5 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
+using Careeroc.Application;
+using Careeroc.Application.Models;
+using Careeroc.Api.Security;
 using Careeroc.Application.Services;
 using Careeroc.Contracts.Agents;
 
@@ -77,12 +78,14 @@ public static class AgentAccessEndpoints
                         ? Results.Ok(reviewRequest)
                         : Results.NotFound())
             .WithName("GetAgentReviewRequest")
-            .WithTags("Agent access");
+            .WithTags("Agent access")
+            .Produces<CareerAgentGraphReviewRequest>()
+            // An A2A review runs the same graph, so it shares the in-app review limit.
+            .RequireRateLimiting(AgentReviewRateLimit.PolicyName);
 
         return endpoints;
     }
 
     // An opaque, stable key the A2A runtime uses to keep each user's tasks apart.
-    private static string OwnerKey(string email) =>
-        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(email.Trim().ToLowerInvariant())));
+    private static string OwnerKey(string email) => CareerocTelemetry.UserKey(email);
 }

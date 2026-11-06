@@ -488,6 +488,86 @@ public sealed class ApiRoutingSecurityTests
     }
 
     [Fact]
+    public async Task SignedRequestsWithEncodedPathsAndNonAsciiNamesAreAccepted()
+    {
+        await using var factory = new CareerocApiFactory();
+        using var client = factory.CreateClient();
+
+        // The web app signs the path as fetch sends it, percent-encoded; 404 means the signature held.
+        using var encodedPath = new HttpRequestMessage(HttpMethod.Get, "/api/applications/%C3%A9");
+        Sign(encodedPath);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.SendAsync(encodedPath)).StatusCode);
+
+        // Header values cannot carry 张三, so the web app percent-encodes the name and the API decodes it.
+        using var profile = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+        Sign(profile, userEmail: "zhang@example.com", userName: Uri.EscapeDataString("张三 José"));
+        var response = await client.SendAsync(profile);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"name\":\"张三 José\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task TamperedBodiesAndStaleSignaturesAreRejected()
+    {
+        await using var factory = new CareerocApiFactory();
+        using var client = factory.CreateClient();
+
+        using var tampered = new HttpRequestMessage(HttpMethod.Patch, "/api/profile")
+        {
+            Content = new StringContent("{\"name\":\"Mallory\"}", Encoding.UTF8, "application/json")
+        };
+        Sign(tampered, "{\"name\":\"Student\"}");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(tampered)).StatusCode);
+
+        using var stale = new HttpRequestMessage(HttpMethod.Get, "/api/dashboard");
+        Sign(stale, signedAt: DateTimeOffset.UtcNow.AddHours(-1));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(stale)).StatusCode);
+    }
+
+    [Fact]
+    public async Task OneUsersBadSignaturesDoNotLockOutOthersOnTheSameAddress()
+    {
+        await using var factory = new CareerocApiFactory();
+        using var client = factory.CreateClient();
+
+        async Task<HttpStatusCode> SendBadSignatureAsync()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/dashboard");
+            Sign(request, userEmail: "attacker@example.com");
+            request.Headers.Remove("X-Careeroc-Signature");
+            request.Headers.Add("X-Careeroc-Signature", new string('0', 64));
+            return (await client.SendAsync(request)).StatusCode;
+        }
+
+        // Every browser request arrives from the web host's one address; the default limit is 30.
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, await SendBadSignatureAsync());
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await SendBadSignatureAsync());
+        Assert.Equal(HttpStatusCode.OK, (await SendSignedAsync(client, HttpMethod.Get, "/api/dashboard", "student@example.com")).StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentReviewsAreLimitedPerUser()
+    {
+        await using var factory = new CareerocApiFactory();
+        using var client = factory.CreateClient();
+
+        for (var review = 0; review < AgentReviewRateLimit.PermitLimit; review++)
+        {
+            var response = await SendSignedJsonAsync(client, "/api/orchestrator/resume-mailbox-review", new { }, "student@example.com");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        var limited = await SendSignedJsonAsync(client, "/api/orchestrator/resume-mailbox-review", new { }, "student@example.com");
+        var otherUser = await SendSignedJsonAsync(client, "/api/orchestrator/resume-mailbox-review", new { }, "other@example.com");
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, otherUser.StatusCode);
+    }
+
+    [Fact]
     public async Task RepeatedInvalidCredentialsAreThrottledBeforeAnyLookup()
     {
         await using var factory = new CareerocApiFactory();
@@ -676,9 +756,10 @@ public sealed class ApiRoutingSecurityTests
         HttpRequestMessage request,
         string body = "",
         string userEmail = "student@example.com",
-        string userName = "Student User")
+        string userName = "Student User",
+        DateTimeOffset? signedAt = null)
     {
-        var timestamp = DateTimeOffset.UtcNow.ToString("O");
+        var timestamp = (signedAt ?? DateTimeOffset.UtcNow).ToString("O");
         var email = userEmail;
         var name = userName;
         var bodyHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(body))).ToLowerInvariant();
@@ -733,7 +814,6 @@ public sealed class ApiRoutingSecurityTests
                         ["Database:ApplyMigrationsOnStartup"] = "false",
                         ["Security:RateLimiting:AnonymousPermitLimit"] = "1000",
                         ["Security:RateLimiting:UserPermitLimit"] = "1000",
-                        ["Security:RateLimiting:OAuthCallbackPermitLimit"] = "1000",
                         ["Access:AllowAllUsers"] = "true",
                         ["Security:TokenProtectionKey"] = "test-token-protection-key-with-enough-entropy"
                     };

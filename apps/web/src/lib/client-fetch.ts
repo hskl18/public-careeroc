@@ -36,3 +36,10 @@ export async function fetchWithInFlightDedup(
 
   return request.then((response) => response.clone());
 }
+
+// The API answers errors as { error } (the demo's read-only notice among them); fall back to the
+// status when the body has no message.
+export async function readErrorMessage(response: Response) {
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+  return payload?.error || `Request failed with ${response.status}`;
+}

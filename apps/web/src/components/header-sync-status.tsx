@@ -10,6 +10,7 @@ import {
   activeWorkspacePollingIntervalMs,
   idleWorkspacePollingIntervalMs,
   setupPollingIntervalMs,
+  isInboxAnalysisActive,
 } from "@/lib/workspace-polling";
 import type {
   InboxAccountSetup,
@@ -75,12 +76,7 @@ function shouldAdvanceInboxProcessing(
   accounts: InboxAccountSetup[],
   dashboard: DashboardResponse,
 ) {
-  if (!shouldRunInboxCheck(accounts)) {
-    return false;
-  }
-
-  const { processed, total } = getDashboardProgress(dashboard);
-  return !dashboard.inbox.lastSyncAtUtc || (total > 0 && processed < total);
+  return shouldRunInboxCheck(accounts) && isInboxAnalysisActive(dashboard);
 }
 
 function getHeaderPollingIntervalMs(
@@ -92,12 +88,9 @@ function getHeaderPollingIntervalMs(
     return setupPollingIntervalMs;
   }
 
-  const { processed, total } = getDashboardProgress(dashboard);
-  if (!dashboard.inbox.lastSyncAtUtc || (total > 0 && processed < total)) {
-    return activeWorkspacePollingIntervalMs;
-  }
-
-  return idleWorkspacePollingIntervalMs;
+  return isInboxAnalysisActive(dashboard)
+    ? activeWorkspacePollingIntervalMs
+    : idleWorkspacePollingIntervalMs;
 }
 
 function buildStatus(
@@ -151,7 +144,7 @@ function buildStatus(
     return {
       label: "Gmail needs attention",
       meta: "",
-      title: `${attentionAccounts.length} inbox connection${attentionAccounts.length === 1 ? "" : "s"} need attention. Click to fix.`,
+      title: `${attentionAccounts.length === 1 ? "1 inbox connection needs" : `${attentionAccounts.length} inbox connections need`} attention. Click to fix.`,
       tone: "border-[var(--red)]/25 bg-[var(--red-soft)] text-[var(--red)]",
       dotColor: "bg-[var(--red)]",
       pulse: true,
@@ -171,7 +164,7 @@ function buildStatus(
     };
   }
 
-  if (total > 0 && processed < total) {
+  if (isInboxAnalysisActive(dashboard)) {
     return {
       label: "Analyzing inbox",
       meta: countLabel,
@@ -341,14 +334,14 @@ export function HeaderSyncStatus({
     <Link
       href={status.href as Route}
       title={status.title}
-      className={`hidden h-8 max-w-[260px] items-center gap-2 rounded-md border px-2.5 text-[11px] font-medium transition-colors hover:bg-[var(--surface)] md:inline-flex ${status.tone}`}
+      className={`hidden h-8 max-w-[16rem] items-center gap-2 rounded-md border px-2.5 text-xs font-medium transition-colors hover:bg-[var(--surface)] md:inline-flex ${status.tone}`}
     >
       <span
         className={`sync-dot ${status.dotColor} ${status.pulse ? "sync-dot-live" : ""}`}
       />
       <span className="truncate whitespace-nowrap">{status.label}</span>
       {status.meta ? (
-        <span className="whitespace-nowrap font-mono text-[10px] text-[var(--text-tertiary)]">
+        <span className="whitespace-nowrap text-xs text-[var(--text-tertiary)]">
           {status.meta}
         </span>
       ) : null}

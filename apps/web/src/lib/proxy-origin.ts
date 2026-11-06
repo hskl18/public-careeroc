@@ -31,7 +31,7 @@ export function hasTrustedBrowserOrigin(request: NextRequest) {
   }
 }
 
-export function getTrustedBrowserOrigins(request: NextRequest) {
+function getTrustedBrowserOrigins(request: NextRequest) {
   const origins = new Set<string>();
   addTrustedOrigin(origins, process.env.AUTH_URL);
   addTrustedOrigin(origins, process.env.NEXTAUTH_URL);
@@ -46,7 +46,7 @@ export function getTrustedBrowserOrigins(request: NextRequest) {
   return origins;
 }
 
-export function normalizeOrigin(value?: string | null) {
+function normalizeOrigin(value?: string | null) {
   const trimmed = value?.trim();
   if (!trimmed) {
     return null;

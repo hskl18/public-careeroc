@@ -2,6 +2,7 @@ import {
   fetchCareerocApi,
   getCareerocBackendBaseUrl,
   getCareerocClientApiBaseUrl,
+  warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
 import type { ApplicationDetail } from "./application-detail";
@@ -58,7 +59,8 @@ const getApplicationDetailForUserCached = createKeyedUserScopedCache(async (
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };
-  } catch {
+  } catch (error) {
+    warnFallback("application-detail", error);
     return {
       detail: null,
       source: "fallback",

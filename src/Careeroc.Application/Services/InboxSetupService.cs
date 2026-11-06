@@ -80,7 +80,7 @@ public sealed class InboxSetupService
         var emailAddress = NormalizeEmailAddress(request.EmailAddress);
         ValidateGmailAddress(emailAddress);
 
-        var user = await GetOrCreateUserAsync(userEmail, userName, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, userName, cancellationToken);
         var account = await UpsertAccountAsync(
             user,
             ApplicationDefaults.GmailInboxProvider,
@@ -125,7 +125,7 @@ public sealed class InboxSetupService
         var emailAddress = NormalizeEmailAddress(request.EmailAddress);
         ValidateGmailAddress(emailAddress);
 
-        var user = await GetOrCreateUserAsync(userEmail, userName, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, userName, cancellationToken);
         var account = await UpsertAccountAsync(
             user,
             ApplicationDefaults.GmailInboxProvider,
@@ -590,31 +590,6 @@ public sealed class InboxSetupService
             1);
     }
 
-    private async Task<User> GetOrCreateUserAsync(
-        string? userEmail,
-        string? userName,
-        CancellationToken cancellationToken)
-    {
-        var resolvedUserEmail = ResolveUserEmail(userEmail);
-        var resolvedUserName = ResolveUserName(userName, resolvedUserEmail);
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(candidate => candidate.Email == resolvedUserEmail, cancellationToken);
-
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new User
-        {
-            Email = resolvedUserEmail,
-            Name = resolvedUserName
-        };
-
-        await _dbContext.Users.AddAsync(user, cancellationToken);
-        return user;
-    }
-
     private async Task<InboxAccount> UpsertAccountAsync(
         User user,
         string provider,
@@ -887,14 +862,4 @@ public sealed class InboxSetupService
         return ApplicationDefaults.NormalizeRequiredUserEmail(userEmail);
     }
 
-    private static string ResolveUserName(string? userName, string userEmail)
-    {
-        if (!string.IsNullOrWhiteSpace(userName))
-        {
-            return userName.Trim();
-        }
-
-        var separatorIndex = userEmail.IndexOf('@');
-        return separatorIndex > 0 ? userEmail[..separatorIndex] : ApplicationDefaults.DefaultUserName;
-    }
 }

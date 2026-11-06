@@ -3,9 +3,9 @@ import Link from "next/link";
 import { memo, useMemo } from "react";
 import type {
   AnalyticsBreakdownItem,
+  AnalyticsInsight,
   AnalyticsProvider,
   AnalyticsRange,
-  AnalyticsResponse,
 } from "@/lib/analytics";
 
 const SAMPLE_SIZE_THRESHOLD = 10;
@@ -103,7 +103,8 @@ function buildBreakdownDrillHref(
   label: string,
   drillKind: BreakdownKind,
 ): Route {
-  const searchParams = new URLSearchParams();
+  // Every application for that company or role, not only the default needs-action view.
+  const searchParams = new URLSearchParams({ view: "all" });
   switch (drillKind) {
     case "company":
       searchParams.set("company", label);
@@ -197,40 +198,16 @@ export type FunnelStage = {
   description: string;
 };
 
-export type Insight = {
-  id: string;
-  tone: "warning" | "win" | "info";
-  headline: string;
-  body: string;
-  drillHref?: string | null;
-};
-
-const INSIGHT_TONE_ORDER: Record<Insight["tone"], number> = {
+const INSIGHT_TONE_ORDER: Record<AnalyticsInsight["tone"], number> = {
   warning: 0,
   win: 1,
   info: 2,
 };
 
-export function sortInsightsByImportance(insights: Insight[]): Insight[] {
+export function sortInsightsByImportance(insights: AnalyticsInsight[]): AnalyticsInsight[] {
   return [...insights].sort(
     (left, right) => INSIGHT_TONE_ORDER[left.tone] - INSIGHT_TONE_ORDER[right.tone],
   );
-}
-
-export function mapServerInsights(
-  insights: AnalyticsResponse["insights"],
-): Insight[] {
-  if (!insights || insights.length === 0) {
-    return [];
-  }
-
-  return insights.map((insight) => ({
-    id: insight.id,
-    tone: insight.tone,
-    headline: insight.headline,
-    body: insight.body,
-    drillHref: insight.drillHref,
-  }));
 }
 
 function RateCell({
@@ -244,7 +221,7 @@ function RateCell({
 }) {
   return (
     <div className="flex items-center justify-end gap-2">
-      <div className="relative h-1.5 w-10 overflow-hidden rounded-full bg-[rgba(15,23,42,0.07)] min-[1500px]:w-14">
+      <div className="relative h-1.5 w-10 overflow-hidden rounded-full bg-[var(--surface-overlay)] min-[1500px]:w-14">
         <div
           className="h-full rounded-full"
           style={{
@@ -254,10 +231,8 @@ function RateCell({
           }}
         />
       </div>
-      <span
-        className="font-mono text-xs tabular-nums"
-        style={{ color, opacity: lowSample ? 0.7 : 1 }}
-      >
+      {/* Low samples show only on the bar; faded text would fall below readable contrast. */}
+      <span className="text-xs tabular-nums" style={{ color }}>
         {formatPercent(value)}
       </span>
     </div>
@@ -363,17 +338,15 @@ export const BreakdownTable = memo(function BreakdownTable({
   );
 
   return (
-    <div className="analytics-panel flex min-h-0 flex-col overflow-hidden p-0">
-      <div className="shrink-0 border-b border-[var(--border)] px-4 py-3">
+    <div className="card flex min-h-0 flex-col overflow-hidden p-0 xl:h-full">
+      <div className="shrink-0 border-b border-[var(--border)] px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="eyebrow mr-1">{eyebrow}</p>
-          <span className="badge border-[var(--brand-blue)]/12 bg-white/70 text-[var(--text-tertiary)]">
-            {sortedRows.length}
-          </span>
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">{eyebrow}</h2>
+          <span className="text-xs tabular-nums text-[var(--text-tertiary)]">{sortedRows.length}</span>
           {hiddenCount > 0 ? (
             <Link
               href={"/app/review" as Route}
-              className="badge border-[var(--brand-blue)]/18 bg-[var(--blue-soft)] text-[var(--brand-blue-ink)] hover:underline"
+              className="badge border-[var(--brand-blue)]/18 bg-[var(--blue-soft)] text-[var(--brand-blue-ink)] hover:underline max-sm:min-h-6"
               title={`${hiddenCount} ${drillKind} row${hiddenCount === 1 ? "" : "s"} hidden because the ${drillKind} could not be identified. Fix in review queue.`}
             >
               {hiddenCount} hidden
@@ -389,10 +362,9 @@ export const BreakdownTable = memo(function BreakdownTable({
             : "No data yet."}
         </p>
       ) : (
-        <div className="min-h-0 max-h-[34rem] overflow-y-auto overflow-x-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="space-y-2 p-3 lg:hidden">
             {sortedRows.map((row) => {
-              const lowSample = row.applicationsCount < SAMPLE_SIZE_THRESHOLD;
               const lowQuality =
                 drillKind === "role" && isLowConfidenceRoleLabel(row.label);
               const outcome = getMobileOutcome(row);
@@ -401,7 +373,7 @@ export const BreakdownTable = memo(function BreakdownTable({
                 <Link
                   key={row.label}
                   href={buildBreakdownDrillHref(row.label, drillKind)}
-                  className="block rounded-md border border-[var(--border)] bg-white/58 px-3 py-2.5 transition-colors hover:border-[var(--brand-blue)]/30 hover:bg-white/78"
+                  className="block rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5 transition-colors hover:border-[var(--brand-blue)]/30 hover:bg-[var(--surface-overlay)]"
                   title={row.label}
                 >
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -409,27 +381,26 @@ export const BreakdownTable = memo(function BreakdownTable({
                       <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                         {row.label}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                      <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
                         {row.applicationsCount} app
                         {row.applicationsCount === 1 ? "" : "s"}
-                        {lowSample ? " · low sample" : ""}
                       </p>
                     </div>
                     <div className="text-right">
                       <p
-                        className="font-mono text-base font-semibold tabular-nums"
+                        className=" text-base font-semibold tabular-nums"
                         style={{ color: outcome.color }}
                       >
                         {formatPercent(outcome.value)}
                       </p>
-                      <p className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-tertiary)]">
+                      <p className=" text-xs font-semibold text-[var(--text-tertiary)]">
                         {outcome.label}
                       </p>
                     </div>
                   </div>
                   {lowQuality ? (
                     <span
-                      className="mt-2 inline-flex rounded-full border border-[var(--brand-blue)]/18 bg-[var(--blue-soft)] px-2 py-0.5 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-blue-ink)]"
+                      className="mt-2 inline-flex rounded-full border border-[var(--brand-blue)]/18 bg-[var(--blue-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-blue-ink)]"
                       title="Generic or low-confidence label — these distort analytics."
                     >
                       Review label
@@ -440,7 +411,7 @@ export const BreakdownTable = memo(function BreakdownTable({
             })}
           </div>
 
-          <table className="hidden w-full table-fixed text-sm lg:table">
+          <table className="hidden h-full w-full table-fixed text-sm lg:table">
             <colgroup>
               <col className="w-[34%]" />
               <col className="w-[10%]" />
@@ -449,8 +420,8 @@ export const BreakdownTable = memo(function BreakdownTable({
               <col className="w-[18%]" />
             </colgroup>
             <thead>
-              <tr className="bg-[rgba(37,99,235,0.045)]">
-                <th className="text-left px-3 py-3 font-mono text-[11px] font-medium text-[var(--text-tertiary)] uppercase">
+              <tr className="h-px bg-[var(--surface-elevated)]">
+                <th className="text-left px-3 py-3 text-xs font-medium text-[var(--text-tertiary)]">
                   Name
                 </th>
                 <th className="px-3 py-3 text-right">
@@ -493,16 +464,16 @@ export const BreakdownTable = memo(function BreakdownTable({
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {sortedRows.map((row) => {
-                const lowSample = row.applicationsCount < SAMPLE_SIZE_THRESHOLD;
-                const lowQuality =
+                  const lowSample = row.applicationsCount < SAMPLE_SIZE_THRESHOLD;
+                  const lowQuality =
                   drillKind === "role" && isLowConfidenceRoleLabel(row.label);
                 return (
                   <tr
                     key={row.label}
-                    className="transition-colors hover:bg-[rgba(37,99,235,0.035)]"
+                    className="transition-colors hover:bg-[var(--surface-overlay)]"
                   >
                     <td
-                      className="max-w-[220px] truncate px-3 py-3 font-medium text-[var(--text-primary)]"
+                      className="max-w-[14rem] truncate px-3 py-3 font-medium text-[var(--text-primary)]"
                       title={row.label}
                     >
                       <Link
@@ -520,16 +491,8 @@ export const BreakdownTable = memo(function BreakdownTable({
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--text-secondary)]">
+                    <td className="px-3 py-3 text-right tabular-nums text-[var(--text-secondary)]">
                       {row.applicationsCount}
-                      {lowSample ? (
-                        <span
-                          className="ml-1 text-[10px] text-[var(--text-tertiary)]"
-                          title={`Small sample (< ${SAMPLE_SIZE_THRESHOLD}). Treat percentages with caution.`}
-                        >
-                          n
-                        </span>
-                      ) : null}
                     </td>
                     <td className="px-3 py-3">
                       <RateCell
@@ -575,10 +538,6 @@ export function FunnelChart({
     <div className="grid w-full flex-1 gap-2 lg:grid-cols-5 lg:items-center lg:gap-3 xl:gap-5">
       {stages.map((stage, index) => {
         const previous = index === 0 ? null : stages[index - 1];
-        const dropOff =
-          previous && previous.value > 0
-            ? Math.max(0, previous.value - stage.value)
-            : null;
         const continuationRate =
           previous && previous.value > 0
             ? (stage.value / previous.value) * 100
@@ -590,20 +549,20 @@ export function FunnelChart({
             key={stage.key}
             href={stage.href}
             title={stage.description}
-            className="group grid gap-2 rounded-md border border-[var(--border)] bg-white/58 p-3 transition-colors hover:border-[var(--brand-blue)]/35 hover:bg-white/78 lg:min-h-[7.15rem] lg:grid-rows-[auto_1fr_auto] lg:gap-3"
+            className="group grid gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-3 transition-colors hover:border-[var(--brand-blue)]/35 hover:bg-[var(--surface-overlay)] lg:min-h-[7.15rem] lg:grid-rows-[auto_1fr_auto] lg:gap-3"
           >
             <div className="flex items-center justify-between gap-3">
-              <p className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-[var(--text-tertiary)] lg:text-xs lg:tracking-normal">
+              <p className=" text-xs text-[var(--text-tertiary)]">
                 {stage.label}
               </p>
               <p
-                className="text-base font-semibold tabular-nums lg:text-2xl"
+                className="text-base font-semibold tabular-nums"
                 style={{ color: stage.color }}
               >
                 {stage.value}
               </p>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(15,23,42,0.07)] lg:h-2">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-overlay)] lg:h-2">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -612,10 +571,10 @@ export function FunnelChart({
                 }}
               />
             </div>
-            <p className="text-[10px] leading-4 text-[var(--text-tertiary)] lg:text-[11px] lg:leading-5">
+            <p className="text-xs leading-4 text-[var(--text-tertiary)] lg:text-xs lg:leading-5">
               {previous && continuationRate !== null
-                ? `${dropOff} · ${formatPercent(continuationRate)} advance`
-                : "100% baseline"}
+                ? formatPercent(continuationRate)
+                : "100%"}
             </p>
           </Link>
         );
@@ -624,18 +583,13 @@ export function FunnelChart({
   );
 }
 
-export function InsightCard({ insights }: { insights: Insight[] }) {
+export function InsightCard({ insights }: { insights: AnalyticsInsight[] }) {
   return (
-    <div className="analytics-panel px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="eyebrow">Insights</p>
-        <span className="badge border-[var(--brand-blue)]/12 bg-white/70 text-[var(--text-tertiary)]">
-          {insights.length}
-        </span>
-      </div>
+    <div className="card p-4">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">Insights</h2>
       {insights.length === 0 ? (
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Not enough data yet — sync more emails or widen the range.
+          Not enough data yet.
         </p>
       ) : (
         <ul className="mt-2 divide-y divide-[var(--border)]">
@@ -647,12 +601,9 @@ export function InsightCard({ insights }: { insights: Insight[] }) {
                   ? "bg-[var(--green)]"
                   : "bg-[var(--text-tertiary)]";
             const content = (
-              <div className="text-sm leading-5">
-                <p className="font-semibold text-[var(--text-primary)]">
+              <div className="text-sm" title={insight.body}>
+                <p className="text-[var(--text-secondary)]">
                   {insight.headline}
-                </p>
-                <p className="mt-0.5 text-[var(--text-secondary)]">
-                  {insight.body}
                 </p>
               </div>
             );

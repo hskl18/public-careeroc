@@ -14,11 +14,7 @@ test("applications page has no horizontal overflow or clipped buttons", async ({
   );
 
   await page.goto("/app/applications?focus=needs-action");
-  await expect(
-    page.getByRole("heading", {
-      name: /job pipeline/i,
-    }),
-  ).toBeVisible();
+  await expect(page.getByLabel("Search applications")).toBeVisible();
 
   const layoutIssues = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;

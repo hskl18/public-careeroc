@@ -9,7 +9,7 @@ import type {
   ApplicationThread,
   ApplicationThreadMessage,
 } from "@/lib/application-detail";
-import { formatEnumLabel } from "@/lib/labels";
+import { formatEnumLabel, formatConfidence } from "@/lib/labels";
 
 const EMAIL_CATEGORY_OPTIONS = [
   "recruiter_outreach",
@@ -39,14 +39,6 @@ type AgentTraceSummaryCardProps = {
   compact?: boolean;
 };
 
-function formatConfidenceValue(value: number | null) {
-  if (value === null) {
-    return "n/a";
-  }
-
-  return value.toFixed(2);
-}
-
 export function AgentTraceSummaryCard({
   summary,
   title = "Model trace summary",
@@ -59,14 +51,14 @@ export function AgentTraceSummaryCard({
   const rows = [
     ["Model path", summary.modelPath ?? "not recorded"],
     ["Purpose", summary.purpose],
-    ["Confidence", formatConfidenceValue(summary.confidence)],
+    ["Confidence", formatConfidence(summary.confidence)],
     ["Evidence source", summary.evidenceSource],
     ["Review gate", summary.reviewGateResult],
     ["Fallback", summary.fallbackPath],
   ];
 
   return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[rgba(255,255,255,0.46)] p-3">
+    <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-strong)] p-3">
       <div className="flex items-center justify-between gap-3">
         <p className="eyebrow text-[var(--accent)]">{title}</p>
         {summary.modelPath ? (
@@ -85,7 +77,7 @@ export function AgentTraceSummaryCard({
             key={label}
             className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
           >
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+            <p className="text-xs text-[var(--text-tertiary)]">
               {label}
             </p>
             <p className="mt-1 text-xs font-medium leading-5 text-[var(--text-primary)]">
@@ -138,7 +130,7 @@ function AgentTraceStepCard({ step }: { step: AgentTraceStep }) {
               key={`${step.stage}:${fact.label}`}
               className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2"
             >
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+              <p className="text-xs text-[var(--text-tertiary)]">
                 {fact.label}
               </p>
               <p className="mt-1 text-xs font-medium text-[var(--text-primary)]">
@@ -164,7 +156,7 @@ export function AgentTraceStepsPanel({
   }
 
   return (
-    <details className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
+    <details className="rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-3">
       <summary className="flex cursor-pointer items-center justify-between gap-3 text-xs font-semibold text-[var(--text-secondary)]">
         <span>{title}</span>
         <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
@@ -206,29 +198,18 @@ export function ApplicationThreadEvidenceSection({
   onCorrectEmail,
   onMarkNotOa,
 }: ThreadEvidenceSectionProps) {
-  const totalMessages = threads.reduce(
-    (total, thread) => total + thread.messageCount,
-    0,
-  );
   const visibleThreads = threads.slice(0, maxVisibleThreads);
   const hiddenThreadCount = Math.max(0, threads.length - visibleThreads.length);
 
   return (
-    <section className="card app-workspace-panel p-4">
+    <section className="card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="eyebrow">Source evidence</p>
-          <h2 className="mt-1.5 text-base font-semibold text-[var(--text-primary)]">
-            Recruiting threads
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
+            Threads
           </h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
-            {totalMessages} source message{totalMessages === 1 ? "" : "s"} across{" "}
-            {threads.length} recruiting thread{threads.length === 1 ? "" : "s"}.
-          </p>
         </div>
-        <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
-          {threads.length}
-        </span>
+        <span className="text-xs tabular-nums text-[var(--text-tertiary)]">{threads.length}</span>
       </div>
 
       {threads.length === 0 ? (
@@ -252,10 +233,7 @@ export function ApplicationThreadEvidenceSection({
             />
           ))}
           {hiddenThreadCount > 0 ? (
-            <p className="rounded-md border border-[var(--border)] bg-[var(--surface-overlay)] px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-              Showing the latest {visibleThreads.length} threads; {hiddenThreadCount} older
-              thread{hiddenThreadCount === 1 ? " is" : "s are"} not shown.
-            </p>
+            <p className="px-1 text-xs text-[var(--text-tertiary)]">+{hiddenThreadCount} older</p>
           ) : null}
         </div>
       )}
@@ -278,12 +256,11 @@ function ThreadEvidenceBlock({
   const hiddenMessageCount = Math.max(0, thread.messages.length - visibleMessages.length);
 
   return (
-    <article className="overflow-hidden rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.44)]">
+    <article className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-strong)]">
       <div className="border-b border-[var(--border)] p-4">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0">
-            <p className="eyebrow">Thread</p>
-            <h3 className="mt-2 text-base font-semibold leading-6 text-[var(--text-primary)]">
+            <h3 className="text-base font-semibold leading-6 text-[var(--text-primary)]">
               {thread.title}
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
@@ -317,7 +294,7 @@ function ThreadEvidenceBlock({
                 {thread.messageCount} message{thread.messageCount === 1 ? "" : "s"}
               </span>
             </div>
-            <p className="text-[11px] text-[var(--text-tertiary)]">
+            <p className="text-xs text-[var(--text-tertiary)]">
               Latest {formatTimestamp(thread.lastMessageAtUtc, timeZoneId)}
             </p>
             {thread.gmailUrl ? (
@@ -350,11 +327,7 @@ function ThreadEvidenceBlock({
           />
         ))}
         {hiddenMessageCount > 0 ? (
-          <p className="rounded-md border border-[var(--border)] bg-[var(--surface-overlay)] px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-            Showing the latest {visibleMessages.length} messages in this thread;{" "}
-            {hiddenMessageCount} older message{hiddenMessageCount === 1 ? " is" : "s are"} not
-            shown.
-          </p>
+          <p className="px-1 text-xs text-[var(--text-tertiary)]">+{hiddenMessageCount} older</p>
         ) : null}
       </div>
     </article>
@@ -379,7 +352,7 @@ function MessageEvidenceItem({
   const canPersist = source === "api";
 
   return (
-    <article className="overflow-hidden rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.64)]">
+    <article className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-strong)]">
       <div className="border-b border-[var(--border)] px-4 py-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
@@ -387,7 +360,8 @@ function MessageEvidenceItem({
               <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
                 {message.isOutbound ? "Sent" : "Received"}
               </span>
-              {message.category ? (
+              {message.category &&
+              toCompactStageLabel(message.category) !== (message.isOutbound ? "Sent" : "Received") ? (
                 <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
                   {toCompactStageLabel(message.category)}
                 </span>
@@ -408,7 +382,7 @@ function MessageEvidenceItem({
                 </span>
               ) : null}
             </div>
-            <p className="mt-3 break-all text-[11px] font-mono text-[var(--text-tertiary)]">
+            <p className="mt-3 break-all text-xs text-[var(--text-tertiary)]">
               {message.sender}
             </p>
             <h4 className="mt-1 text-sm font-semibold leading-6 text-[var(--text-primary)]">
@@ -445,24 +419,19 @@ function MessageEvidenceItem({
 
       <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
         <div className="min-w-0 space-y-3">
-          <div className="rounded-md border border-[var(--border-active)]/35 bg-[var(--surface)] p-4">
-            <p className="eyebrow text-[var(--accent)]">Agent read</p>
-            <p className="mt-2 text-sm leading-7 text-[var(--text-primary)]">
-              {message.summary}
-            </p>
-          </div>
+          <p className="text-sm leading-6 text-[var(--text-primary)]">{message.summary}</p>
 
-          <details className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)]">
-            <summary className="px-4 py-3 text-xs font-semibold text-[var(--text-secondary)]">
+          <details className="border-t border-[var(--border)] pt-2">
+            <summary className="text-xs font-semibold text-[var(--text-secondary)]">
               Email excerpt
             </summary>
-            <p className="border-t border-[var(--border)] px-4 py-3 text-sm leading-7 text-[var(--text-secondary)]">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
               {message.bodyPreview}
             </p>
           </details>
 
-          <details className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)]">
-            <summary className="px-4 py-3 text-xs font-semibold text-[var(--text-secondary)]">
+          <details className="border-t border-[var(--border)] pt-2">
+            <summary className="text-xs font-semibold text-[var(--text-secondary)]">
               Correct evidence
             </summary>
             <form
@@ -473,7 +442,7 @@ function MessageEvidenceItem({
                 message.dueDateUtc,
                 message.requiresManualReview,
               ].join(":")}
-              className="grid gap-3 border-t border-[var(--border)] p-4"
+              className="mt-2 grid gap-3"
               onSubmit={(event) => onCorrectEmail(event, message)}
             >
               <div className="grid gap-3 md:grid-cols-2">
@@ -541,7 +510,7 @@ function MessageEvidenceItem({
                     placeholder="Correction note"
                   />
                 </label>
-                <label className="flex min-h-11 items-center gap-2 rounded-md border border-[var(--border)] bg-white/55 px-3 text-sm text-[var(--text-primary)]">
+                <label className="flex min-h-11 items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-3 text-sm text-[var(--text-primary)]">
                   <input
                     name="actionRequired"
                     type="checkbox"
@@ -565,64 +534,26 @@ function MessageEvidenceItem({
         </div>
 
         <aside className="space-y-3">
-          <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
-            <p className="eyebrow">{message.isOutbound ? "Sent" : "Received"}</p>
-            <p className="mt-1 text-sm font-medium leading-5 text-[var(--text-primary)]">
-              {formatTimestamp(message.receivedAtUtc, timeZoneId)}
-            </p>
-          </div>
-
-          <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
-            <p className="eyebrow">Confidence</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-                  Class
-                </p>
-                <p className="mt-1 font-mono text-xs font-semibold text-[var(--text-primary)]">
-                  {formatConfidence(message.classificationConfidence)}
-                </p>
+          {/* Flat label and value rows; the message is already a card. */}
+          <dl className="divide-y divide-[var(--border)] text-xs">
+            {[
+              [message.isOutbound ? "Sent" : "Received", formatTimestamp(message.receivedAtUtc, timeZoneId)],
+              ["Type", formatConfidence(message.classificationConfidence)],
+              ["Match", formatConfidence(message.matchingConfidence)],
+              ...(message.dueDateUtc ? [["Due", formatTimestamp(message.dueDateUtc, timeZoneId)]] : []),
+              ...(message.contactName || message.contactEmail
+                ? [["Contact", message.contactName ?? message.contactEmail ?? ""]]
+                : []),
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-3 py-1.5">
+                <dt className="text-[var(--text-tertiary)]">{label}</dt>
+                <dd className="min-w-0 break-all text-right font-medium text-[var(--text-primary)]">{value}</dd>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-                  Match
-                </p>
-                <p className="mt-1 font-mono text-xs font-semibold text-[var(--text-primary)]">
-                  {formatConfidence(message.matchingConfidence)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {message.contactName || message.contactEmail ? (
-            <div className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
-              <p className="eyebrow">Contact</p>
-              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
-                {message.contactName ?? message.contactEmail}
-              </p>
-              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                {message.contactType ?? "Unclassified contact"}
-                {message.contactRoleHint ? ` · ${message.contactRoleHint}` : ""}
-              </p>
-              {message.contactEmail ? (
-                <p className="mt-2 break-all text-xs text-[var(--text-secondary)]">
-                  {message.contactEmail}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {message.dueDateUtc ? (
-            <div className="rounded-md border border-[var(--yellow)]/25 bg-[var(--yellow-soft)] p-3">
-              <p className="eyebrow text-[var(--yellow)]">Due date</p>
-              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
-                {formatTimestamp(message.dueDateUtc, timeZoneId)}
-              </p>
-            </div>
-          ) : null}
+            ))}
+          </dl>
 
           {message.reviewReason || message.processingSource ? (
-            <details className="rounded-md border border-[var(--border)] bg-[rgba(255,255,255,0.42)] p-3">
+            <details className="border-t border-[var(--border)] pt-2">
               <summary className="text-xs font-semibold text-[var(--text-secondary)]">
                 Extraction
               </summary>
@@ -688,7 +619,3 @@ function toCompactStageLabel(value: string | null) {
   }
 }
 
-function formatConfidence(value: number | null) {
-  if (value === null) return "n/a";
-  return `${Math.round(value * 100)}%`;
-}

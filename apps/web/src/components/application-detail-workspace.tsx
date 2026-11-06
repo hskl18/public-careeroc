@@ -10,7 +10,7 @@ import {
 } from "@/components/application-thread-evidence-section";
 import { InlineMemoryProposals } from "@/components/inline-memory-proposals";
 import { ResumeFitPanel } from "@/components/resume-fit-panel";
-import { fetchWithInFlightDedup } from "@/lib/client-fetch";
+import { fetchWithInFlightDedup, readErrorMessage } from "@/lib/client-fetch";
 import {
   formatTimestampInTimeZone,
   toUtcIsoStringFromDateTimeLocal,
@@ -20,14 +20,13 @@ import type {
   ApplicationDetailReminder,
   ApplicationThreadMessage,
 } from "@/lib/application-detail";
-import { formatEnumLabel } from "@/lib/labels";
+import { formatEnumLabel, formatConfidence } from "@/lib/labels";
+import { StatusPill } from "@/components/status-pill";
 
 type ApplicationDetailWorkspaceProps = {
   detail: ApplicationDetail | null;
   source: "api" | "fallback";
   proxyPrefix: string | null;
-  currentUserEmail: string;
-  currentUserName?: string | null;
   timeZoneId: string;
 };
 
@@ -55,25 +54,8 @@ function toCompactStageLabel(value: string | null) {
   }
 }
 
-function formatConfidence(value: number | null) {
-  if (value === null) return "n/a";
-  return `${Math.round(value * 100)}%`;
-}
-
 function isTerminalStatus(status: string) {
   return status === "Rejected" || status === "Closed";
-}
-
-function getStatusBadgeClass(status: string) {
-  if (status === "Rejected") {
-    return "border-[var(--red-strong)] bg-[var(--red)] text-white shadow-[0_8px_18px_rgba(37,99,235,0.18)]";
-  }
-
-  if (status === "Closed") {
-    return "bg-[var(--surface-overlay)] text-[var(--text-tertiary)]";
-  }
-
-  return "bg-[var(--accent-soft)] text-[var(--accent)]";
 }
 
 const APPLICATION_STATUS_OPTIONS = [
@@ -102,11 +84,11 @@ function buildReviewAgentSummary(message: ApplicationThreadMessage) {
   if (message.requiresManualReview) {
     return (
       message.reviewReason ||
-      "Escalated because extraction or application matching was not trustworthy enough."
+      "Sent to review."
     );
   }
 
-  return "Allowed this message to update workflow state automatically.";
+  return "Updated automatically.";
 }
 
 function buildReviewAgentDecisions(detail: ApplicationDetail) {
@@ -217,7 +199,7 @@ export function ApplicationDetailWorkspace({
       );
 
       if (!correctionResponse.ok) {
-        throw new Error(`Email correction failed with ${correctionResponse.status}`);
+        throw new Error(await readErrorMessage(correctionResponse));
       }
 
       const assessmentActions = detail.pendingActions.filter(isAssessmentReminder);
@@ -233,7 +215,7 @@ export function ApplicationDetailWorkspace({
           );
 
           if (!reminderResponse.ok) {
-            throw new Error(`Reminder update failed with ${reminderResponse.status}`);
+            throw new Error(await readErrorMessage(reminderResponse));
           }
         }),
       );
@@ -252,7 +234,7 @@ export function ApplicationDetailWorkspace({
         );
 
         if (!statusResponse.ok) {
-          throw new Error(`Application status update failed with ${statusResponse.status}`);
+          throw new Error(await readErrorMessage(statusResponse));
         }
       }
 
@@ -286,6 +268,8 @@ export function ApplicationDetailWorkspace({
 
       setNotice("Marked this evidence as not an OA and cleared the assessment action.");
     } catch (requestError) {
+      // Earlier steps may have saved; show what the API has now.
+      void refreshDetailFromApi().catch(() => {});
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -327,7 +311,7 @@ export function ApplicationDetailWorkspace({
       );
 
       if (!response.ok) {
-        throw new Error(`Application update failed with ${response.status}`);
+        throw new Error(await readErrorMessage(response));
       }
 
       const refreshed = await refreshDetailFromApi();
@@ -404,7 +388,7 @@ export function ApplicationDetailWorkspace({
       );
 
       if (!response.ok) {
-        throw new Error(`Email correction failed with ${response.status}`);
+        throw new Error(await readErrorMessage(response));
       }
 
       const refreshed = await refreshDetailFromApi();
@@ -451,15 +435,11 @@ export function ApplicationDetailWorkspace({
   if (!detail) {
     return (
       <main className="app-scroll-main">
-        <div className="mx-auto flex w-full max-w-[104rem] flex-col gap-4 px-5 py-6">
+        <div className="flex w-full flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6">
           <section className="card shrink-0 p-6 sm:p-8">
-            <p className="eyebrow">Application detail</p>
-            <h1 className="mt-3 text-2xl font-bold text-[var(--text-primary)]">
-              Not available
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+              Application not found
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              No live record for this route. Open one from the dashboard.
-            </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/app/applications" className="btn btn-primary">
                 Back to applications
@@ -486,55 +466,33 @@ export function ApplicationDetailWorkspace({
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto flex min-h-full w-full max-w-[104rem] flex-col gap-4 px-4 py-5 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
-        <section className="card app-workspace-panel shrink-0 p-4">
+      <div className="flex min-h-full w-full flex-col gap-4 px-4 py-5 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
+        <section className="card shrink-0 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/app/applications"
-                  className="btn btn-secondary btn-sm"
-                >
-                  Back to applications
-                </Link>
-                <p className="eyebrow">Application detail</p>
-              </div>
-              <h1 className="mt-2 text-xl font-bold text-[var(--text-primary)] sm:text-2xl">
-                {detail.company} / {detail.role}
-              </h1>
-            </div>
+            <h1 className="min-w-0 text-xl font-semibold text-[var(--text-primary)]">
+              {detail.company} / {detail.role}
+            </h1>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`badge ${getStatusBadgeClass(detail.status)}`}>
-                {detail.status}
-              </span>
-              <span
-                className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]"
-                title={`Priority ${detail.priority}`}
-              >
-                P{detail.priority}
-              </span>
               {source === "fallback" ? (
-                <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">
-                  Fallback data
-                </span>
+                <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">Offline</span>
               ) : null}
+              <Link href="/app/applications" className="btn btn-secondary btn-sm">
+                Applications
+              </Link>
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             <ApplicationPipelineStepper
               status={detail.status}
               completedStages={detail.completedStages ?? []}
             />
           </div>
 
-          {notice ? (
-            <div className="alert alert-success mt-4">
-              {notice}
-            </div>
-          ) : null}
+          {notice ? <div className="alert alert-success mt-4">{notice}</div> : null}
+          <p role="status" className="sr-only">{notice ?? ""}</p>
           {error ? (
-            <div className="alert alert-error mt-4">
+            <div role="alert" className="alert alert-error mt-4">
               {error}
             </div>
           ) : null}
@@ -545,62 +503,9 @@ export function ApplicationDetailWorkspace({
           <div className="workspace-scroll-region min-h-0 space-y-4">
             <section className="card overflow-hidden p-0">
               <div className="p-4">
-                <p className="eyebrow">Snapshot</p>
-                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Source
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {detail.source}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Last activity
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {formatTimestamp(detail.lastActivityAtUtc, timeZoneId)}
-                  </dd>
-                </div>
-                {terminal ? null : (
-                  <div>
-                    <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                      Open actions
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                    {visiblePendingActions.length}
-                    </dd>
-                  </div>
-                )}
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Contacts
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {detail.contacts.length}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Threads
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {detail.threads.length}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Created
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                  {formatTimestamp(detail.createdAtUtc, timeZoneId)}
-                  </dd>
-                </div>
-                </dl>
                 <form
                   key={`${detail.status}:${detail.priority}:${detail.lastActivityAtUtc}`}
-                  className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4"
+                  className="grid gap-3"
                   onSubmit={handleApplicationStatusSubmit}
                 >
                   <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-3">
@@ -647,16 +552,14 @@ export function ApplicationDetailWorkspace({
 
               <div className="border-t border-[var(--border)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="eyebrow">{terminal ? "Outcome" : "Pending actions"}</p>
-                <span
-                  className={`badge ${
-                    terminal
-                      ? getStatusBadgeClass(detail.status)
-                      : "bg-[var(--surface-elevated)] text-[var(--text-tertiary)]"
-                  }`}
-                >
-                  {terminal ? detail.status : visiblePendingActions.length}
-                </span>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">{terminal ? "Outcome" : "To do"}</h2>
+                {terminal ? (
+                  <StatusPill status={detail.status} />
+                ) : (
+                  <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
+                    {visiblePendingActions.length}
+                  </span>
+                )}
               </div>
 
               {terminal ? (
@@ -674,19 +577,15 @@ export function ApplicationDetailWorkspace({
                   >
                     No active follow-up for a {detail.status.toLowerCase()} application.
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    Historical contacts and thread evidence stay available below for record keeping.
-                  </p>
                 </div>
               ) : visiblePendingActions.length === 0 ? (
                 latestOutboundReply ? (
                   <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--green)]/20 bg-[var(--green-soft)] p-4">
                     <p className="text-sm font-semibold text-[var(--green)]">
-                      Last sent reply is already recorded.
+                      Reply sent
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      careeroc detected a Gmail reply on{" "}
-                      {formatTimestamp(latestOutboundReply.receivedAtUtc, timeZoneId)}.
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      {formatTimestamp(latestOutboundReply.receivedAtUtc, timeZoneId)}
                     </p>
                     {latestOutboundReply.gmailUrl ? (
                       <div className="mt-3">
@@ -696,7 +595,7 @@ export function ApplicationDetailWorkspace({
                           rel="noreferrer"
                           className="btn btn-secondary btn-sm"
                         >
-                          Open sent message in Gmail
+                          Gmail
                         </a>
                       </div>
                     ) : null}
@@ -707,27 +606,19 @@ export function ApplicationDetailWorkspace({
                   </p>
                 )
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-1 divide-y divide-[var(--border)]">
                   {visiblePendingActions.map((action) => (
-                    <article key={action.id} className="card-elevated p-4">
+                    <article key={action.id} className="py-2">
                       <p className="text-sm font-medium text-[var(--text-primary)]">
                         {action.title}
                       </p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                        {action.source} · {action.status} ·{" "}
-                        {action.hasExplicitDueDate
-                          ? `due ${formatTimestamp(action.dueAtUtc, timeZoneId)}`
-                          : "unknown due date"}
-                      </p>
-                      {action.sourceThreadId || action.sourceMessageId ? (
-                        <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">
-                          Evidence {action.sourceThreadId ? `thread ${action.sourceThreadId}` : ""}
-                          {action.sourceThreadId && action.sourceMessageId ? " · " : ""}
-                          {action.sourceMessageId ? `message ${action.sourceMessageId}` : ""}
+                      {action.hasExplicitDueDate ? (
+                        <p className="text-xs text-[var(--accent)]">
+                          Due {formatTimestamp(action.dueAtUtc, timeZoneId)}
                         </p>
                       ) : null}
                       {isAssessmentReminder(action) || action.gmailUrl ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-2 flex flex-wrap gap-2">
                           {isAssessmentReminder(action) ? (
                             <button
                               type="button"
@@ -745,7 +636,7 @@ export function ApplicationDetailWorkspace({
                               rel="noreferrer"
                               className="btn btn-secondary btn-sm"
                             >
-                              Open Gmail evidence
+                              Gmail
                             </a>
                           ) : null}
                         </div>
@@ -758,8 +649,8 @@ export function ApplicationDetailWorkspace({
 
               <div className="border-t border-[var(--border)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="eyebrow">Contacts</p>
-                <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Contacts</h2>
+                <span className="text-xs tabular-nums text-[var(--text-tertiary)]">
                   {detail.contacts.length}
                 </span>
               </div>
@@ -769,44 +660,25 @@ export function ApplicationDetailWorkspace({
                   No contacts identified.
                 </p>
               ) : (
-                <div className="mt-4 space-y-3">
+                <ul className="mt-1 divide-y divide-[var(--border)]">
                   {detail.contacts.map((contact, index) => (
-                    <article
-                      key={`${contact.email ?? contact.name ?? "contact"}:${index}`}
-                      className="card-elevated p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-[var(--text-primary)]">
-                            {contact.name ?? contact.email ?? "Unnamed contact"}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                            {contact.type ?? "Unclassified contact"}
-                            {contact.roleHint ? ` · ${contact.roleHint}` : ""}
-                          </p>
-                        </div>
-                        <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                          {contact.messageCount} message{contact.messageCount === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                      {contact.email ? (
-                        <p className="mt-3 break-all text-sm leading-6 text-[var(--text-secondary)]">
-                          {contact.email}
-                        </p>
-                      ) : null}
-                      <p className="mt-3 text-xs leading-6 text-[var(--text-tertiary)]">
-                        Last seen {formatTimestamp(contact.lastSeenAtUtc, timeZoneId)} · latest
-                        subject: {contact.latestSubject}
+                    <li key={`${contact.email ?? contact.name ?? "contact"}:${index}`} className="py-2">
+                      <p className="truncate text-sm text-[var(--text-primary)]">
+                        {contact.name ?? contact.email ?? "Unnamed contact"}
                       </p>
-                    </article>
+                      <p className="truncate text-xs text-[var(--text-tertiary)]">
+                        {contact.messageCount} message{contact.messageCount === 1 ? "" : "s"} ·{" "}
+                        {formatTimestamp(contact.lastSeenAtUtc, timeZoneId)}
+                      </p>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
               </div>
 
               <div className="border-t border-[var(--border)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="eyebrow">Recent activity</p>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent activity</h2>
                 <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
                   {recentActivityTotalCount}
                 </span>
@@ -828,16 +700,14 @@ export function ApplicationDetailWorkspace({
                           {formatEnumLabel(activity.category)}
                         </span>
                       </div>
-                      <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">
+                      <p className="mt-2 text-xs text-[var(--text-tertiary)]">
                         {formatTimestamp(activity.occurredAtUtc, timeZoneId)}
                       </p>
                     </article>
                   ))}
                   {hiddenRecentActivityCount > 0 ? (
-                    <p className="rounded-md border border-[var(--border)] bg-[var(--surface-overlay)] px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-                      Showing the latest {visibleRecentActivity.length} events;{" "}
-                      {hiddenRecentActivityCount} older event
-                      {hiddenRecentActivityCount === 1 ? " is" : "s are"} not shown.
+                    <p className="px-1 text-xs text-[var(--text-tertiary)]">
+                      +{hiddenRecentActivityCount} older
                     </p>
                   ) : null}
                 </div>
@@ -846,8 +716,8 @@ export function ApplicationDetailWorkspace({
 
               <div className="border-t border-[var(--border)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="eyebrow">Evidence agent</p>
-                <span className="badge bg-[var(--surface-elevated)] text-[var(--text-tertiary)]">
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Evidence agent</h2>
+                <span className="text-xs tabular-nums text-[var(--text-tertiary)]">
                   {reviewAgentDecisions.length}
                 </span>
               </div>
@@ -879,7 +749,7 @@ export function ApplicationDetailWorkspace({
                               : "bg-[var(--green-soft)] text-[var(--green)]"
                           }`}
                         >
-                          {decision.requiresManualReview ? "Escalated" : "Cleared"}
+                          {decision.requiresManualReview ? "Email review" : "Cleared"}
                         </span>
                       </div>
                       <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
@@ -897,10 +767,10 @@ export function ApplicationDetailWorkspace({
                           {toCompactStageLabel(decision.category)}
                         </span>
                         <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                          class {formatConfidence(decision.classificationConfidence)}
+                          Type {formatConfidence(decision.classificationConfidence)}
                         </span>
                         <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
-                          match {formatConfidence(decision.matchingConfidence)}
+                          Match {formatConfidence(decision.matchingConfidence)}
                         </span>
                         <span className="badge bg-[var(--surface-overlay)] text-[var(--text-tertiary)]">
                           {formatTimestamp(decision.receivedAtUtc, timeZoneId)}
@@ -918,27 +788,10 @@ export function ApplicationDetailWorkspace({
           </div>
 
           <div className="workspace-scroll-region min-h-0 space-y-4">
-            <section className="card app-workspace-panel p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="eyebrow">Brief</p>
-                  <h2 className="mt-1.5 text-base font-semibold text-[var(--text-primary)]">
-                    {detail.agentBrief.headline}
-                  </h2>
-                </div>
-                <span className="badge w-fit bg-[var(--accent-soft)] text-[var(--accent)]">
-                  {detail.agentBrief.recommendedSurface}
-                </span>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-                {detail.agentBrief.summary}
-              </p>
-              <div className="mt-3 rounded-md border border-[var(--border-active)]/40 bg-[var(--surface)] p-3">
-                <p className="eyebrow text-[var(--accent)]">Next move</p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--text-primary)]">
-                  {detail.agentBrief.nextAction}
-                </p>
-              </div>
+            <section className="card p-4">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                {detail.agentBrief.nextAction}
+              </h2>
               <div className="mt-3">
                 <AgentTraceStepsPanel
                   steps={detail.agentTrace?.steps ?? []}
@@ -952,8 +805,6 @@ export function ApplicationDetailWorkspace({
             <InlineMemoryProposals
               proposals={detail.memoryProposals}
               proxyPrefix={proxyPrefix}
-              title="Application memory"
-              emptyCopy="No application-scoped memory proposals are waiting here."
             />
 
             <ApplicationThreadEvidenceSection

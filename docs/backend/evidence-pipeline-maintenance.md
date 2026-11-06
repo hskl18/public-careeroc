@@ -41,7 +41,7 @@ The expected order is:
 ## Reminder Evidence Refresh
 
 Some older reminders were created before explicit deadline extraction or before the linked email evidence was strong enough.
-The backend now refreshes reminder evidence automatically before dashboard and application-detail reads, scoped to the signed user.
+The backend refreshes reminder evidence for the signed user after each inbox sync and on the dashboard's bounded inbox check.
 
 Direct endpoint:
 
@@ -86,19 +86,13 @@ Suspicious company names, such as temporal phrases, sentence fragments, role fra
 There is no automatic repair of historical rows.
 Fix an existing wrong company through the review queue or application detail, which reruns the same workflow rules.
 
-## Guidance Maintenance Agent
+## Maintaining the guidance
 
-The guidance maintenance agent is the only agent allowed to evolve durable markdown guidance from accumulated user feedback.
+The markdown guidance in `docs/agent-memory/*.md` changes by hand, from repeated correction patterns; nothing in the code edits it.
 
-Boundary:
-
-- It may group repeated correction patterns.
-- It may propose edits to `docs/agent-memory/*.md`.
-- It must not directly change source code, database rows, or historical application records.
-- It must not turn one correction into a broad rule without regression coverage.
-
-Evaluation gate: `dotnet test Careeroc.sln`, which runs the document-contract tests, the parser and feedback regressions, the guidance-store tests, and the pipeline evaluation.
-If the gate fails or is skipped, the agent can leave a proposal but must not apply markdown changes.
+- Group repeated corrections before writing a rule; one correction is not a rule.
+- Change guidance only, never source code, database rows, or historical application records, in the same edit.
+- Every new rule needs regression coverage, and `dotnet test Careeroc.sln` (the document-contract tests, the parser and feedback regressions, the guidance-store tests, and the pipeline evaluation) must pass before it lands.
 
 Corrections reach the guidance only when `Ollama__UserFeedbackFilePath` is set, which Development does by default.
 The file is shared by everyone on an install, so production and demo installs leave it unset.

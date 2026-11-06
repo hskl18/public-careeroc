@@ -75,7 +75,7 @@ public sealed partial class ResumeIntelligenceService
         string? userEmail,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetOrCreateUserAsync(userEmail, cancellationToken);
+        var user = await UserAccounts.GetOrCreateAsync(_dbContext, userEmail, null, cancellationToken);
         var documents = await _dbContext.ResumeDocuments
             .AsNoTracking()
             .Where(document => document.UserId == user.Id)
@@ -107,7 +107,7 @@ public sealed partial class ResumeIntelligenceService
         var mutationLock = await AcquireResumeMutationLockAsync(resolvedUserEmail, cancellationToken);
         try
         {
-            var user = await GetOrCreateUserAsync(resolvedUserEmail, cancellationToken);
+            var user = await UserAccounts.GetOrCreateAsync(_dbContext, resolvedUserEmail, null, cancellationToken);
             var sourceText = NormalizeSourceText(request.SourceText);
             var title = NormalizeTitle(request.Title, sourceText);
             var sourceKind = NormalizeSourceKind(request.SourceKind);

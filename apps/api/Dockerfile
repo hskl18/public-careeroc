@@ -21,10 +21,12 @@ RUN dotnet publish apps/api/Careeroc.Api.csproj \
     --output /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+LABEL org.opencontainers.image.source="https://github.com/hskl18/public-careeroc" \
+      org.opencontainers.image.licenses="MIT"
 WORKDIR /app
 
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+ENV ForwardedHeaders__Enabled=true
 ENV DOTNET_EnableDiagnostics=0
 
 COPY --from=build /app/publish ./

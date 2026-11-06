@@ -29,14 +29,19 @@ export function buildCareerocApiAuthHeaders(
   request: {
     method: string;
     pathAndQuery: string;
-    body?: string | null;
+    // Hashed as raw bytes, as the API does.
+    body?: string | Uint8Array | null;
   },
   initHeaders?: HeadersInit,
 ) {
   const method = request.method.toUpperCase();
   const timestamp = new Date().toISOString();
   const normalizedEmail = normalizeEmail(user.email);
-  const normalizedName = normalizeName(user.name);
+  // Header values must be ByteStrings, so a name like 张三 travels percent-encoded.
+  const normalizedName = encodeURIComponent(normalizeName(user.name));
+  // Signed exactly as fetch sends it (percent-encoded), which is what the API reads from the wire.
+  const target = new URL(request.pathAndQuery, "http://careeroc.invalid");
+  const signedPathAndQuery = `${target.pathname}${target.search}`;
   const bodyHash = computeBodyHash(request.body ?? "");
   const headers = new Headers(initHeaders);
 
@@ -54,7 +59,7 @@ export function buildCareerocApiAuthHeaders(
     computeSignature(
       resolveSecret(),
       method,
-      request.pathAndQuery,
+      signedPathAndQuery,
       normalizedEmail,
       normalizedName,
       timestamp,
@@ -147,8 +152,8 @@ function normalizeName(value?: string | null) {
   return value?.trim() ?? "";
 }
 
-function computeBodyHash(body: string) {
-  return createHash("sha256").update(body, "utf8").digest("hex");
+function computeBodyHash(body: string | Uint8Array) {
+  return createHash("sha256").update(body).digest("hex");
 }
 
 function computeSignature(
@@ -174,4 +179,12 @@ function assertStrongSecret(secret: string) {
       "careeroc API auth secret must be at least 32 characters and must not use development defaults in production.",
     );
   }
+}
+
+// Loaders fall back to empty data so a page still renders; the log says why.
+export function warnFallback(loader: string, error: unknown) {
+  console.warn(
+    `[${loader}] API unavailable, showing fallback data:`,
+    error instanceof Error ? error.message : error,
+  );
 }

@@ -54,7 +54,7 @@ export function WorkspaceNav({
             key={item.href}
             href={item.href}
             className={`relative min-w-0 px-1 text-center font-semibold transition-colors ${
-              isBottom ? "py-2 text-[10px]" : "py-1.5 text-xs"
+              isBottom ? "py-2 text-xs" : "py-1.5 text-xs"
             } ${
               active
                 ? "text-[var(--text-primary)]"
@@ -77,7 +77,7 @@ export function WorkspaceNav({
   );
 
   return isBottom ? (
-    <div className="fixed inset-x-0 bottom-0 z-50 min-w-0 max-w-full overflow-hidden border-t border-[var(--border)] bg-[var(--bg)]/90 px-3 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-1.5 backdrop-blur-xl sm:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-50 min-w-0 max-w-full overflow-hidden border-t border-[var(--border)] bg-[var(--bg)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-1.5 sm:hidden">
       {nav}
     </div>
   ) : (

@@ -14,7 +14,6 @@ export default function ErrorBoundary({
       error={error}
       reset={reset}
       title="The page could not load."
-      description="Retry the page. If the problem continues, the public shell may be down or a required service returned an unexpected error."
     />
   );
 }

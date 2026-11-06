@@ -88,7 +88,7 @@ Every run receives a unique thread ID and is checkpointed independently.
 ## Failure Policy
 
 The runtime does not hide partial model failures.
-Each specialist and the supervisor run with a `TimeoutPolicy` per attempt and a `RetryPolicy` of two attempts, so a hung provider call cannot hold the request.
+Each specialist and the supervisor run with a `TimeoutPolicy` per attempt and one retry for fast transient errors; a timed-out attempt is not retried, so a hung provider call cannot hold the request.
 The whole run also has a budget (`CAREEROC_AGENT_RUN_TIMEOUT_SECONDS`, 100 by default) below the API's `AgentRuntime__TimeoutSeconds` (120), so the runtime gives up before the API stops waiting and never checkpoints a review the API did not store.
 If a node still fails or the budget runs out, the graph request returns an error.
 The .NET client records a warning and returns the existing deterministic review with a visible `completed_with_fallback` status.
@@ -113,7 +113,7 @@ CAREEROC_AGENT_MINIMUM_CONFIDENCE=0.65
 CAREEROC_AGENT_RUN_TIMEOUT_SECONDS=100
 ```
 
-`CAREEROC_AGENT_PROVIDER` selects the specialists: `deterministic` (the default in Compose and the demo, no model needed), `ollama`, or `openai`.
+`CAREEROC_AGENT_PROVIDER` selects the specialists: `deterministic` (the default, no model needed), `ollama`, or `openai`.
 The deterministic suite runs the same graph and gate and labels its traces `deterministic/evidence-v1`.
 LangGraph checkpoints are stored in PostgreSQL through a connection pool, in a database of their own; without one they live in memory.
 The shared secret is required: the runtime refuses its internal endpoints when none is configured, and the API refuses to start without one outside Development.
@@ -124,7 +124,7 @@ Run the sidecar on a private service network.
 The runtime also serves an A2A 1.0 agent with the `a2a-sdk` package: the agent card at `/.well-known/agent-card.json` and JSON-RPC at `/a2a`.
 Its two skills are `pipeline_status` and `career_review`.
 A caller sends the user's careeroc personal access token; the runtime forwards it to the API's `/agent/v1/*` endpoints, so the API still decides what the caller may read, and the runtime never holds product database credentials.
-Each A2A review runs on a fresh checkpoint thread (`a2a:<random id>`), separate from in-app reviews and from other callers.
+Each A2A review gets its own thread ID (`a2a:<random id>`) and runs without a checkpointer, since it never pauses, so nothing is left in the checkpoint database.
 Tokens are read-only, so an A2A review never pauses: when the gate wants a person, the answer says what is pending and that only the user can approve it in careeroc, and nothing is saved.
 Assistants that prefer tools use the API's MCP server at `/mcp` with the same tokens.
 

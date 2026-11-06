@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { formatTimestampInTimeZone } from "@/lib/date-time";
 import dynamic from "next/dynamic";
 import { OnboardingHero, type OnboardingState } from "@/components/onboarding-hero";
 import { WelcomeToast } from "@/components/welcome-toast";
@@ -13,6 +14,7 @@ import { fetchWithInFlightDedup } from "@/lib/client-fetch";
 import {
   activeWorkspacePollingIntervalMs,
   idleWorkspacePollingIntervalMs,
+  isInboxAnalysisActive,
 } from "@/lib/workspace-polling";
 import {
   ApplicationsOverviewSection,
@@ -55,18 +57,6 @@ type SyncNowResponse = {
   retryAfterSeconds?: number;
   error?: string;
 };
-
-function formatTimestamp(value: string | null, timeZoneId: string) {
-  if (!value) return "Waiting for first sync";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: timeZoneId,
-  }).format(new Date(value));
-}
 
 function isConnectedAccount(account: InboxAccountSetup) {
   return account.connectionStatus === "Connected";
@@ -137,26 +127,7 @@ function getWorkspacePollingIntervalMs(
     return null;
   }
 
-  const scannedCount = Math.max(
-    0,
-    dashboard.inbox.scannedCount ?? dashboard.inbox.processedEmails,
-  );
-  const syncedEmails = Math.max(0, dashboard.inbox.syncedEmails);
-  const processedEmails = Math.max(0, dashboard.inbox.processedEmails);
-  const total = Math.max(
-    dashboard.inbox.totalEstimate ?? 0,
-    syncedEmails,
-    processedEmails,
-    scannedCount,
-  );
-  const processed = total === 0 ? scannedCount : Math.min(scannedCount, total);
-  const hasActiveAnalysis =
-    (dashboard.inbox.pendingAnalysisEmails ?? 0) > 0 ||
-    (dashboard.inbox.processingAnalysisEmails ?? 0) > 0 ||
-    dashboard.inbox.backfillStatus?.toLowerCase() === "running" ||
-    (total > 0 && processed < total);
-
-  return hasActiveAnalysis || !dashboard.inbox.lastSyncAtUtc
+  return isInboxAnalysisActive(dashboard)
     ? activeWorkspacePollingIntervalMs
     : idleWorkspacePollingIntervalMs;
 }
@@ -203,7 +174,7 @@ function removePendingAction(
   };
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readSyncErrorMessage(response: Response): Promise<string> {
   try {
     const payload = (await response.json()) as SyncNowResponse;
     if (payload.retryAfterSeconds) {
@@ -231,7 +202,7 @@ export function DashboardWorkspace({
   welcomeDismissedAtUtc,
 }: DashboardWorkspaceProps) {
   const formatDateTime = (value: string | null) =>
-    formatTimestamp(value, userTimeZoneId);
+    formatTimestampInTimeZone(value, userTimeZoneId, "Waiting for first sync");
   const [dashboard, setDashboard] = useState(initialDashboard);
   const [inboxSetup, setInboxSetup] = useState(initialInboxSetup);
   const [pendingReminderKey, setPendingReminderKey] = useState<string | null>(
@@ -458,7 +429,7 @@ export function DashboardWorkspace({
       );
 
       if (!response.ok) {
-        throw new Error(`Request failed with ${response.status}`);
+        throw new Error(await readSyncErrorMessage(response));
       }
 
       const refreshed = await refreshDashboardFromApi({ bypassCache: true });
@@ -507,7 +478,7 @@ export function DashboardWorkspace({
       );
 
       if (!response.ok) {
-        throw new Error(`Request failed with ${response.status}`);
+        throw new Error(await readSyncErrorMessage(response));
       }
 
       const refreshed = await refreshDashboardFromApi({ bypassCache: true });
@@ -551,13 +522,13 @@ export function DashboardWorkspace({
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
+        throw new Error(await readSyncErrorMessage(response));
       }
 
       const payload = (await response.json()) as SyncNowResponse;
       setNotice(
         payload.queued
-          ? "Inbox sync queued. Dashboard progress will refresh automatically."
+          ? "Sync queued."
           : "Sync request accepted.",
       );
 
@@ -575,39 +546,28 @@ export function DashboardWorkspace({
 
   return (
     <main className="app-scroll-main">
-      <div className="mx-auto w-full max-w-[104rem] px-3 pt-4 sm:px-5 sm:pt-6">{agentReview}</div>
-      <div className="workspace-shell mx-auto flex w-full max-w-[104rem] flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-6">
+      <div className="workspace-shell flex w-full flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-6">
         {!liveData ? (
-          <div className="alert alert-warning shrink-0">
-            Live API data is unavailable right now. This page is showing an
-            empty local state until the API comes back.
+          <div role="status" className="alert alert-warning shrink-0">
+            API unavailable. Showing empty data.
           </div>
         ) : null}
-        {error ? <div className="alert alert-error shrink-0">{error}</div> : null}
+        {error ? <div role="alert" className="alert alert-error shrink-0">{error}</div> : null}
 
-        {liveData && connectedInboxCount > 0 ? (
-          <section className="card app-workspace-panel shrink-0 p-3 sm:p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="eyebrow">Inbox sync</p>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Last synced {formatDateTime(dashboard.inbox.lastSyncAtUtc)}
-                  {dashboard.inbox.backfillStatus
-                    ? ` · backfill ${dashboard.inbox.backfillStatus}`
-                    : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm w-full sm:w-auto"
-                disabled={!proxyPrefix || syncNowPending}
-                onClick={() => void handleSyncNow()}
-              >
-                {syncNowPending ? "Syncing..." : "Sync inbox now"}
-              </button>
-            </div>
-          </section>
-        ) : null}
+        <div className="flex shrink-0 items-stretch gap-2">
+          <div className="min-w-0 flex-1">{agentReview}</div>
+          {liveData && connectedInboxCount > 0 ? (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm shrink-0"
+              title={`Last synced ${formatDateTime(dashboard.inbox.lastSyncAtUtc)}`}
+              disabled={!proxyPrefix || syncNowPending}
+              onClick={() => void handleSyncNow()}
+            >
+              {syncNowPending ? "Syncing..." : "Sync inbox"}
+            </button>
+          ) : null}
+        </div>
 
         {onboardingState ? (
           <div className="shrink-0">
@@ -622,7 +582,8 @@ export function DashboardWorkspace({
           <ApplicationsOverviewSection dashboard={dashboard} coldStart={coldStart} />
         </div>
 
-        <section className="grid min-h-0 flex-1 items-stretch gap-4 [grid-template-rows:minmax(0,1fr)] xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
+        {/* Stacked below xl, each panel gets its own row; an implicit auto row would take all the height. */}
+        <section className="grid min-h-0 flex-1 items-stretch gap-4 [grid-template-rows:minmax(0,1fr)] md:[grid-template-rows:repeat(2,minmax(0,1fr))] xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] xl:[grid-template-rows:minmax(0,1fr)]">
           <div className="workspace-scroll-region min-h-0">
             <RecentChangesSection
               recentActivity={dashboard.recentActivity}
@@ -653,6 +614,7 @@ export function DashboardWorkspace({
       {notice ? (
         <SuccessToast message={notice} onDismiss={() => setNotice(null)} />
       ) : null}
+      <p role="status" className="sr-only">{notice ?? ""}</p>
       {/* The welcome walks through connecting Gmail, so it is moot once an inbox (or the demo's) is connected. */}
       {connectedInboxCount === 0 ? (
         <WelcomeToast

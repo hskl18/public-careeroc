@@ -14,13 +14,13 @@ test.describe("cold-start UX", () => {
 
     const hero = page
       .getByRole("heading", {
-        name: /connect gmail|first sync|analyzing/i,
+        name: /connect gmail|first sync|reading your mail/i,
       })
       .first();
     await expect(hero).toBeVisible();
 
     const setupCta = page
-      .getByRole("link", { name: /connect gmail|set up gmail/i })
+      .getByRole("link", { name: /connect gmail/i })
       .first();
     await expect(setupCta).toBeVisible();
 
@@ -53,9 +53,7 @@ test.describe("cold-start UX", () => {
 
     await page.goto("/app/review");
     await expect(page).toHaveURL(/\/app\/review$/);
-    await expect(
-      page.getByRole("heading", { name: /blocked email evidence/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Emails" })).toBeVisible();
   });
 
   test("home page loads without auth", async ({ page }) => {

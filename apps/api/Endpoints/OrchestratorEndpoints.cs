@@ -33,6 +33,7 @@ public static class OrchestratorEndpoints
                 })
             .WithName("ReviewResumeMailboxFit")
             .WithTags("Orchestrator")
+            .RequireRateLimiting(AgentReviewRateLimit.PolicyName)
             .Produces<ResumeMailboxReviewDto>();
 
         return endpoints;

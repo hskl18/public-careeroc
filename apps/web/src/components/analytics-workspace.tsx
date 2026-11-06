@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { LocalTime } from "@/components/local-time";
 import {
   analyticsProviderOptions,
   analyticsRangeOptions,
@@ -20,7 +19,6 @@ import {
   buildApplicationsDrillHref,
   formatPercent,
   formatRelativeTime,
-  mapServerInsights,
   sortInsightsByImportance,
   type BreakdownSort,
 } from "./analytics-workspace-ui";
@@ -63,7 +61,7 @@ export function AnalyticsWorkspace({
     }));
   }, [initialAnalytics.funnel]);
   const insights = useMemo(() => {
-    return sortInsightsByImportance(mapServerInsights(initialAnalytics.insights));
+    return sortInsightsByImportance(initialAnalytics.insights ?? []);
   }, [initialAnalytics.insights]);
 
   const summaryCards = [
@@ -82,36 +80,17 @@ export function AnalyticsWorkspace({
   ];
 
   return (
-    <main className="app-scroll-main analytics-main">
-      <div className="analytics-shell mx-auto flex h-full min-h-0 w-full max-w-[104rem] flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-5">
-        <section className="analytics-panel shrink-0 p-3 sm:p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="min-w-0 flex-1">
-              <p className="eyebrow">Analytics</p>
-              <h1 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                Where is the effort actually working?
-              </h1>
-              {initialAnalytics.lastSyncAtUtc ? (
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                  As of <LocalTime value={initialAnalytics.lastSyncAtUtc} format="shortDateTime" />
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex shrink-0 flex-wrap items-center gap-2 xl:justify-end">
-              <span
-                className={`badge ${
-                  source === "api"
-                    ? "border-[var(--brand-green)]/25 bg-[var(--green-soft)] text-[var(--brand-green-ink)]"
-                    : "border-[var(--brand-blue)]/20 bg-[var(--blue-soft)] text-[var(--brand-blue-ink)]"
-                }`}
-              >
-                {readOnlyDemo ? "Demo" : source === "api" ? "Live" : "Offline"}
-              </span>
+    <main className="app-scroll-main">
+      <div className="workspace-shell flex min-h-0 w-full flex-col gap-3 px-3 py-4 animate-in sm:gap-4 sm:px-5 sm:py-5">
+        <section className="shrink-0">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* The title fills the row's left side, as on Settings and Memory. */}
+              <h1 className="mr-auto text-xl font-semibold text-[var(--text-primary)]">Analytics</h1>
               {summaryCards.map((card) => (
                 <div
                   key={card.label}
-                  className="analytics-stat flex min-h-9 items-center gap-2 rounded-md border border-[var(--brand-blue)]/14 px-3 py-1"
+                  className="bg-[var(--surface-elevated)] flex min-h-9 items-center gap-2 rounded-md border border-[var(--brand-blue)]/14 px-3 py-1"
                   title={card.tooltip}
                 >
                   <p className="eyebrow">{card.label}</p>
@@ -125,7 +104,7 @@ export function AnalyticsWorkspace({
               ))}
               <select
                 aria-label="Analytics range"
-                className="analytics-filter-select h-7 w-[6.6rem] rounded-md border border-[var(--border)] bg-white/88 px-2 pr-6 font-mono font-semibold uppercase tracking-[0.06em] text-[var(--text-primary)] outline-none transition hover:border-[var(--brand-blue)]/35 focus:border-[var(--accent)]"
+                className="input h-7 w-[6.6rem] py-0 pr-6 pl-2 text-xs"
                 value={selectedRange}
                 onChange={(event) =>
                   router.push(
@@ -145,7 +124,7 @@ export function AnalyticsWorkspace({
               {readOnlyDemo ? null : (
                 <select
                   aria-label="Mail source"
-                  className="analytics-filter-select h-7 w-[6.8rem] rounded-md border border-[var(--border)] bg-white/88 px-2 pr-6 font-mono font-semibold uppercase tracking-[0.06em] text-[var(--text-primary)] outline-none transition hover:border-[var(--brand-blue)]/35 focus:border-[var(--accent)]"
+                  className="input h-7 w-[6.8rem] py-0 pr-6 pl-2 text-xs"
                   value={selectedProvider}
                   onChange={(event) =>
                     router.push(
@@ -165,8 +144,7 @@ export function AnalyticsWorkspace({
               )}
               {metrics.applicationsCount > 0 ? (
                 <label
-                  className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[var(--brand-blue)]/14 bg-white/60 px-2.5 text-[11px] font-medium text-[var(--text-secondary)]"
-                  title="Hide rows with unknown company or role labels."
+                  className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[var(--brand-blue)]/14 bg-[var(--surface-strong)] px-2.5 text-xs font-medium text-[var(--text-secondary)]"
                 >
                   <input
                     type="checkbox"
@@ -174,7 +152,7 @@ export function AnalyticsWorkspace({
                     onChange={(event) => setFilterUnknown(event.target.checked)}
                     className="h-3.5 w-3.5"
                   />
-                  Unknown
+                  Hide unknown
                 </label>
               ) : null}
             </div>
@@ -182,37 +160,25 @@ export function AnalyticsWorkspace({
 
           {source === "fallback" &&
             (selectedRange !== "all" || selectedProvider !== "all") && (
-              <div className="alert alert-warning mt-3">
-                Filters inactive — API unavailable.
+              <div role="status" className="alert alert-warning mt-3">
+                Offline.
               </div>
             )}
         </section>
 
         {metrics.applicationsCount === 0 && (
-          <div className="analytics-panel shrink-0 p-5">
+          <div className="card shrink-0 p-5">
             <p className="text-sm text-[var(--text-tertiary)]">
-              No applications yet — analytics will populate as records are
-              created.
+              No applications yet.
             </p>
           </div>
         )}
 
         {metrics.applicationsCount > 0 ? (
-          <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-            <section className="analytics-panel flex flex-col p-3 sm:p-4 lg:min-h-[13.25rem]">
+          <div className="grid shrink-0 gap-3 xl:grid-cols-[1.4fr_1fr]">
+            <section className="card flex flex-col p-4">
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="eyebrow">Funnel</p>
-                  <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-                    Applied → Response → Interview → Offer
-                  </h2>
-                </div>
-                {metrics.responseRates ? (
-                  <p className="text-right text-[11px] leading-6 text-[var(--text-tertiary)]">
-                    Human {formatPercent(metrics.responseRates.humanResponseRate)}
-                    {" "}· auto receipt {formatPercent(metrics.responseRates.autoReceiptRate)}
-                  </p>
-                ) : null}
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Funnel</h2>
               </div>
               <FunnelChart stages={funnelStages} />
             </section>
@@ -221,7 +187,7 @@ export function AnalyticsWorkspace({
           </div>
         ) : null}
 
-        <div className="grid min-h-0 items-start gap-4 xl:grid-cols-2">
+        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto xl:grid-cols-2 xl:overflow-hidden xl:[grid-template-rows:minmax(0,1fr)]">
           <BreakdownTable
             eyebrow="Companies"
             rows={companyBreakdown}
