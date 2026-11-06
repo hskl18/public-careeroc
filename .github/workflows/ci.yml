@@ -136,6 +136,7 @@ jobs:
           helm lint deploy/helm/careeroc
           helm template careeroc deploy/helm/careeroc | ./kubeconform -strict -summary
           helm template careeroc deploy/helm/careeroc --set demoMode=false --set allowedEmailDomains=example.com | ./kubeconform -strict -summary
+          helm template careeroc deploy/helm/careeroc --set networkPolicy.enabled=true | ./kubeconform -strict -summary
 
   compose-smoke:
     name: Docker Compose demo smoke test

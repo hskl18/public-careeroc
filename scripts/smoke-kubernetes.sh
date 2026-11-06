@@ -46,7 +46,8 @@ kubectl -n "$NAMESPACE" create secret generic careeroc --dry-run=client -o yaml 
 kubectl -n "$NAMESPACE" rollout status deployment/postgres --timeout=180s
 
 if ! helm upgrade --install careeroc deploy/helm/careeroc -n "$NAMESPACE" --wait --timeout 10m \
-  --set host=localhost --set images.registry=careeroc --set images.tag="$IMAGE_TAG" --set images.pullPolicy=Never; then
+  --set host=localhost --set images.registry=careeroc --set images.tag="$IMAGE_TAG" --set images.pullPolicy=Never \
+  --set networkPolicy.enabled=true; then
   kubectl -n "$NAMESPACE" get pods -o wide
   for app in web api agent-runtime; do kubectl -n "$NAMESPACE" logs "deployment/$app" --tail=60 || true; done
   exit 1
@@ -63,3 +64,13 @@ done
 # The chart serves https://<host>; the web app checks Origin against that, not the port-forward address.
 WEB_URL=http://localhost:13000 API_URL=http://localhost:15114 AGENT_URL=http://localhost:18123 \
   SITE_ORIGIN=https://localhost scripts/smoke-demo.sh
+
+# The demo passed with networkPolicy on, so the allowed paths work. Check it also blocks: a listed
+# caller reaches the API, and a pod outside the release does not.
+kubectl -n "$NAMESPACE" exec deploy/agent-runtime -- \
+  python -c "import urllib.request; urllib.request.urlopen('http://api:8080/health', timeout=5)"
+if kubectl -n "$NAMESPACE" exec deploy/postgres -- wget -q -T 5 -O /dev/null http://api:8080/health; then
+  echo "NetworkPolicy did not block postgres -> api; does the cluster's CNI enforce NetworkPolicy?" >&2
+  exit 1
+fi
+echo "NetworkPolicy: agent-runtime -> api allowed, postgres -> api blocked"
