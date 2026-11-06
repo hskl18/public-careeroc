@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Api.Security;
 using Careeroc.Contracts.Resumes;
@@ -53,7 +54,7 @@ public static class ResumeEndpoints
                             createRequest.Title);
                         return Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
