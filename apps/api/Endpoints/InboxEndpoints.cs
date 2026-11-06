@@ -114,7 +114,7 @@ public static class InboxEndpoints
                             request.EmailAddress);
                         return Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
@@ -169,7 +169,7 @@ public static class InboxEndpoints
 
                         return Results.Redirect(authorizationUrl);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogOAuthEventAsync(
                             request,
@@ -242,7 +242,7 @@ public static class InboxEndpoints
 
                         return Results.Redirect(BuildReturnUrl(completed.ReturnUrl, completed));
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         var rejected = new GmailOAuthCompletionResult(
                             "/app/inbox#mail-sync",
@@ -291,7 +291,7 @@ public static class InboxEndpoints
                             request.BackfillMonths?.ToString());
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
@@ -367,7 +367,7 @@ public static class InboxEndpoints
 
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             request,
@@ -414,7 +414,7 @@ public static class InboxEndpoints
 
                         return response is null ? Results.NotFound() : Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             request,
@@ -445,7 +445,7 @@ public static class InboxEndpoints
         if (!Uri.TryCreate(publicWebBaseUrl, UriKind.Absolute, out var configuredWebBaseUrl) ||
             !IsHttpUrl(configuredWebBaseUrl))
         {
-            throw new InvalidOperationException(
+            throw new UserFacingException(
                 "Gmail sign-in needs the web app's public URL. Set NEXT_PUBLIC_SITE_URL on the API.");
         }
 
@@ -464,7 +464,7 @@ public static class InboxEndpoints
             });
     }
 
-    private static string ToOAuthCallbackErrorMessage(InvalidOperationException exception)
+    private static string ToOAuthCallbackErrorMessage(UserFacingException exception)
     {
         return exception.Message.Contains(
             "No pending Gmail authorization session",

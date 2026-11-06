@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Api.Security;
 using Careeroc.Contracts.Reminders;
@@ -72,7 +73,7 @@ public static class ReminderEndpoints
 
                         return updated ? Results.NoContent() : Results.NotFound();
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,
@@ -118,7 +119,7 @@ public static class ReminderEndpoints
 
                         return updated ? Results.NoContent() : Results.NotFound();
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await securityEventLogger.LogMutationAsync(
                             httpRequest,

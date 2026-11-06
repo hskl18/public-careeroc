@@ -44,14 +44,14 @@ public sealed class PersonalAccessTokenService
         }
 
         var user = await FindUserAsync(userEmail, cancellationToken)
-            ?? throw new InvalidOperationException("Open the workspace once before creating an access token.");
+            ?? throw new UserFacingException("Open the workspace once before creating an access token.");
         var now = _clock.UtcNow;
         var activeTokens = await _dbContext.PersonalAccessTokens.CountAsync(
             token => token.UserId == user.Id && token.RevokedAtUtc == null && token.ExpiresAtUtc > now,
             cancellationToken);
         if (activeTokens >= MaxActiveTokensPerUser)
         {
-            throw new InvalidOperationException($"Revoke a token first; at most {MaxActiveTokensPerUser} can be active.");
+            throw new UserFacingException($"Revoke a token first; at most {MaxActiveTokensPerUser} can be active.");
         }
 
         var secret = TokenPrefix + Base64UrlEncode(RandomNumberGenerator.GetBytes(32));

@@ -18,12 +18,12 @@ public sealed partial class ResumeIntelligenceService
         var normalized = CleanSourceText(value);
         if (normalized.Length < 80)
         {
-            throw new InvalidOperationException("Paste at least 80 characters of resume text.");
+            throw new UserFacingException("Paste at least 80 characters of resume text.");
         }
 
         if (normalized.Length > 100_000)
         {
-            throw new InvalidOperationException("Resume text must be 100,000 characters or fewer.");
+            throw new UserFacingException("Resume text must be 100,000 characters or fewer.");
         }
 
         return normalized;
