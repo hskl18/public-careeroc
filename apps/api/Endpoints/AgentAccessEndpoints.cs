@@ -32,7 +32,7 @@ public static class AgentAccessEndpoints
                     {
                         return Results.Ok(await tokens.CreateAsync(RequestUserContext.GetUserEmail(request), body, cancellationToken));
                     }
-                    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+                    catch (UserFacingException exception)
                     {
                         return Results.BadRequest(new { error = exception.Message });
                     }

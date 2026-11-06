@@ -15,11 +15,6 @@ public sealed class ReviewEvidenceAgentService
 
     private readonly IReviewEvidenceModel _reviewEvidenceModel;
 
-    public ReviewEvidenceAgentService()
-        : this(NullReviewEvidenceModel.Instance)
-    {
-    }
-
     public ReviewEvidenceAgentService(IReviewEvidenceModel reviewEvidenceModel)
     {
         _reviewEvidenceModel = reviewEvidenceModel;

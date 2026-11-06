@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Careeroc.Application.Abstractions;
 using Careeroc.Application.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Careeroc.Infrastructure.Email;
@@ -11,10 +12,14 @@ public sealed class MarkdownRecruitingEmailGuidanceStore : IRecruitingEmailGuida
     private static readonly SemaphoreSlim FileLock = new(1, 1);
 
     private readonly OllamaEmailExtractionOptions _options;
+    private readonly ILogger<MarkdownRecruitingEmailGuidanceStore> _logger;
 
-    public MarkdownRecruitingEmailGuidanceStore(IOptions<OllamaEmailExtractionOptions> options)
+    public MarkdownRecruitingEmailGuidanceStore(
+        IOptions<OllamaEmailExtractionOptions> options,
+        ILogger<MarkdownRecruitingEmailGuidanceStore> logger)
     {
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task<string> ReadGuidanceAsync(CancellationToken cancellationToken = default)
@@ -61,18 +66,24 @@ public sealed class MarkdownRecruitingEmailGuidanceStore : IRecruitingEmailGuida
             return;
         }
 
-        var directory = Path.GetDirectoryName(feedbackPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
         var entry = BuildFeedbackEntry(feedback);
 
         await FileLock.WaitAsync(cancellationToken);
         try
         {
+            var directory = Path.GetDirectoryName(feedbackPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             await File.AppendAllTextAsync(feedbackPath, entry, cancellationToken);
+        }
+        // The feedback file is an optional aid; a full disk or read-only volume must not fail the
+        // person's correction, but it must not go unnoticed either.
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(exception, "Could not append correction feedback to {FeedbackPath}.", feedbackPath);
         }
         finally
         {

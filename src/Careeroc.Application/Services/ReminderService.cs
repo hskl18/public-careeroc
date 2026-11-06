@@ -43,7 +43,7 @@ public sealed class ReminderService
             return false;
         }
 
-        var nextStatus = ParseEnum<ReminderStatus>(request.Status);
+        var nextStatus = RequestEnum.Parse<ReminderStatus>(request.Status);
         if (reminder.Status == nextStatus)
         {
             return true;
@@ -142,19 +142,4 @@ public sealed class ReminderService
         };
     }
 
-    private static TEnum ParseEnum<TEnum>(string value)
-        where TEnum : struct, Enum
-    {
-        var normalized = value
-            .Replace("_", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("-", string.Empty, StringComparison.OrdinalIgnoreCase);
-
-        if (Enum.TryParse<TEnum>(normalized, true, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new UserFacingException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
-    }
 }

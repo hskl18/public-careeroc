@@ -1049,6 +1049,7 @@ public sealed class InboxSetupServiceTests
         return new InboxSetupService(
             dbContext,
             gmailClient ?? new FakeGmailInboxClient(),
+            NoopInboxAccountTokenProtector.Instance,
             clock);
     }
 

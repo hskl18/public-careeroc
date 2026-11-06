@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Contracts.Agents;
 using Careeroc.Domain.Entities;
@@ -66,8 +67,24 @@ public sealed class PersonalAccessTokenServiceTests
         await using var dbContext = await CreateContextWithUserAsync();
         var service = new PersonalAccessTokenService(dbContext, clock);
 
-        await Assert.ThrowsAsync<ArgumentException>(
+        await Assert.ThrowsAsync<UserFacingException>(
             () => service.CreateAsync("alex@example.com", new CreatePersonalAccessTokenRequest(name, lifetimeDays)));
+    }
+
+    [Fact]
+    public async Task CreateAsync_RefusesAnEleventhActiveTokenWithAMessageForThePerson()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero));
+        await using var dbContext = await CreateContextWithUserAsync();
+        var service = new PersonalAccessTokenService(dbContext, clock);
+        for (var index = 0; index < 10; index++)
+        {
+            await service.CreateAsync("alex@example.com", new CreatePersonalAccessTokenRequest($"Assistant {index}", 30));
+        }
+
+        var refused = await Assert.ThrowsAsync<UserFacingException>(
+            () => service.CreateAsync("alex@example.com", new CreatePersonalAccessTokenRequest("Eleventh", 30)));
+        Assert.Contains("at most 10", refused.Message, StringComparison.Ordinal);
     }
 
     private static async Task<Careeroc.Infrastructure.Persistence.CareerocDbContext> CreateContextWithUserAsync()

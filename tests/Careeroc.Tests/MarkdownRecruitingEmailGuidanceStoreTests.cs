@@ -1,6 +1,7 @@
 using Careeroc.Application.Models;
 using Careeroc.Domain.Enums;
 using Careeroc.Infrastructure.Email;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Careeroc.Tests;
@@ -14,7 +15,8 @@ public sealed class MarkdownRecruitingEmailGuidanceStoreTests
         Directory.CreateDirectory(directory);
         await File.WriteAllTextAsync(Path.Combine(directory, "playbook.md"), "# Playbook");
         var store = new MarkdownRecruitingEmailGuidanceStore(
-            Options.Create(new OllamaEmailExtractionOptions { GuidanceFilePath = Path.Combine(directory, "playbook.md") }));
+            Options.Create(new OllamaEmailExtractionOptions { GuidanceFilePath = Path.Combine(directory, "playbook.md") }),
+            NullLogger<MarkdownRecruitingEmailGuidanceStore>.Instance);
 
         try
         {
@@ -56,7 +58,8 @@ public sealed class MarkdownRecruitingEmailGuidanceStoreTests
                 {
                     GuidanceFilePath = Path.Combine(directory, "playbook.md"),
                     UserFeedbackFilePath = feedbackPath
-                }));
+                }),
+            NullLogger<MarkdownRecruitingEmailGuidanceStore>.Instance);
 
         try
         {

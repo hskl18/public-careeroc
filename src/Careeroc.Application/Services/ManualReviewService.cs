@@ -72,7 +72,7 @@ public sealed class ManualReviewService
 
         if (!string.IsNullOrWhiteSpace(request.Category))
         {
-            inboxEmail.Category = ParseEnum<EmailCategory>(request.Category);
+            inboxEmail.Category = RequestEnum.Parse<EmailCategory>(request.Category);
         }
 
         if (explicitlyClearedAssignment)
@@ -171,7 +171,7 @@ public sealed class ManualReviewService
             return false;
         }
 
-        var parsedStatus = ParseEnum<ApplicationStatus>(request.Status);
+        var parsedStatus = RequestEnum.Parse<ApplicationStatus>(request.Status);
         jobApplication.Status = parsedStatus;
         jobApplication.LastActivityAtUtc = _clock.UtcNow;
 
@@ -266,21 +266,6 @@ public sealed class ManualReviewService
             : userEmail.Trim().ToLowerInvariant();
     }
 
-    private static TEnum ParseEnum<TEnum>(string value)
-        where TEnum : struct, Enum
-    {
-        var normalized = value
-            .Replace("_", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("-", string.Empty, StringComparison.OrdinalIgnoreCase);
-
-        if (Enum.TryParse<TEnum>(normalized, true, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new UserFacingException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
-    }
 
     private static string NormalizeCorrectionKind(string value)
     {
@@ -407,30 +392,23 @@ public sealed class ManualReviewService
             return;
         }
 
-        try
-        {
-            await _guidanceStore.AppendFeedbackAsync(
-                new RecruitingEmailGuidanceFeedback(
-                    _clock.UtcNow,
-                    inboxEmail.Sender,
-                    inboxEmail.Subject,
-                    previousCategory,
-                    inboxEmail.Category,
-                    previousActionRequired,
-                    inboxEmail.ActionRequired,
-                    previousDueDateUtc,
-                    inboxEmail.DueDateUtc,
-                    previousCompany,
-                    inboxEmail.ExtractedCompany,
-                    previousRole,
-                    inboxEmail.ExtractedRole,
-                    request.Notes),
-                cancellationToken);
-        }
-        catch
-        {
-            // Guidance memory is a local harness aid. A file-write issue must not block the user's correction.
-        }
+        await _guidanceStore.AppendFeedbackAsync(
+            new RecruitingEmailGuidanceFeedback(
+                _clock.UtcNow,
+                inboxEmail.Sender,
+                inboxEmail.Subject,
+                previousCategory,
+                inboxEmail.Category,
+                previousActionRequired,
+                inboxEmail.ActionRequired,
+                previousDueDateUtc,
+                inboxEmail.DueDateUtc,
+                previousCompany,
+                inboxEmail.ExtractedCompany,
+                previousRole,
+                inboxEmail.ExtractedRole,
+                request.Notes),
+            cancellationToken);
     }
 
     private static bool HasGuidanceSignal(

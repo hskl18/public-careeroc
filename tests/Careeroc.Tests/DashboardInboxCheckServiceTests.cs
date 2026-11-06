@@ -305,7 +305,8 @@ public sealed class DashboardInboxCheckServiceTests
             dbContext,
             new HeuristicDueDateExtractor(new HeuristicRecruitingEmailParser()),
             applicationWorkflowService,
-            clock);
+            clock,
+            NullLogger<ReminderEvidenceRefreshService>.Instance);
 
         return new DashboardInboxCheckService(
             dbContext,

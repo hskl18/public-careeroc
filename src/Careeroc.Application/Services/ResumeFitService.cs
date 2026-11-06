@@ -3,6 +3,7 @@ using Careeroc.Application.Abstractions;
 using Careeroc.Contracts.Resumes;
 using Careeroc.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Careeroc.Application.Services;
 
@@ -12,11 +13,13 @@ public sealed class ResumeFitService
 
     private readonly ICareerocDbContext _dbContext;
     private readonly IClock _clock;
+    private readonly ILogger<ResumeFitService> _logger;
 
-    public ResumeFitService(ICareerocDbContext dbContext, IClock clock)
+    public ResumeFitService(ICareerocDbContext dbContext, IClock clock, ILogger<ResumeFitService> logger)
     {
         _dbContext = dbContext;
         _clock = clock;
+        _logger = logger;
     }
 
     public async Task<ResumeFitDto?> GetFitAsync(
@@ -147,7 +150,20 @@ public sealed class ResumeFitService
         cached.GapsJson = JsonSerializer.Serialize(response.Gaps, JsonOptions);
         cached.Rationale = response.Rationale;
         cached.UpdatedAtUtc = nowUtc;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        // The fit is already computed; a failed cache write, such as two first loads racing on the
+        // unique (application, resume version) index, must not fail the request that computed it.
+        catch (DbUpdateException exception)
+        {
+            _dbContext.ChangeTracker.DiscardPendingChanges();
+            _logger.LogWarning(
+                exception,
+                "Could not cache the resume fit for application {ApplicationId}.",
+                response.JobApplicationId);
+        }
     }
 
     private static ResumeFitDto MapCachedFit(ApplicationResumeFit fit)

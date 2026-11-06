@@ -26,7 +26,7 @@ internal static class TestServices
             new WorkflowExtractionAgentService(recruitingEmailParser),
             new RecruiterIdentityAgentService(),
             new ScamCheckerAgentService(),
-            new ReviewEvidenceAgentService(),
+            new ReviewEvidenceAgentService(NullReviewEvidenceModel.Instance),
             new FollowUpTaskAgentService(clock),
             applicationWorkflowService,
             new RecruitingContactGraphService(dbContext, clock),
