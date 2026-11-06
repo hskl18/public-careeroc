@@ -19,6 +19,9 @@ public sealed class UserMemoryEntryConfiguration : IEntityTypeConfiguration<User
         builder.Property(entry => entry.Confidence).IsRequired();
         builder.Property(entry => entry.CreatedAtUtc).IsRequired();
         builder.Property(entry => entry.UpdatedAtUtc).IsRequired();
+        // Postgres's xmin as a row version: two requests that both read a pending proposal cannot
+        // both resolve it, so a double-clicked approval creates its reminders once.
+        builder.Property<uint>("RowVersion").HasColumnName("xmin").HasColumnType("xid").IsRowVersion();
         builder
             .HasOne(entry => entry.User)
             .WithMany(user => user.MemoryEntries)

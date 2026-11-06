@@ -1,14 +1,16 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace Careeroc.Api.Background;
 
 // Sync requests from the "Sync inbox" button. Bounded, so a burst of clicks cannot pile up
-// unlimited work, and each user is queued once at a time; SyncNowWorker drains it.
+// unlimited work. A user is held from the click until their sync finishes, so two of their syncs
+// never run at once; a click during a run asks for one more run after it. SyncNowWorker drains it.
 public sealed class SyncNowQueue
 {
     private readonly Channel<string> _channel;
-    private readonly ConcurrentDictionary<string, byte> _queued = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _gate = new();
+    private readonly HashSet<string> _held = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _rerun = new(StringComparer.OrdinalIgnoreCase);
 
     public SyncNowQueue(int capacity)
     {
@@ -16,31 +18,42 @@ public sealed class SyncNowQueue
             new BoundedChannelOptions(capacity) { FullMode = BoundedChannelFullMode.Wait });
     }
 
-    // True when the user's sync is queued, now or by an earlier request; false when the queue is full.
+    // True when the user's sync is queued or running, now or by an earlier request; false when the
+    // queue is full.
     public bool TryEnqueue(string userEmail)
     {
-        if (!_queued.TryAdd(userEmail, 0))
+        lock (_gate)
         {
+            if (_held.Contains(userEmail))
+            {
+                _rerun.Add(userEmail);
+                return true;
+            }
+
+            if (!_channel.Writer.TryWrite(userEmail))
+            {
+                return false;
+            }
+
+            _held.Add(userEmail);
             return true;
         }
-
-        if (_channel.Writer.TryWrite(userEmail))
-        {
-            return true;
-        }
-
-        _queued.TryRemove(userEmail, out _);
-        return false;
     }
 
-    public async IAsyncEnumerable<string> ReadAllAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    public IAsyncEnumerable<string> ReadAllAsync(CancellationToken cancellationToken) =>
+        _channel.Reader.ReadAllAsync(cancellationToken);
+
+    // Called when a user's sync ends, however it ends.
+    public void Complete(string userEmail)
     {
-        await foreach (var userEmail in _channel.Reader.ReadAllAsync(cancellationToken))
+        lock (_gate)
         {
-            // Released before the sync runs, so a click during a long sync queues the next one.
-            _queued.TryRemove(userEmail, out _);
-            yield return userEmail;
+            if (_rerun.Remove(userEmail) && _channel.Writer.TryWrite(userEmail))
+            {
+                return;
+            }
+
+            _held.Remove(userEmail);
         }
     }
 }

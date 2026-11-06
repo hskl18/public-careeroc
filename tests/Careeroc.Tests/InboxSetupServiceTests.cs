@@ -352,6 +352,55 @@ public sealed class InboxSetupServiceTests
     }
 
     [Fact]
+    public async Task CompleteGmailOAuthAsync_RefusesAnotherGoogleAccountForAnInboxThatHoldsMail()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 5, 8, 0, 0, TimeSpan.Zero));
+        var gmailClient = new FakeGmailInboxClient
+        {
+            ExchangeResult = new GmailAuthorizationResult("access-token", "refresh-token", clock.UtcNow.AddHours(1)),
+            // In Google's account chooser the person picked their other inbox.
+            Profile = new GmailProfile("alex.other@example.com", "history-123")
+        };
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var service = CreateService(dbContext, clock, gmailClient);
+        await service.StartGmailOAuthAsync(
+            new RegisterInboxAccountRequest { EmailAddress = "alex.personal@example.com" },
+            "http://localhost:5114/api/inbox-accounts/gmail/oauth/callback",
+            "/",
+            ApplicationDefaults.DefaultUserEmail,
+            ApplicationDefaults.DefaultUserName,
+            CancellationToken.None);
+        var reconnecting = Assert.Single(dbContext.InboxAccounts);
+        dbContext.InboxEmails.Add(
+            new InboxEmail
+            {
+                InboxAccountId = reconnecting.Id,
+                ExternalMessageId = "message-1",
+                ThreadId = "thread-1",
+                Sender = "recruiter@kestrel.example",
+                Subject = "Interview",
+                RawBody = "body",
+                ParsedBody = "body",
+                ReceivedAtUtc = clock.UtcNow
+            });
+        await dbContext.SaveChangesAsync();
+        var state = InboxAccountMetadataJson.Read(reconnecting, _ => new InboxAccountMetadata()).OAuthState!;
+
+        var refused = await Assert.ThrowsAsync<UserFacingException>(
+            () => service.CompleteGmailOAuthAsync(
+                state,
+                "auth-code",
+                "http://localhost:5114/api/inbox-accounts/gmail/oauth/callback",
+                ApplicationDefaults.DefaultUserEmail,
+                CancellationToken.None));
+
+        Assert.Contains("alex.other@example.com", refused.Message, StringComparison.Ordinal);
+        var kept = Assert.Single(dbContext.InboxAccounts);
+        Assert.Equal("alex.personal@example.com", kept.EmailAddress);
+        Assert.Single(dbContext.InboxEmails);
+    }
+
+    [Fact]
     public async Task StartGmailOAuthAsync_AllHistorySelection_SetsBackfillAllHistory()
     {
         var databaseName = Guid.NewGuid().ToString("N");

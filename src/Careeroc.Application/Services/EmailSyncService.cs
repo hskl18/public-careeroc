@@ -106,8 +106,8 @@ public sealed class EmailSyncService
             if (syncLease is null)
             {
                 _logger.LogInformation(
-                    "Skipped email sync for inbox {EmailAddress} because another worker holds the sync lease.",
-                    inboxAccount.EmailAddress);
+                    "Skipped email sync for inbox {InboxAccountId} because another worker holds the sync lease.",
+                    inboxAccount.Id);
                 return new EmailSyncResult(0, 0, EmailSyncStatuses.LeaseBusy, "Another worker holds the inbox sync lease.");
             }
 
@@ -179,12 +179,22 @@ public sealed class EmailSyncService
             }
 
             _logger.LogInformation(
-                "Email sync completed for inbox {EmailAddress}. Created {EmailCount} emails and enqueued {JobsEnqueued} jobs.",
-                inboxAccount.EmailAddress,
+                "Email sync completed for inbox {InboxAccountId}. Created {EmailCount} emails and enqueued {JobsEnqueued} jobs.",
+                inboxAccount.Id,
                 createdEmails.Count,
                 jobsEnqueued);
 
             return new EmailSyncResult(createdEmails.Count, jobsEnqueued);
+        }
+        // InboxAccount has a row version: the person disconnected the inbox or changed its window
+        // while this sync ran, and their change wins over this run's results.
+        catch (DbUpdateConcurrencyException) when (!cancellationToken.IsCancellationRequested)
+        {
+            _dbContext.ChangeTracker.DiscardPendingChanges();
+            _logger.LogInformation(
+                "Inbox {InboxAccountId} changed while it synced, so this run's results were not saved.",
+                inboxAccount.Id);
+            return new EmailSyncResult(0, 0, EmailSyncStatuses.Skipped, "The inbox changed during the sync.");
         }
         // Shutdown is not a failed sync; let the cancellation reach the worker.
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
@@ -193,8 +203,8 @@ public sealed class EmailSyncService
             _dbContext.ChangeTracker.DiscardPendingChanges();
             _logger.LogWarning(
                 exception,
-                "Email sync failed for inbox {EmailAddress}.",
-                inboxAccount.EmailAddress);
+                "Email sync failed for inbox {InboxAccountId}.",
+                inboxAccount.Id);
             return new EmailSyncResult(0, 0, EmailSyncStatuses.Failed, "Email sync failed before completion.");
         }
     }
