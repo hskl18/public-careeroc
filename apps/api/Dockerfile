@@ -3,7 +3,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS build
 WORKDIR /src
 
-COPY global.json ./
+# Directory.Build.props carries the release version and build rules every project shares.
+COPY global.json Directory.Build.props ./
 COPY apps/api/Careeroc.Api.csproj apps/api/
 COPY src/Careeroc.Application/Careeroc.Application.csproj src/Careeroc.Application/
 COPY src/Careeroc.Contracts/Careeroc.Contracts.csproj src/Careeroc.Contracts/

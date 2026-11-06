@@ -477,7 +477,6 @@ jobs:
           file: ${{ matrix.image.file }}
           platforms: linux/arm64
           push: false
-          cache-from: type=gha,scope=${{ matrix.image.name }}-arm64
 
   images:
     name: Container images

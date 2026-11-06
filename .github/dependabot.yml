@@ -1,4 +1,5 @@
-# Monthly version updates, grouped per ecosystem so each month is a handful of PRs.
+# Version updates, grouped per ecosystem so each run is a handful of PRs: monthly, and weekly for
+# the digest-pinned base images.
 # Security updates are separate and arrive as soon as an advisory is published.
 version: 2
 updates:
@@ -55,6 +56,13 @@ updates:
     groups:
       docker:
         patterns: ["*"]
+    # Digest refreshes only: a new Python or a new major (node, .NET) must move with CI's versions
+    # in one deliberate change, not ride along with security patches.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Compose's own images. Postgres stays on its major version: a new major cannot read the pg17 volume.
   - package-ecosystem: docker-compose

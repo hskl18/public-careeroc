@@ -24,7 +24,9 @@ export ConnectionStrings__Careeroc="${ConnectionStrings__Careeroc:-Host=localhos
 # for running the API alone.
 export AgentRuntime__Enabled=true
 export AgentRuntime__BaseUrl="${AgentRuntime__BaseUrl:-http://localhost:8123}"
-# The runtime container checks A2A tokens against the API, which runs on this host here.
+# The runtime container checks A2A tokens against the API, which runs on this host here. Docker
+# Desktop forwards host.docker.internal to the host's loopback; on Linux it is the bridge address,
+# where an API listening on localhost is not reachable, so A2A needs API_URLS=http://0.0.0.0:5114.
 export AGENT_API_BASE_URL="${AGENT_API_BASE_URL:-http://host.docker.internal:${API_PORT}}"
 # The runtime container and the API must share this secret, or every review silently falls back.
 export AgentRuntime__SharedSecret="${AgentRuntime__SharedSecret:-local-compose-only-agent-shared-secret-01}"
@@ -33,7 +35,7 @@ export AGENT_SHARED_SECRET="$AgentRuntime__SharedSecret"
 docker compose up -d --build --wait postgres agent-runtime
 
 trap 'trap - EXIT; kill 0' EXIT INT TERM
-dotnet run --project apps/api --urls "http://localhost:${API_PORT}" 2>&1 | sed -u 's/^/[api] /' &
+dotnet run --project apps/api --urls "${API_URLS:-http://localhost:${API_PORT}}" 2>&1 | sed -u 's/^/[api] /' &
 pnpm --dir apps/web dev --port "$WEB_PORT" 2>&1 | sed -u 's/^/[web] /' &
 echo "careeroc is starting at http://localhost:${WEB_PORT}"
 wait

@@ -40,7 +40,8 @@ services:
       context: ./services/agent-runtime
     container_name: careeroc-agent-runtime
     restart: unless-stopped
-    # Lets AGENT_BASE_URL and AGENT_API_BASE_URL reach the host as host.docker.internal on Linux too.
+    # Resolves host.docker.internal on Linux too, where it is the bridge address: a host service
+    # (a model server, or the API in dev-up.sh) must listen there, not only on 127.0.0.1.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -81,7 +82,8 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: careeroc-api
     restart: unless-stopped
-    # Lets Ollama__BaseUrl reach a model on the host as host.docker.internal on Linux too.
+    # Resolves host.docker.internal on Linux too, where it is the bridge address: a model server on
+    # the host must listen there, not only on 127.0.0.1.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

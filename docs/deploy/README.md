@@ -66,9 +66,8 @@ The app refuses to start if Google credentials are also set.
 Deploy from the repository root, because the root `.vercelignore` decides what is uploaded.
 
 Re-record the snapshot on an empty database when an API response changes shape.
-Its emails and review come from real models, here free ones through a signed-in local Ollama, and a test fails if the recording fell back to the rules or the deterministic review:
-
 Stop the main stack first (`docker compose --profile full down` keeps its volume), because the containers have fixed names and ports.
+Its emails and review come from real models, here free ones through a signed-in local Ollama, and a test fails if the recording fell back to the rules or the deterministic review:
 
 ```bash
 export OLLAMA=http://host.docker.internal:11434
