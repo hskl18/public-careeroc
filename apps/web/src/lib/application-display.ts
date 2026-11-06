@@ -59,3 +59,46 @@ export function nextActionToneClass(tone: DerivedNextAction["tone"]) {
       return "text-[var(--text-secondary)]";
   }
 }
+
+export type DueDescription = {
+  relative: string | null;
+  pill: { label: string; className: string } | null;
+};
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+// The row's "tomorrow" and its "Due today" pill come from one count of calendar days in the
+// viewer's time, so they can never disagree.
+export function describeDue(value: string | null, now = new Date()): DueDescription {
+  const target = value ? new Date(value) : null;
+  if (!target || Number.isNaN(target.getTime())) {
+    return { relative: null, pill: null };
+  }
+
+  const days = Math.round((startOfDay(target) - startOfDay(now)) / 86_400_000);
+  const relative =
+    days === 0
+      ? "today"
+      : days === 1
+        ? "tomorrow"
+        : days === -1
+          ? "yesterday"
+          : days > 0 && days <= 14
+            ? `in ${days}d`
+            : days < 0 && days >= -30
+              ? `${Math.abs(days)}d ago`
+              : null;
+  const pill =
+    target.getTime() < now.getTime()
+      ? { label: "Overdue", className: "bg-[var(--red-soft)] text-[var(--red)]" }
+      : days === 0
+        ? { label: "Due today", className: "bg-[var(--red-soft)] text-[var(--red)]" }
+        : days <= 3
+          ? { label: "Due soon", className: "bg-[var(--yellow-soft)] text-[var(--yellow)]" }
+          : null;
+
+  return { relative, pill };
+}
+

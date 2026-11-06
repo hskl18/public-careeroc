@@ -1,0 +1,19 @@
+name: Question
+description: Ask how to set up, run, or extend careeroc.
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: Check the README, AGENTS.md, and docs/deploy first; a bug report fits better if something is broken.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What you are trying to do and where you are stuck.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release tag or commit, if it matters.

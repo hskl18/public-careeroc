@@ -11,6 +11,7 @@ docker compose --profile full up -d --build --wait
 scripts/smoke-demo.sh
 
 # Full local test loop
+pnpm install                              # once
 pnpm web:lint
 pnpm --dir apps/web test:unit
 pnpm web:build
@@ -26,7 +27,7 @@ dotnet test Careeroc.sln --filter "FullyQualifiedName~ClassName"
 
 # Multi-agent browser E2E against a disposable database (CI runs it on every pull request and push to main)
 CAREEROC_E2E_CONNECTION_STRING='Host=localhost;Port=5432;Database=careeroc_e2e;Username=postgres;Password=postgres' \
-  pnpm e2e:multi-agent
+  pnpm e2e:multi-agent                    # first: pnpm --dir apps/web exec playwright install chromium
 
 # Development loop: Postgres and the agent runtime in Docker, the API and web app from source
 ./scripts/dev-up.sh       # Ctrl-C stops the API and web app; `docker compose stop` stops the containers
@@ -36,7 +37,8 @@ docker compose up -d postgres agent-runtime
 dotnet run --project apps/api                       # port 5114, applies migrations
 pnpm --dir apps/web dev                             # port 3000
 
-# EF Core migrations
+# EF Core migrations (dotnet-ef is a local tool)
+dotnet tool restore                                  # once
 dotnet ef migrations add MigrationName --project src/Careeroc.Infrastructure
 dotnet ef database update --project src/Careeroc.Infrastructure
 
@@ -160,11 +162,13 @@ After changing auth, signing, proxy routes, OAuth, tokens, rate limiting, or use
 
 ### Backend
 
-- Inject `IClock` instead of calling `DateTime.UtcNow`; persisted timestamps are UTC with `*AtUtc` names. Entities have no wall-clock defaults: `CareerocDbContext` stamps a new row's unset timestamps from `IClock` when it saves.
+- Inject `IClock` instead of calling `DateTime.UtcNow`; persisted timestamps are UTC with `*AtUtc` names.
+  Entities have no wall-clock defaults: `CareerocDbContext` stamps a new row's unset timestamps from `IClock` when it saves.
 - Every persisted entity has an EF configuration class in `Infrastructure/Persistence/Configurations`; column names stay snake_case through the context's convention.
 - Do not edit a migration that has shipped; add a new one.
 - Do not swallow exceptions; on parser or model failure, log a warning or error and use the deterministic path.
-- Throw `UserFacingException` for an error the requester can fix, with a message written for them; endpoints answer it with 400. Every other exception is a bug or an outage and becomes a 500 whose message stays in the logs.
+- Throw `UserFacingException` for an error the requester can fix, with a message written for them; endpoints answer it with 400.
+  Every other exception is a bug or an outage and becomes a 500 whose message stays in the logs.
 - After a failed save in a loop that shares a `DbContext`, call `ChangeTracker.DiscardPendingChanges()` before saving anything else.
 
 ### Frontend

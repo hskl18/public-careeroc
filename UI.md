@@ -47,7 +47,7 @@ Routine evidence checks belong to the review agent; review UI appears only when 
 | Applications `/app/applications` | Browsing every record: search, status filters, aligned rows with stage and urgency, a selected preview, links to detail and Gmail |
 | Application detail | Why the record has its status: pipeline stage, a brief and next move, open actions or terminal outcome, contacts, evidence grouped by thread, original Gmail links, correction buttons |
 | Review `/app/review` | Only ambiguous items: uncertain company, role, or match, agencies, likely scams |
-| Updates `/app/updates` | The full activity timeline |
+| Updates `/app/updates` | The 50 newest updates, filtered by type |
 | Analytics `/app/analytics` | Funnel health: counts, stage distribution, company and role tables, drill-downs; never next actions |
 | Resume `/app/resume` | The score, what to fix, and what careeroc read |
 | Memory `/app/memory` | Pending, confirmed, and rejected facts that agents can reuse, as three columns |

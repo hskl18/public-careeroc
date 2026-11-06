@@ -288,24 +288,32 @@ export function AttentionSection({
                     >
                       {completing ? "…" : "Done"}
                     </button>
-                    <select
-                      aria-label={`Snooze ${action.title}`}
-                      className="cursor-pointer appearance-none bg-transparent [field-sizing:content] max-sm:min-h-6 hover:text-[var(--text-primary)] disabled:cursor-default disabled:opacity-50"
-                      value=""
-                      disabled={reminderActionsDisabled}
-                      onChange={(event) =>
-                        onReminderSnooze(action, event.target.value as SnoozePreset)
-                      }
-                    >
-                      <option value="" disabled hidden>
+                    {/* A select that acts on change snoozes as soon as a keyboard user presses an
+                        arrow key; this opens a menu, and only a chosen duration snoozes. */}
+                    <details className="relative">
+                      <summary
+                        aria-label={`Snooze ${action.title}`}
+                        className="cursor-pointer list-none hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6 [&::-webkit-details-marker]:hidden"
+                      >
                         {snoozing ? "…" : "Snooze"}
-                      </option>
-                      {(["1h", "tomorrow", "next-week"] as const).map((preset) => (
-                        <option key={preset} value={preset}>
-                          {getSnoozePresetLabel(preset)}
-                        </option>
-                      ))}
-                    </select>
+                      </summary>
+                      <div className="absolute right-0 z-10 mt-1 grid min-w-28 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-1">
+                        {(["1h", "tomorrow", "next-week"] as const).map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            className="rounded px-2 py-1 text-left hover:bg-[var(--surface-overlay)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                            disabled={reminderActionsDisabled}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details")?.removeAttribute("open");
+                              onReminderSnooze(action, preset);
+                            }}
+                          >
+                            {getSnoozePresetLabel(preset)}
+                          </button>
+                        ))}
+                      </div>
+                    </details>
                     <button
                       type="button"
                       className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
