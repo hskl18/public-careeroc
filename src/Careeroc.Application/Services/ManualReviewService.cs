@@ -211,7 +211,7 @@ public sealed class ManualReviewService
         var correctionKind = NormalizeCorrectionKind(request.Kind);
         if (correctionKind != "not_an_application")
         {
-            throw new InvalidOperationException("Unsupported application correction kind.");
+            throw new UserFacingException("Unsupported application correction kind.");
         }
 
         var jobApplication = await _dbContext.JobApplications
@@ -279,7 +279,7 @@ public sealed class ManualReviewService
             return parsed;
         }
 
-        throw new InvalidOperationException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
+        throw new UserFacingException($"Unsupported value '{value}' for {typeof(TEnum).Name}.");
     }
 
     private static string NormalizeCorrectionKind(string value)

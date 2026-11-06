@@ -251,7 +251,7 @@ public sealed class RecruitingContactQueryService
         var trimmed = value.Trim().ToLowerInvariant();
         if (!trimmed.Contains('@', StringComparison.Ordinal) || trimmed.Length > 320)
         {
-            throw new InvalidOperationException("Recruiting contact email must be a valid email address.");
+            throw new UserFacingException("Recruiting contact email must be a valid email address.");
         }
 
         return trimmed;
@@ -282,7 +282,7 @@ public sealed class RecruitingContactQueryService
             return contactType;
         }
 
-        throw new InvalidOperationException("Unsupported recruiting contact type.");
+        throw new UserFacingException("Unsupported recruiting contact type.");
     }
 
     private static string? FirstNonEmpty(params string?[] values)

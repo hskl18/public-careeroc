@@ -1,3 +1,4 @@
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Contracts.Profile;
 
@@ -137,7 +138,7 @@ public static class ProfileEndpoints
                         return Results.Ok(
                             await careerOrchestratorService.ApplyReviewDecisionAsync(response, cancellationToken));
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         await auditLogger.LogMutationAsync(
                             request,
@@ -173,7 +174,7 @@ public static class ProfileEndpoints
 
                         return Results.Ok(response);
                     }
-                    catch (InvalidOperationException exception)
+                    catch (UserFacingException exception)
                     {
                         return Results.BadRequest(new { error = exception.Message });
                     }

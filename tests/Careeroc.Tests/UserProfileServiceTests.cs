@@ -91,7 +91,7 @@ public sealed class UserProfileServiceTests
 
         var service = new UserProfileService(dbContext, new TestClock(new DateTimeOffset(2026, 4, 26, 12, 0, 0, TimeSpan.Zero)));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<UserFacingException>(
             () => service.UpdateProfileAsync(
                 new UpdateUserProfileRequest(
                     "Student User",
@@ -112,7 +112,7 @@ public sealed class UserProfileServiceTests
 
         var service = new UserProfileService(dbContext, new TestClock(new DateTimeOffset(2026, 4, 26, 12, 0, 0, TimeSpan.Zero)));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<UserFacingException>(
             () => service.UpdateProfileAsync(
                 new UpdateUserProfileRequest(
                     "Student User",

@@ -150,7 +150,7 @@ internal static class ApiRequestSignatureValidator
             normalizedEmail = ApplicationDefaults.NormalizeRequiredUserEmail(value);
             return true;
         }
-        catch (InvalidOperationException)
+        catch (UserFacingException)
         {
             normalizedEmail = string.Empty;
             return false;

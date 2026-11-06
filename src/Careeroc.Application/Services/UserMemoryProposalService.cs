@@ -198,14 +198,14 @@ public sealed class UserMemoryProposalService
 
         if (proposal.ExpiresAtUtc.HasValue && proposal.ExpiresAtUtc <= nowUtc)
         {
-            throw new InvalidOperationException("Expired memory proposals cannot be resolved.");
+            throw new UserFacingException("Expired memory proposals cannot be resolved.");
         }
 
         // A newer review overwrites the same pending entry, so a stale page could approve unseen content.
         if (request.ExpectedUpdatedAtUtc is { } expected &&
             (proposal.UpdatedAtUtc - expected).Duration() > TimeSpan.FromMilliseconds(1))
         {
-            throw new InvalidOperationException("This proposal changed after you opened it. Reload and decide again.");
+            throw new UserFacingException("This proposal changed after you opened it. Reload and decide again.");
         }
 
         if (action == "confirm")
@@ -265,7 +265,7 @@ public sealed class UserMemoryProposalService
 
         if (expiresAtUtc.HasValue && expiresAtUtc <= nowUtc)
         {
-            throw new InvalidOperationException("Memory proposal expiration must be in the future.");
+            throw new UserFacingException("Memory proposal expiration must be in the future.");
         }
 
         return new NormalizedMemoryProposal(
@@ -284,7 +284,7 @@ public sealed class UserMemoryProposalService
         var normalized = NormalizeRequiredText(value, maxLength, label);
         if (!normalized.All(character => char.IsLetterOrDigit(character) || character is '_' or '-' or '.' or ':'))
         {
-            throw new InvalidOperationException($"{label} may only contain letters, numbers, '.', ':', '_' or '-'.");
+            throw new UserFacingException($"{label} may only contain letters, numbers, '.', ':', '_' or '-'.");
         }
 
         return normalized;
@@ -296,7 +296,7 @@ public sealed class UserMemoryProposalService
         {
             "confirm" or "confirmed" or "approve" or "approved" => "confirm",
             "reject" or "rejected" or "dismiss" or "dismissed" => "reject",
-            _ => throw new InvalidOperationException("Memory proposal action must be confirm or reject.")
+            _ => throw new UserFacingException("Memory proposal action must be confirm or reject.")
         };
     }
 
@@ -315,7 +315,7 @@ public sealed class UserMemoryProposalService
         }
         catch (JsonException exception)
         {
-            throw new InvalidOperationException(
+            throw new UserFacingException(
                 "Memory value looks like JSON but is not valid JSON.",
                 exception);
         }
@@ -332,12 +332,12 @@ public sealed class UserMemoryProposalService
         var normalized = value?.Trim();
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new InvalidOperationException($"{label} is required.");
+            throw new UserFacingException($"{label} is required.");
         }
 
         if (normalized.Length > maxLength)
         {
-            throw new InvalidOperationException($"{label} must be {maxLength} characters or fewer.");
+            throw new UserFacingException($"{label} must be {maxLength} characters or fewer.");
         }
 
         return normalized;
@@ -353,7 +353,7 @@ public sealed class UserMemoryProposalService
 
         if (normalized.Length > maxLength)
         {
-            throw new InvalidOperationException($"{label} must be {maxLength} characters or fewer.");
+            throw new UserFacingException($"{label} must be {maxLength} characters or fewer.");
         }
 
         return normalized;

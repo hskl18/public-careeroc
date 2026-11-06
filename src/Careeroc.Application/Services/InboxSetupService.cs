@@ -119,7 +119,7 @@ public sealed class InboxSetupService
     {
         if (!_gmailInboxClient.IsConfigured)
         {
-            throw new InvalidOperationException("Google OAuth is not configured. Set Google__ClientId and Google__ClientSecret.");
+            throw new UserFacingException("Google OAuth is not configured. Set Google__ClientId and Google__ClientSecret.");
         }
 
         var emailAddress = NormalizeEmailAddress(request.EmailAddress);
@@ -172,13 +172,13 @@ public sealed class InboxSetupService
     {
         if (string.IsNullOrWhiteSpace(state) || string.IsNullOrWhiteSpace(code))
         {
-            throw new InvalidOperationException("Missing OAuth state or authorization code.");
+            throw new UserFacingException("Missing OAuth state or authorization code.");
         }
 
         var pendingAccount = await FindGmailAccountByStateAsync(state, userEmail, cancellationToken);
         if (pendingAccount is null)
         {
-            throw new InvalidOperationException("No pending Gmail authorization session was found.");
+            throw new UserFacingException("No pending Gmail authorization session was found.");
         }
 
         var pendingMetadata = ReadMetadata(pendingAccount);
@@ -190,21 +190,30 @@ public sealed class InboxSetupService
             pendingMetadata.NextStep = "Retry Continue with Google to start a fresh Gmail authorization session.";
             WriteMetadata(pendingAccount, pendingMetadata);
             await _dbContext.SaveChangesAsync(cancellationToken);
-            throw new InvalidOperationException("The Gmail authorization session expired. Start the flow again.");
+            throw new UserFacingException("The Gmail authorization session expired. Start the flow again.");
         }
 
         if (string.IsNullOrWhiteSpace(pendingMetadata.OAuthCodeVerifier))
         {
-            throw new InvalidOperationException("The Gmail authorization session is incomplete. Start the flow again.");
+            throw new UserFacingException("The Gmail authorization session is incomplete. Start the flow again.");
         }
 
-        var authorization = await _gmailInboxClient.ExchangeCodeAsync(
-            code,
-            pendingMetadata.OAuthCodeVerifier,
-            redirectUri,
-            cancellationToken);
-
-        var profile = await _gmailInboxClient.GetProfileAsync(authorization.AccessToken, cancellationToken);
+        GmailAuthorizationResult authorization;
+        GmailProfile profile;
+        try
+        {
+            authorization = await _gmailInboxClient.ExchangeCodeAsync(
+                code,
+                pendingMetadata.OAuthCodeVerifier,
+                redirectUri,
+                cancellationToken);
+            profile = await _gmailInboxClient.GetProfileAsync(authorization.AccessToken, cancellationToken);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode is not null)
+        {
+            // Google answered, but refused; the person can start over. No answer at all stays a 500.
+            throw new UserFacingException("Google did not accept this Gmail connection. Start the flow again.");
+        }
         var actualEmailAddress = NormalizeEmailAddress(profile.EmailAddress);
         ValidateGmailAddress(actualEmailAddress);
 
@@ -291,7 +300,7 @@ public sealed class InboxSetupService
 
         if (account.Provider != ApplicationDefaults.GmailInboxProvider)
         {
-            throw new InvalidOperationException("Backfill settings can only be updated for Gmail inboxes.");
+            throw new UserFacingException("Backfill settings can only be updated for Gmail inboxes.");
         }
 
         var metadata = ReadMetadata(account);
@@ -395,7 +404,7 @@ public sealed class InboxSetupService
 
         if (!string.Equals(request.Confirmation?.Trim(), account.EmailAddress, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Type the inbox email address to delete imported data.");
+            throw new UserFacingException("Type the inbox email address to delete imported data.");
         }
 
         var inboxEmails = await _dbContext.InboxEmails
@@ -480,7 +489,7 @@ public sealed class InboxSetupService
         var requiredConfirmation = $"DELETE {account.EmailAddress}";
         if (!string.Equals(request.Confirmation?.Trim(), requiredConfirmation, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException($"Type {requiredConfirmation} to purge this inbox and its imported applications.");
+            throw new UserFacingException($"Type {requiredConfirmation} to purge this inbox and its imported applications.");
         }
 
         var inboxEmails = await _dbContext.InboxEmails
@@ -765,7 +774,7 @@ public sealed class InboxSetupService
 
         if (!MailAddress.TryCreate(trimmed, out var parsed) || !string.Equals(parsed.Address, trimmed, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Enter a valid email address.");
+            throw new UserFacingException("Enter a valid email address.");
         }
 
         return trimmed;
@@ -786,7 +795,7 @@ public sealed class InboxSetupService
         var separatorIndex = emailAddress.LastIndexOf('@');
         if (separatorIndex < 0 || separatorIndex == emailAddress.Length - 1)
         {
-            throw new InvalidOperationException("Enter a valid email address.");
+            throw new UserFacingException("Enter a valid email address.");
         }
 
         return emailAddress[(separatorIndex + 1)..];
@@ -812,7 +821,7 @@ public sealed class InboxSetupService
 
         if (backfillMonths < 1 || backfillMonths > 24)
         {
-            throw new InvalidOperationException("Choose a backfill window between 1 and 24 months, or use all history.");
+            throw new UserFacingException("Choose a backfill window between 1 and 24 months, or use all history.");
         }
 
         return backfillMonths;
