@@ -8,17 +8,9 @@ import { hasUnknownRole as parserHasUnknownRole } from "@/lib/parser-quality";
 import type { ApplicationCard, PendingAction } from "@/lib/dashboard";
 import { useHydrated } from "@/lib/use-hydrated";
 import { deriveNextAction, describePriority, nextActionToneClass } from "@/lib/application-display";
+import type { SortColumn, SortState } from "@/lib/dashboard-workflow";
 
-export type DashboardSortColumn =
-  | "company"
-  | "role"
-  | "stage"
-  | "next-action"
-  | "priority";
-
-export type DashboardSortDirection = "desc" | "asc";
-
-const SORT_LABEL: Record<DashboardSortColumn, string> = {
+const SORT_LABEL: Record<SortColumn, string> = {
   company: "Company",
   role: "Role",
   stage: "Stage",
@@ -30,13 +22,10 @@ type DashboardApplicationListProps = {
   applications: ApplicationCard[];
   activeApplicationId: string | null;
   pendingActions: PendingAction[];
-  sortState: {
-    column: DashboardSortColumn | null;
-    direction: DashboardSortDirection;
-  };
+  sortState: SortState;
   listRef: RefObject<HTMLDivElement | null>;
   timeZoneId: string;
-  onSort: (column: DashboardSortColumn) => void;
+  onSort: (column: SortColumn) => void;
   onOpenApplication: (applicationId: string) => void;
 };
 
@@ -163,13 +152,10 @@ function SortHeader({
   sortState,
   onSort,
 }: {
-  column: DashboardSortColumn;
+  column: SortColumn;
   align?: "left" | "right";
-  sortState: {
-    column: DashboardSortColumn | null;
-    direction: DashboardSortDirection;
-  };
-  onSort: (column: DashboardSortColumn) => void;
+  sortState: SortState;
+  onSort: (column: SortColumn) => void;
 }) {
   return (
     <SortableHeaderButton

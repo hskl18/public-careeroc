@@ -2,7 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatTimestampInTimeZone } from "@/lib/date-time";
+import {
+  ConnectedInboxCard,
+  GmailConnectCard,
+  InboxSetupNeededCard,
+  SignedInGmailPrompt,
+} from "@/components/inbox-setup-cards";
+import {
+  buildBackfillSelections,
+  canUseSignedInEmail,
+  defaultGmailBackfillMonths,
+  formatBackfillWindow,
+  getBackfillOptionValue,
+  isConnectedAccount,
+  needsGmailSetup,
+} from "@/lib/inbox-account-status";
 import type {
   InboxAccountSetup,
   InboxSetupResponse,
@@ -17,250 +31,6 @@ type InboxSetupPanelProps = {
   timeZoneId: string;
   onAccountsChanged?: () => Promise<unknown>;
 };
-
-const gmailBackfillOptions = [
-  { value: "1", label: "Last 1 month" },
-  { value: "3", label: "Last 3 months (90 days)" },
-  { value: "6", label: "Last 6 months" },
-  { value: "12", label: "Last 12 months" },
-  { value: "24", label: "Last 24 months" },
-  { value: "all", label: "All history" },
-] as const;
-const defaultGmailBackfillMonths = "3";
-
-function formatBackfillWindow(backfillMonths: number | null, backfillAllHistory: boolean) {
-  if (backfillAllHistory) return "all available history";
-  const months = backfillMonths ?? Number(defaultGmailBackfillMonths);
-  return `the last ${months} month${months === 1 ? "" : "s"}`;
-}
-
-function getBackfillOptionValue(account: InboxAccountSetup) {
-  return account.backfillAllHistory
-    ? "all"
-    : String(account.backfillMonths ?? Number(defaultGmailBackfillMonths));
-}
-
-function buildBackfillSelections(accounts: InboxAccountSetup[]) {
-  return Object.fromEntries(
-    accounts.map((account) => [account.id, getBackfillOptionValue(account)]),
-  );
-}
-
-function formatTimestamp(value: string | null, timeZoneId: string) {
-  return formatTimestampInTimeZone(value, timeZoneId, "Not synced yet");
-}
-
-function isConnectedAccount(account: InboxAccountSetup) {
-  return account.connectionStatus === "Connected";
-}
-
-function isInvalidInboxMetadata(account: InboxAccountSetup) {
-  return (
-    account.isValid === false ||
-    account.connectionStatus.toLowerCase() === "metadata invalid"
-  );
-}
-
-function isCancelledOrDisconnectedSetup(account: InboxAccountSetup) {
-  const status = account.connectionStatus.toLowerCase();
-  const nextStep = account.nextStep.toLowerCase();
-
-  return (
-    status.includes("imported data deleted") ||
-    nextStep.includes("access was disconnected")
-  );
-}
-
-function getStatusMeta(account: InboxAccountSetup) {
-  const status = account.connectionStatus.toLowerCase();
-
-  if (status === "connected") {
-    return {
-      label: "Connected",
-      className: "bg-[var(--green-soft)] text-[var(--green)]",
-    };
-  }
-
-  if (
-    isInvalidInboxMetadata(account) ||
-    status.includes("reconnect") ||
-    status.includes("not completed") ||
-    status.includes("missing")
-  ) {
-    return {
-      label:
-        isInvalidInboxMetadata(account) || status.includes("reconnect")
-          ? "Reconnect"
-          : "Finish setup",
-      className: "bg-[var(--red-soft)] text-[var(--red)]",
-    };
-  }
-
-  return {
-    label: "Finish setup",
-    className: "bg-[var(--yellow-soft)] text-[var(--yellow)]",
-  };
-}
-
-function getAccountSummary(account: InboxAccountSetup) {
-  if (isConnectedAccount(account)) {
-    return account.initialBackfillCompletedAtUtc
-      ? `Synced ${formatBackfillWindow(account.backfillMonths, account.backfillAllHistory)} and keeping Gmail up to date.`
-      : `Connected and ready to sync ${formatBackfillWindow(account.backfillMonths, account.backfillAllHistory)}.`;
-  }
-
-  if (account.connectionStatus === "Waiting for Google") {
-    return "Your Gmail setup is almost complete. Continue to Google to approve access.";
-  }
-
-  if (isInvalidInboxMetadata(account)) {
-    return "Reconnect Google to repair stored Gmail access metadata and resume syncing.";
-  }
-
-  if (account.connectionStatus.includes("Reconnect")) {
-    return "Reconnect Google to restore Gmail syncing and resume application tracking.";
-  }
-
-  return "Continue to Google so careeroc can import recruiting emails from this inbox.";
-}
-
-function getActionLabel(account: InboxAccountSetup) {
-  if (
-    isInvalidInboxMetadata(account) ||
-    account.connectionStatus.includes("Reconnect") ||
-    account.connectionStatus === "OAuth not completed"
-  ) {
-    return "Reconnect with Google";
-  }
-
-  if (account.connectionStatus === "Waiting for Google") {
-    return "Continue with Google";
-  }
-
-  return "Continue with Google";
-}
-
-function canUseSignedInEmail(emailAddress: string) {
-  const trimmed = emailAddress.trim().toLowerCase();
-
-  return Boolean(trimmed) && trimmed.includes("@");
-}
-
-function GmailTrustList() {
-  const items = [
-    "Import recent recruiting emails",
-    "Detect applications, recruiter replies, interviews, and decisions",
-    "Keep new recruiting messages synced",
-    "Let you disconnect Gmail and delete imported data anytime",
-    "Never send, delete, or modify emails",
-  ];
-
-  return (
-    <div className="grid gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] p-4">
-      <p className="eyebrow">What happens when you connect Gmail</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {items.map((item) => (
-          <div key={item} className="flex min-w-0 items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
-            <span className="mt-0.5 text-[var(--green)]">OK</span>
-            <span>{item}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SignedInGmailPrompt({
-  emailAddress,
-  onUseSignedIn,
-  canPersist,
-  pendingAction,
-}: {
-  emailAddress: string;
-  onUseSignedIn: () => void;
-  canPersist: boolean;
-  pendingAction: string | null;
-}) {
-  return (
-    <div className="card-elevated relative space-y-4 overflow-hidden p-5">
-      <div className="absolute top-0 left-0 h-[2px] w-full bg-[var(--accent)]" />
-      <div className="flex flex-col gap-3 pt-1 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-strong)] text-xs font-semibold text-[var(--accent)]">
-            G
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">
-              Connect this Gmail inbox
-            </h3>
-            <p className="mt-1 break-all text-sm font-medium text-[var(--text-primary)]">
-              {emailAddress}
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-[var(--text-tertiary)]">
-              Make sure this is the inbox you use for job applications.
-            </p>
-          </div>
-        </div>
-        <span className="badge self-start bg-[var(--green-soft)] text-[var(--green)]">
-          90 days
-        </span>
-      </div>
-
-      <button
-        type="button"
-        className="btn btn-primary btn-block"
-        onClick={onUseSignedIn}
-        disabled={!canPersist || pendingAction !== null}
-      >
-        {pendingAction === "gmail"
-          ? <><span className="spinner" /> Redirecting...</>
-          : "Continue with Google"}
-      </button>
-
-      <GmailTrustList />
-    </div>
-  );
-}
-
-function GmailConnectCard({
-  onSubmit,
-  canPersist,
-  pendingAction,
-  title,
-  description,
-}: {
-  onSubmit: () => void;
-  canPersist: boolean;
-  pendingAction: string | null;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="card-elevated p-5 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 h-[2px] w-full bg-[var(--accent)]" />
-      <div className="flex items-center gap-2.5 pt-1">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-strong)] text-xs font-semibold text-[var(--accent)]">
-          G
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
-          <p className="text-xs text-[var(--text-tertiary)]">{description}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="btn btn-primary btn-block"
-        onClick={onSubmit}
-        disabled={!canPersist || pendingAction !== null}
-      >
-        {pendingAction === "gmail"
-          ? <><span className="spinner" /> Redirecting...</>
-          : "Continue with Google"}
-      </button>
-    </div>
-  );
-}
 
 export function InboxSetupPanel({
   initialSetup,
@@ -475,19 +245,16 @@ export function InboxSetupPanel({
     }
   }
 
-  const gmailAccounts = [...setup.accounts]
-    .filter(
-      (account) =>
-        account.provider === "gmail" &&
-        (isConnectedAccount(account) || !isCancelledOrDisconnectedSetup(account)),
-    )
+  const gmailAccounts = setup.accounts
+    .filter((account) => account.provider === "gmail" && (isConnectedAccount(account) || needsGmailSetup(account)))
     .sort(
       (left, right) =>
         new Date(right.createdAtUtc).getTime() - new Date(left.createdAtUtc).getTime(),
     );
 
   const connectedAccounts = gmailAccounts.filter(isConnectedAccount);
-  const attentionAccounts = gmailAccounts.filter((account) => !isConnectedAccount(account));
+  const attentionAccounts = gmailAccounts.filter(needsGmailSetup);
+  const actionsDisabled = !canPersist || pendingAction !== null;
   const hasAccounts = gmailAccounts.length > 0;
 
   return (
@@ -549,8 +316,8 @@ export function InboxSetupPanel({
         <SignedInGmailPrompt
           emailAddress={signedInEmail}
           onUseSignedIn={() => startGmailOAuth(gmailLoginHint)}
-          canPersist={canPersist}
-          pendingAction={pendingAction}
+          disabled={actionsDisabled}
+          redirecting={pendingAction === "gmail"}
         />
       ) : null}
 
@@ -561,103 +328,25 @@ export function InboxSetupPanel({
               <p className="eyebrow mb-3">Connected Gmail inboxes</p>
               <div className="space-y-2">
                 {connectedAccounts.map((account) => {
-                  const statusMeta = getStatusMeta(account);
                   const selectedBackfill =
                     backfillSelections[account.id] ?? getBackfillOptionValue(account);
-                  const backfillChanged = selectedBackfill !== getBackfillOptionValue(account);
-                  const backfillPending = pendingAction === `backfill:${account.id}`;
 
                   return (
-                    <article
+                    <ConnectedInboxCard
                       key={account.id}
-                      className="card-elevated relative overflow-hidden p-5"
-                    >
-                      <div className="absolute top-0 left-0 h-[2px] w-full bg-[var(--green)]" />
-                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-3 flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--red)] text-xs font-semibold text-[var(--on-accent)]">
-                              G
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="break-all text-base font-semibold leading-tight text-[var(--text-primary)]">
-                                {account.emailAddress}
-                              </h4>
-                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                <span className="badge bg-[var(--surface-overlay)] text-[var(--text-secondary)]">
-                                  Gmail
-                                </span>
-                                <span className={`badge ${statusMeta.className}`}>
-                                  <span className="sync-dot sync-dot-live mr-1.5 bg-[var(--green)]" />
-                                  {statusMeta.label}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            {getAccountSummary(account)}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm w-full sm:w-auto xl:shrink-0"
-                          onClick={() => void disconnectAccount(account)}
-                          disabled={!canPersist || pendingAction !== null}
-                        >
-                          {pendingAction === `disconnect:${account.id}`
-                            ? <><span className="spinner" /> Disconnecting...</>
-                            : "Disconnect"}
-                        </button>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-                        <div className="info-tile border-l-2 border-l-[var(--blue)]">
-                          <p className="text-xs text-[var(--text-tertiary)]">
-                            Last sync
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                            {formatTimestamp(account.lastSyncedAtUtc, timeZoneId)}
-                          </p>
-                        </div>
-
-                        <div className="info-tile border-l-2 border-l-[var(--accent)]">
-                          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                            <label className="block min-w-0">
-                              <span className="text-xs text-[var(--text-tertiary)]">
-                                Sync window
-                              </span>
-                              <select
-                                value={selectedBackfill}
-                                onChange={(event) =>
-                                  setBackfillSelections((current) => ({
-                                    ...current,
-                                    [account.id]: event.target.value,
-                                  }))
-                                }
-                                className="input mt-2 text-sm"
-                                disabled={!canPersist || pendingAction !== null}
-                              >
-                                {gmailBackfillOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm w-full sm:w-auto"
-                              onClick={() => void updateBackfill(account)}
-                              disabled={!canPersist || pendingAction !== null || !backfillChanged}
-                            >
-                              {backfillPending
-                                ? <><span className="spinner" /> Updating...</>
-                                : "Save window"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
+                      account={account}
+                      timeZoneId={timeZoneId}
+                      selectedBackfill={selectedBackfill}
+                      backfillChanged={selectedBackfill !== getBackfillOptionValue(account)}
+                      disabled={actionsDisabled}
+                      backfillPending={pendingAction === `backfill:${account.id}`}
+                      disconnectPending={pendingAction === `disconnect:${account.id}`}
+                      onSelectBackfill={(value) =>
+                        setBackfillSelections((current) => ({ ...current, [account.id]: value }))
+                      }
+                      onSaveBackfill={() => void updateBackfill(account)}
+                      onDisconnect={() => void disconnectAccount(account)}
+                    />
                   );
                 })}
               </div>
@@ -673,68 +362,17 @@ export function InboxSetupPanel({
                 </span>
               </div>
               <div className="space-y-3">
-                {attentionAccounts.map((account) => {
-                  const statusMeta = getStatusMeta(account);
-                  const actionLabel = getActionLabel(account);
-
-                  return (
-                    <article
-                      key={account.id}
-                      className="card-elevated relative overflow-hidden border-l-2 border-l-[var(--yellow)] p-5"
-                    >
-                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-3 flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--red)] text-xs font-semibold text-[var(--on-accent)]">
-                              G
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="break-all text-base font-semibold leading-tight text-[var(--text-primary)]">
-                                {account.emailAddress}
-                              </h4>
-                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                <span className="badge bg-[var(--surface-overlay)] text-[var(--text-secondary)]">
-                                  Gmail
-                                </span>
-                                <span className={`badge ${statusMeta.className}`}>
-                                  {statusMeta.label}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            {getAccountSummary(account)}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                            {account.nextStep}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 flex-wrap gap-2 xl:justify-end">
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => startGmailOAuth(account.emailAddress)}
-                            disabled={!canPersist || pendingAction !== null}
-                          >
-                            {pendingAction === "gmail"
-                              ? <><span className="spinner" /> Redirecting...</>
-                              : actionLabel}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => void disconnectAccount(account)}
-                          disabled={!canPersist || pendingAction !== null}
-                        >
-                          {pendingAction === `disconnect:${account.id}`
-                            ? <><span className="spinner" /> Cancelling...</>
-                            : "Cancel setup"}
-                        </button>
-                      </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                {attentionAccounts.map((account) => (
+                  <InboxSetupNeededCard
+                    key={account.id}
+                    account={account}
+                    disabled={actionsDisabled}
+                    redirecting={pendingAction === "gmail"}
+                    cancelPending={pendingAction === `disconnect:${account.id}`}
+                    onContinue={() => startGmailOAuth(account.emailAddress)}
+                    onCancel={() => void disconnectAccount(account)}
+                  />
+                ))}
               </div>
             </section>
           )}
@@ -751,8 +389,8 @@ export function InboxSetupPanel({
             <div className="border-t border-[var(--border)] p-5">
               <GmailConnectCard
                 onSubmit={() => startGmailOAuth(gmailLoginHint)}
-                canPersist={canPersist}
-                pendingAction={pendingAction}
+                disabled={actionsDisabled}
+                redirecting={pendingAction === "gmail"}
                 title="Connect another Gmail"
                 description="Open Google to connect or switch the mailbox careeroc should track."
               />
