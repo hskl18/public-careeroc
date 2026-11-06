@@ -41,6 +41,11 @@ apply, Helm 4's default, rejects a Deployment with duplicate env names.
 - { name: AgentRuntime__Enabled, value: "true" }
 - { name: AgentRuntime__BaseUrl, value: "http://agent-runtime:8123" }
 - { name: SyncWorker__Enabled, value: {{ not $root.Values.demoMode | quote }} }
+{{- if gt (int $root.Values.api.replicas) 1 }}
+{{- /* The dashboard cache and its reset on writes live in one pod, so with more than one a refresh
+could read another pod's stale copy. */}}
+- { name: Dashboard__ResponseCacheSeconds, value: "0" }
+{{- end }}
 {{- include "careeroc.secretEnv" (list "DATABASE_URL" $root.Values.existingSecret "DATABASE_URL") | nindent 0 }}
 {{- include "careeroc.secretEnv" (list "CAREEROC_API_AUTH_SECRET" $root.Values.existingSecret "CAREEROC_API_AUTH_SECRET") | nindent 0 }}
 {{- include "careeroc.secretEnv" (list "CAREEROC_TOKEN_PROTECTION_KEY" $root.Values.existingSecret "CAREEROC_TOKEN_PROTECTION_KEY") | nindent 0 }}

@@ -56,6 +56,12 @@ export function DashboardApplicationEvidencePanel({
     nextAction.tone === "action" &&
     (Boolean(primaryReminderId) || application.status === "Oa Pending");
   const primaryCompletionKey = `${application.id}:${primaryReminderId ?? "stage"}:Completed`;
+  // Finishing the assessment, or the stage itself when no task is attached, moves an assessment
+  // stage back to Applied; any other task leaves it. A reminder outside the dashboard's six has no
+  // known type, so it leaves the stage too.
+  const primaryCompletesStage = primaryCompletableReminder
+    ? primaryCompletableReminder.taskType === "assessment"
+    : !primaryReminderId;
   const completingPrimaryAction = pendingCompletionKey === primaryCompletionKey;
   const otherReminders = linkedReminders.filter(
     (reminder) => reminder.id !== primaryCompletableReminder?.id,
@@ -105,7 +111,7 @@ export function DashboardApplicationEvidencePanel({
             type="button"
             className="btn btn-secondary btn-sm mt-2"
             disabled={pendingCompletionKey !== null}
-            onClick={() => onCompleteAction(application, primaryReminderId, true)}
+            onClick={() => onCompleteAction(application, primaryReminderId, primaryCompletesStage)}
           >
             {completingPrimaryAction ? (
               <>
@@ -154,7 +160,7 @@ export function DashboardApplicationEvidencePanel({
                 type="button"
                 className="shrink-0 text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                 disabled={pendingCompletionKey !== null}
-                onClick={() => onCompleteAction(application, reminder.id, false)}
+                onClick={() => onCompleteAction(application, reminder.id, reminder.taskType === "assessment")}
               >
                 {pendingCompletionKey === `${application.id}:${reminder.id}:Completed` ? "…" : "Done"}
               </button>
