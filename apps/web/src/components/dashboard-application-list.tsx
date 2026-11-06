@@ -7,7 +7,12 @@ import { formatTimestampInTimeZone } from "@/lib/date-time";
 import { hasUnknownRole as parserHasUnknownRole } from "@/lib/parser-quality";
 import type { ApplicationCard, PendingAction } from "@/lib/dashboard";
 import { useHydrated } from "@/lib/use-hydrated";
-import { deriveNextAction, describePriority, nextActionToneClass } from "@/lib/application-display";
+import {
+  deriveNextAction,
+  describeDue,
+  describePriority,
+  nextActionToneClass,
+} from "@/lib/application-display";
 import type { SortColumn, SortState } from "@/lib/dashboard-workflow";
 
 const SORT_LABEL: Record<SortColumn, string> = {
@@ -89,8 +94,9 @@ function ApplicationRow({
   const parserError = application.requiresReview;
   // Relative times depend on the current time, so they appear once the page has hydrated.
   const hydrated = useHydrated();
-  const dueRelative = hydrated ? relativeFromNow(nextAction.due) : null;
-  const duePill = hydrated ? getDuePill(nextAction.due) : null;
+  const due = hydrated ? describeDue(nextAction.due) : null;
+  const dueRelative = due?.relative ?? null;
+  const duePill = due?.pill ?? null;
 
   return (
     <button
@@ -176,47 +182,6 @@ function formatTimestamp(value: string | null, timeZoneId: string) {
     timeZoneId,
     "Waiting for first sync",
   );
-}
-
-function relativeFromNow(value: string | null) {
-  if (!value) return null;
-  const target = new Date(value).getTime();
-  if (Number.isNaN(target)) return null;
-  const diffMs = target - Date.now();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "today";
-  if (diffDays === 1) return "tomorrow";
-  if (diffDays === -1) return "yesterday";
-  if (diffDays > 0 && diffDays <= 14) return `in ${diffDays}d`;
-  if (diffDays < 0 && diffDays >= -30) return `${Math.abs(diffDays)}d ago`;
-  return null;
-}
-
-function getDuePill(value: string | null) {
-  if (!value) return null;
-  const target = new Date(value).getTime();
-  if (Number.isNaN(target)) return null;
-
-  const diffHours = (target - Date.now()) / (1000 * 60 * 60);
-  if (diffHours < 0) {
-    return {
-      label: "Overdue",
-      className: "bg-[var(--red-soft)] text-[var(--red)]",
-    };
-  }
-  if (diffHours <= 24) {
-    return {
-      label: "Due today",
-      className: "bg-[var(--red-soft)] text-[var(--red)]",
-    };
-  }
-  if (diffHours <= 72) {
-    return {
-      label: "Due soon",
-      className: "bg-[var(--yellow-soft)] text-[var(--yellow)]",
-    };
-  }
-  return null;
 }
 
 function hasUnknownRole(application: ApplicationCard) {

@@ -10,8 +10,6 @@ type UpdatesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const activityPageSize = 50;
-
 const activityFilters = [
   { label: "All", value: "all" },
   { label: "Interviews", value: "interviews" },
@@ -26,24 +24,13 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
   const user = await requireUser();
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedType = normalizeActivityFilter(firstParam(resolvedSearchParams.type));
-  const cursor = firstParam(resolvedSearchParams.cursor);
+  // The dashboard carries the 50 newest updates across every application; paging it would page
+  // applications, not updates, so this page shows those 50.
   const [{ dashboard, source }, { profile }] = await Promise.all([
-    getDashboardWithFiltersForUser(
-      {
-        limit: activityPageSize,
-        cursor,
-      },
-      user,
-    ),
+    getDashboardWithFiltersForUser({}, user),
     getProfileForUser(user),
   ]);
   const filteredActivity = filterActivities(dashboard.recentActivity, selectedType);
-  const nextHref = dashboard.nextCursor
-    ? buildUpdatesHref(resolvedSearchParams, { cursor: dashboard.nextCursor })
-    : null;
-  const previousHref = cursor
-    ? buildUpdatesHref(resolvedSearchParams, { cursor: null })
-    : null;
 
   const coldStart =
     dashboard.inbox.lastSyncAtUtc === null &&
@@ -61,7 +48,7 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
 
         <section className="shrink-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-xl font-semibold text-[var(--text-primary)]">All activity</h1>
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">Latest activity</h1>
           </div>
           <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <nav className="flex flex-wrap gap-2" aria-label="Activity filters">
@@ -70,10 +57,7 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
                 return (
                   <Link
                     key={filter.value}
-                    href={buildUpdatesHref(resolvedSearchParams, {
-                      type: filter.value,
-                      cursor: null,
-                    })}
+                    href={buildUpdatesHref(resolvedSearchParams, filter.value)}
                     className={`btn btn-sm ${
                       selected ? "btn-primary" : "btn-secondary"
                     }`}
@@ -86,18 +70,8 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
             </nav>
             <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
               <span className="tabular-nums text-[var(--text-tertiary)]">
-                {filteredActivity.length} update{filteredActivity.length === 1 ? "" : "s"}
+                {filteredActivity.length} of the latest {dashboard.recentActivity.length} updates
               </span>
-              {previousHref ? (
-                <Link href={previousHref} className="btn btn-secondary btn-sm">
-                  First page
-                </Link>
-              ) : null}
-              {nextHref ? (
-                <Link href={nextHref} className="btn btn-secondary btn-sm">
-                  Next page
-                </Link>
-              ) : null}
             </div>
           </div>
         </section>
@@ -157,14 +131,12 @@ function normalizeCategory(value: string) {
 
 function buildUpdatesHref(
   searchParams: Record<string, string | string[] | undefined>,
-  updates: Partial<{
-    type: ActivityFilter;
-    cursor: string | null;
-  }>,
+  type: ActivityFilter,
 ) {
   const params = new URLSearchParams();
 
   Object.entries(searchParams).forEach(([key, value]) => {
+    if (key === "cursor") return;
     if (typeof value === "string") {
       params.set(key, value);
       return;
@@ -173,22 +145,12 @@ function buildUpdatesHref(
     value?.forEach((item) => params.append(key, item));
   });
 
-  if (updates.type) {
-    if (updates.type === "all") {
-      params.delete("type");
-    } else {
-      params.set("type", updates.type);
-    }
-  }
-
-  if (Object.hasOwn(updates, "cursor")) {
-    if (updates.cursor) {
-      params.set("cursor", updates.cursor);
-    } else {
-      params.delete("cursor");
-    }
+  if (type === "all") {
+    params.delete("type");
+  } else {
+    params.set("type", type);
   }
 
   const query = params.toString();
-  return (query ? `/app/updates?${query}` : "/app/updates") as Route;
+  return `/app/updates${query ? `?${query}` : ""}` as Route;
 }
