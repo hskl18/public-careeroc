@@ -79,9 +79,7 @@ export function InboxSetupPanel({
 
       queueMicrotask(() => {
         setNotice(null);
-        setError(
-          "The API is unavailable. Try again.",
-        );
+        setError("API offline. Try again.");
       });
       return;
     }
@@ -261,20 +259,18 @@ export function InboxSetupPanel({
     <div id="connect-inbox" className="card scroll-mt-20 p-4">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">
-          {hasAccounts ? "Gmail" : "Connect Gmail"}
-        </h2>
-        {hasAccounts ? null : (
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Reads recruiting mail only.
-          </p>
-        )}
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
+            {hasAccounts ? "Gmail" : "Connect Gmail"}
+          </h2>
+          {hasAccounts ? null : (
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Reads recruiting mail only.</p>
+          )}
         </div>
       </div>
 
       {!canPersist && (
         <div role="status" className="alert alert-warning mb-5">
-          Offline.
+          API offline.
         </div>
       )}
       {notice ? <div className="alert alert-success mb-5">{notice}</div> : null}

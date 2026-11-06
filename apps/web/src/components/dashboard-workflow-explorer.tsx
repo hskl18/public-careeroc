@@ -101,12 +101,12 @@ function EmptyViewActions({
       <div className="mt-4 flex flex-wrap gap-2">
         {selectedView !== "active" && metrics.activeApplications > 0 ? (
           <button type="button" className="btn btn-primary btn-sm" onClick={() => onSelect("active")}>
-            See {metrics.activeApplications} active
+            Active ({metrics.activeApplications})
           </button>
         ) : null}
         {selectedView !== "all" && metrics.totalApplications > 0 ? (
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect("all")}>
-            See all {metrics.totalApplications}
+            All ({metrics.totalApplications})
           </button>
         ) : null}
         {selectedView !== "interviewing" && metrics.interviews > 0 ? (

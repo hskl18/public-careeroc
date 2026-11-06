@@ -69,7 +69,7 @@ export default async function ApplicationsPage({
       <div className="flex min-h-full w-full flex-col px-3 py-4 animate-in sm:px-5 sm:py-6 md:h-full md:overflow-hidden">
         {source === "fallback" ? (
           <div role="status" className="alert alert-warning">
-            API unavailable. Showing empty data.
+            API offline. Showing empty data.
           </div>
         ) : null}
 
