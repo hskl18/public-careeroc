@@ -1,3 +1,4 @@
+using Careeroc.Api.Background;
 using Careeroc.Application;
 using Careeroc.Application.Models;
 using Careeroc.Application.Services;
@@ -37,11 +38,9 @@ public static class InboxEndpoints
                 "/api/inbox-accounts/sync-now",
                 (
                     HttpRequest request,
-                    IServiceScopeFactory scopeFactory,
+                    SyncNowQueue syncNowQueue,
                     IMemoryCache memoryCache,
-                    IHostApplicationLifetime applicationLifetime,
-                    IClock clock,
-                    ILoggerFactory loggerFactory) =>
+                    IClock clock) =>
                 {
                     var userEmail = RequestUserContext.GetUserEmail(request);
                     var throttleKey = $"inbox-sync-now:{userEmail}";
@@ -52,31 +51,15 @@ public static class InboxEndpoints
                             statusCode: StatusCodes.Status429TooManyRequests);
                     }
 
+                    if (!syncNowQueue.TryEnqueue(userEmail!))
+                    {
+                        return Results.Json(
+                            new { error = "sync_now_busy", retryAfterSeconds = 30 },
+                            statusCode: StatusCodes.Status429TooManyRequests);
+                    }
+
                     var attemptedAtUtc = clock.UtcNow;
                     memoryCache.Set(throttleKey, true, TimeSpan.FromSeconds(30));
-                    var logger = loggerFactory.CreateLogger("InboxSyncNow");
-                    _ = Task.Run(
-                        async () =>
-                        {
-                            try
-                            {
-                                using var scope = scopeFactory.CreateScope();
-                                var coordinator = scope.ServiceProvider.GetRequiredService<InboxSyncCoordinator>();
-                                await coordinator.RunForUserAsync(userEmail, applicationLifetime.ApplicationStopping);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                            }
-                            catch (Exception exception)
-                            {
-                                logger.LogWarning(
-                                    exception,
-                                    "User-triggered inbox sync failed for {UserEmail}.",
-                                    userEmail);
-                            }
-                        },
-                        CancellationToken.None);
-
                     return Results.Accepted(
                         value: new SyncNowResponseDto(true, attemptedAtUtc));
                 })

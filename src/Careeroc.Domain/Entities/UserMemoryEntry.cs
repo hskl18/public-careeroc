@@ -17,7 +17,7 @@ public sealed class UserMemoryEntry
     public Guid? SourceId { get; set; }
     public double Confidence { get; set; } = 1.0;
     public string ConfirmationStatus { get; set; } = "confirmed";
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
     public DateTimeOffset? ExpiresAtUtc { get; set; }
 }

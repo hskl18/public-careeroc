@@ -12,6 +12,6 @@ public sealed class ResumeVersion
     public string ExtractionMetadataJson { get; set; } = "{}";
     public int ExperienceCount { get; set; }
     public int ProjectCount { get; set; }
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public ResumeEvaluation? Evaluation { get; set; }
 }

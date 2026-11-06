@@ -634,94 +634,94 @@ export interface components {
     schemas: {
         AgentApplicationDto: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
+            lastActivityAtUtc: string;
         };
         AgentCallerDto: {
-            owner?: string | null;
+            owner: string;
         };
         AgentPipelineSummaryDto: {
             /** Format: int32 */
-            totalApplications?: number;
-            applicationsByStatus?: {
+            totalApplications: number;
+            applicationsByStatus: {
                 [key: string]: number;
-            } | null;
-            openReminders?: components["schemas"]["AgentReminderDto"][] | null;
-            recentlyActive?: components["schemas"]["AgentApplicationDto"][] | null;
+            };
+            openReminders: components["schemas"]["AgentReminderDto"][];
+            recentlyActive: components["schemas"]["AgentApplicationDto"][];
             /** Format: date-time */
-            generatedAtUtc?: string;
+            generatedAtUtc: string;
         };
         AgentReminderDto: {
-            company?: string | null;
-            role?: string | null;
-            title?: string | null;
+            company: string;
+            role: string;
+            title: string;
             /** Format: date-time */
-            dueAtUtc?: string;
-            isOverdue?: boolean;
+            dueAtUtc: string;
+            isOverdue: boolean;
         };
         AgentTraceSummaryDto: {
-            modelPath?: string | null;
-            purpose?: string | null;
+            modelPath: string | null;
+            purpose: string;
             /** Format: double */
-            confidence?: number | null;
-            evidenceSource?: string | null;
-            reviewGateResult?: string | null;
-            fallbackPath?: string | null;
+            confidence: number | null;
+            evidenceSource: string;
+            reviewGateResult: string;
+            fallbackPath: string;
         };
         AnalyticsBreakdownItemDto: {
-            label?: string | null;
+            label: string;
             /** Format: int32 */
-            applicationsCount?: number;
+            applicationsCount: number;
             /** Format: double */
-            replyRate?: number;
+            replyRate: number;
             /** Format: double */
-            interviewRate?: number;
+            interviewRate: number;
             /** Format: double */
-            offerRate?: number;
+            offerRate: number;
             /** Format: double */
-            avgTimeToFirstResponseHours?: number | null;
-            responseRates?: components["schemas"]["AnalyticsResponseRatesDto"];
+            avgTimeToFirstResponseHours: number | null;
+            responseRates?: components["schemas"]["AnalyticsResponseRatesDto"] | null;
         };
         AnalyticsFunnelStageDto: {
-            key?: string | null;
-            label?: string | null;
+            key: string;
+            label: string;
             /** Format: int32 */
-            count?: number;
+            count: number;
             /** Format: double */
-            continuationRateFromPreviousStage?: number;
+            continuationRateFromPreviousStage: number;
         };
         AnalyticsInsightDto: {
-            id?: string | null;
-            tone?: string | null;
-            headline?: string | null;
-            body?: string | null;
+            id: string;
+            tone: string;
+            headline: string;
+            body: string;
             drillHref?: string | null;
         };
         AnalyticsMetricsDto: {
             /** Format: int32 */
-            applicationsCount?: number;
+            applicationsCount: number;
             /** Format: int32 */
-            uniqueCompanies?: number;
+            uniqueCompanies: number;
             /** Format: int32 */
-            rolesCount?: number;
+            rolesCount: number;
             /** Format: double */
-            replyRate?: number;
+            replyRate: number;
             /** Format: double */
-            interviewRate?: number;
+            interviewRate: number;
             /** Format: double */
-            offerRate?: number;
+            offerRate: number;
             /** Format: double */
-            avgTimeToFirstResponseHours?: number | null;
-            responseRates?: components["schemas"]["AnalyticsResponseRatesDto"];
+            avgTimeToFirstResponseHours: number | null;
+            responseRates?: components["schemas"]["AnalyticsResponseRatesDto"] | null;
         };
         AnalyticsResponse: {
-            metrics?: components["schemas"]["AnalyticsMetricsDto"];
-            companyBreakdown?: components["schemas"]["AnalyticsBreakdownItemDto"][] | null;
-            roleBreakdown?: components["schemas"]["AnalyticsBreakdownItemDto"][] | null;
+            metrics: components["schemas"]["AnalyticsMetricsDto"];
+            companyBreakdown: components["schemas"]["AnalyticsBreakdownItemDto"][];
+            roleBreakdown: components["schemas"]["AnalyticsBreakdownItemDto"][];
             funnel?: components["schemas"]["AnalyticsFunnelStageDto"][] | null;
             sourceBreakdown?: components["schemas"]["AnalyticsBreakdownItemDto"][] | null;
             locationBreakdown?: components["schemas"]["AnalyticsBreakdownItemDto"][] | null;
@@ -732,140 +732,140 @@ export interface components {
         };
         AnalyticsResponseRatesDto: {
             /** Format: double */
-            anyResponseRate?: number;
+            anyResponseRate: number;
             /** Format: double */
-            autoReceiptRate?: number;
+            autoReceiptRate: number;
             /** Format: double */
-            humanResponseRate?: number;
+            humanResponseRate: number;
             /** Format: double */
-            assessmentRate?: number;
+            assessmentRate: number;
             /** Format: double */
-            interviewRate?: number;
+            interviewRate: number;
             /** Format: double */
-            offerRate?: number;
+            offerRate: number;
             /** Format: double */
-            rejectionRate?: number;
+            rejectionRate: number;
         };
         ApplicationAgentBriefDto: {
-            headline?: string | null;
-            summary?: string | null;
-            nextAction?: string | null;
-            recommendedSurface?: string | null;
-            confidenceSummary?: string | null;
+            headline: string;
+            summary: string;
+            nextAction: string;
+            recommendedSurface: string;
+            confidenceSummary: string;
         };
         ApplicationContactDto: {
-            name?: string | null;
-            email?: string | null;
-            type?: string | null;
-            roleHint?: string | null;
+            name: string | null;
+            email: string | null;
+            type: string | null;
+            roleHint: string | null;
             /** Format: date-time */
-            lastSeenAtUtc?: string;
-            latestSubject?: string | null;
+            lastSeenAtUtc: string;
+            latestSubject: string;
             /** Format: int32 */
-            messageCount?: number;
+            messageCount: number;
         };
         ApplicationDetailActivityDto: {
             /** Format: uuid */
-            id?: string;
-            description?: string | null;
-            category?: string | null;
+            id: string;
+            description: string;
+            category: string;
             /** Format: date-time */
-            occurredAtUtc?: string;
+            occurredAtUtc: string;
         };
         ApplicationDetailDto: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
-            completedStages?: string[] | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
+            completedStages: string[];
             /** Format: int32 */
-            priority?: number;
-            source?: string | null;
+            priority: number;
+            source: string;
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
-            actionRequired?: boolean;
-            agentBrief?: components["schemas"]["ApplicationAgentBriefDto"];
-            contacts?: components["schemas"]["ApplicationContactDto"][] | null;
-            pendingActions?: components["schemas"]["ApplicationDetailReminderDto"][] | null;
-            recentActivity?: components["schemas"]["ApplicationDetailActivityDto"][] | null;
-            threads?: components["schemas"]["ApplicationThreadDto"][] | null;
-            feedbackNotes?: components["schemas"]["ApplicationFeedbackNoteDto"][] | null;
+            lastActivityAtUtc: string;
+            actionRequired: boolean;
+            agentBrief: components["schemas"]["ApplicationAgentBriefDto"];
+            contacts: components["schemas"]["ApplicationContactDto"][];
+            pendingActions: components["schemas"]["ApplicationDetailReminderDto"][];
+            recentActivity: components["schemas"]["ApplicationDetailActivityDto"][];
+            threads: components["schemas"]["ApplicationThreadDto"][];
+            feedbackNotes: components["schemas"]["ApplicationFeedbackNoteDto"][];
             /** Format: int32 */
             recentActivityTotalCount?: number;
             memoryProposals?: components["schemas"]["UserMemoryEntryDto"][] | null;
-            agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
+            agentTrace?: components["schemas"]["ReviewAgentTraceDto"] | null;
         };
         ApplicationDetailReminderDto: {
             /** Format: uuid */
-            id?: string;
-            title?: string | null;
+            id: string;
+            title: string;
             /** Format: date-time */
-            dueAtUtc?: string;
-            source?: string | null;
-            status?: string | null;
+            dueAtUtc: string;
+            source: string;
+            status: string;
             /** Format: uuid */
-            sourceEmailId?: string | null;
-            sourceThreadId?: string | null;
-            sourceMessageId?: string | null;
-            hasExplicitDueDate?: boolean;
-            gmailUrl?: string | null;
+            sourceEmailId: string | null;
+            sourceThreadId: string | null;
+            sourceMessageId: string | null;
+            hasExplicitDueDate: boolean;
+            gmailUrl: string | null;
         };
         ApplicationFeedbackNoteDto: {
             /** Format: uuid */
-            emailId?: string;
-            subject?: string | null;
-            note?: string | null;
-            source?: string | null;
+            emailId: string;
+            subject: string;
+            note: string;
+            source: string;
             /** Format: date-time */
-            occurredAtUtc?: string;
+            occurredAtUtc: string;
         };
         ApplicationLookupItemDto: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
-            source?: string | null;
-            location?: string | null;
+            lastActivityAtUtc: string;
+            source: string | null;
+            location: string | null;
             /** Format: int32 */
             urgencyScore?: number;
             /** Format: date-time */
             nextActionDueAtUtc?: string | null;
         };
         ApplicationLookupResponse: {
-            items?: components["schemas"]["ApplicationLookupItemDto"][] | null;
+            items: components["schemas"]["ApplicationLookupItemDto"][];
         };
         ApplicationSummaryDto: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
             /** Format: int32 */
-            priority?: number;
+            priority: number;
             /** Format: date-time */
-            receivedAtUtc?: string;
+            receivedAtUtc: string;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
-            updatedFrom?: string | null;
-            actionRequired?: boolean;
-            gmailUrl?: string | null;
-            hasOutboundReply?: boolean;
+            lastActivityAtUtc: string;
+            updatedFrom: string;
+            actionRequired: boolean;
+            gmailUrl: string | null;
+            hasOutboundReply: boolean;
             /** Format: date-time */
-            lastOutboundReplyAtUtc?: string | null;
-            nextAction?: components["schemas"]["ApplicationSummaryNextActionDto"];
-            priorityLabel?: string | null;
-            priorityReason?: string | null;
+            lastOutboundReplyAtUtc: string | null;
+            nextAction: components["schemas"]["ApplicationSummaryNextActionDto"];
+            priorityLabel: string;
+            priorityReason: string;
             /** Format: double */
             parserConfidence?: number | null;
             requiresReview?: boolean;
             reviewReason?: string | null;
-            latestEvidence?: components["schemas"]["ApplicationSummaryEvidenceDto"];
+            latestEvidence?: components["schemas"]["ApplicationSummaryEvidenceDto"] | null;
             /** Format: int32 */
             urgencyScore?: number;
             /** Format: date-time */
@@ -873,121 +873,121 @@ export interface components {
         };
         ApplicationSummaryEvidenceDto: {
             /** Format: uuid */
-            emailId?: string;
-            summary?: string | null;
-            subject?: string | null;
-            sender?: string | null;
-            snippet?: string | null;
+            emailId: string;
+            summary: string;
+            subject: string | null;
+            sender: string | null;
+            snippet: string | null;
             /** Format: date-time */
-            occurredAtUtc?: string;
-            category?: string | null;
-            gmailUrl?: string | null;
+            occurredAtUtc: string;
+            category: string;
+            gmailUrl: string | null;
         };
         ApplicationSummaryNextActionDto: {
-            title?: string | null;
+            title: string;
             /** Format: date-time */
-            dueAtUtc?: string | null;
-            hasExplicitDueDate?: boolean;
-            tone?: string | null;
+            dueAtUtc: string | null;
+            hasExplicitDueDate: boolean;
+            tone: string;
             /** Format: uuid */
-            sourceReminderId?: string | null;
+            sourceReminderId: string | null;
         };
         ApplicationThreadDto: {
-            threadId?: string | null;
-            title?: string | null;
+            threadId: string;
+            title: string;
             /** Format: date-time */
-            lastMessageAtUtc?: string;
+            lastMessageAtUtc: string;
             /** Format: int32 */
-            messageCount?: number;
-            actionRequired?: boolean;
-            requiresManualReview?: boolean;
-            hasOutboundReply?: boolean;
-            stageLabel?: string | null;
-            snippet?: string | null;
-            messages?: components["schemas"]["ApplicationThreadMessageDto"][] | null;
-            gmailUrl?: string | null;
+            messageCount: number;
+            actionRequired: boolean;
+            requiresManualReview: boolean;
+            hasOutboundReply: boolean;
+            stageLabel: string | null;
+            snippet: string;
+            messages: components["schemas"]["ApplicationThreadMessageDto"][];
+            gmailUrl: string | null;
         };
         ApplicationThreadMessageDto: {
             /** Format: uuid */
-            id?: string;
-            sender?: string | null;
-            subject?: string | null;
-            summary?: string | null;
-            snippet?: string | null;
-            bodyPreview?: string | null;
+            id: string;
+            sender: string;
+            subject: string;
+            summary: string;
+            snippet: string;
+            bodyPreview: string;
             /** Format: date-time */
-            receivedAtUtc?: string;
-            isOutbound?: boolean;
-            category?: string | null;
-            actionRequired?: boolean;
+            receivedAtUtc: string;
+            isOutbound: boolean;
+            category: string | null;
+            actionRequired: boolean;
             /** Format: date-time */
-            dueDateUtc?: string | null;
+            dueDateUtc: string | null;
             /** Format: double */
-            classificationConfidence?: number | null;
+            classificationConfidence: number | null;
             /** Format: double */
-            matchingConfidence?: number | null;
-            contactName?: string | null;
-            contactEmail?: string | null;
-            contactType?: string | null;
-            contactRoleHint?: string | null;
-            requiresManualReview?: boolean;
-            reviewReason?: string | null;
-            processingSource?: string | null;
-            hasFeedbackNote?: boolean;
-            gmailUrl?: string | null;
-            traceSummary?: components["schemas"]["AgentTraceSummaryDto"];
-            agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
+            matchingConfidence: number | null;
+            contactName: string | null;
+            contactEmail: string | null;
+            contactType: string | null;
+            contactRoleHint: string | null;
+            requiresManualReview: boolean;
+            reviewReason: string | null;
+            processingSource: string | null;
+            hasFeedbackNote: boolean;
+            gmailUrl: string | null;
+            traceSummary?: components["schemas"]["AgentTraceSummaryDto"] | null;
+            agentTrace?: components["schemas"]["ReviewAgentTraceDto"] | null;
         };
         CareerAgentGraphApplicationEvidence: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
-            hasOpenReminder?: boolean;
+            lastActivityAtUtc: string;
+            hasOpenReminder: boolean;
         };
         CareerAgentGraphEvidence: {
             /** Format: int32 */
-            resumeVersions?: number;
+            resumeVersions: number;
             /** Format: int32 */
-            latestResumeScore?: number;
+            latestResumeScore: number;
             /** Format: int32 */
-            totalApplications?: number;
+            totalApplications: number;
             /** Format: int32 */
-            interviewOrOfferApplications?: number;
+            interviewOrOfferApplications: number;
             /** Format: int32 */
-            rejectedApplications?: number;
+            rejectedApplications: number;
             /** Format: uuid */
-            resumeVersionLinkedToOutcome?: string | null;
+            resumeVersionLinkedToOutcome: string | null;
         };
         CareerAgentGraphResumeEvidence: {
-            title?: string | null;
-            summary?: string | null;
+            title: string;
+            summary: string;
             /** Format: int32 */
-            score?: number;
-            skills?: string[] | null;
-            projectHighlights?: string[] | null;
+            score: number;
+            skills: string[];
+            projectHighlights: string[];
         };
         CareerAgentGraphReviewRequest: {
-            threadId?: string | null;
+            threadId: string;
             /** Format: date-time */
-            requestedAtUtc?: string;
-            baselineSummary?: string | null;
-            baselineFindings?: string[] | null;
-            baselineNextActions?: string[] | null;
-            evidence?: components["schemas"]["CareerAgentGraphEvidence"];
-            latestResume?: components["schemas"]["CareerAgentGraphResumeEvidence"];
-            applications?: components["schemas"]["CareerAgentGraphApplicationEvidence"][] | null;
-            topTargetRoles?: string[] | null;
-            positiveOutcomes?: string[] | null;
-            repeatedRejections?: string[] | null;
-            latestActionSignals?: string[] | null;
-            confirmedMemoryFacts?: string[] | null;
+            requestedAtUtc: string;
+            baselineSummary: string;
+            baselineFindings: string[];
+            baselineNextActions: string[];
+            evidence: components["schemas"]["CareerAgentGraphEvidence"];
+            latestResume: components["schemas"]["CareerAgentGraphResumeEvidence"] | null;
+            applications: components["schemas"]["CareerAgentGraphApplicationEvidence"][];
+            topTargetRoles: string[];
+            positiveOutcomes: string[];
+            repeatedRejections: string[];
+            latestActionSignals: string[];
+            confirmedMemoryFacts: string[];
         };
         CorrectApplicationRequest: {
-            kind?: string | null;
+            kind?: string;
             notes?: string | null;
         };
         CorrectEmailRequest: {
@@ -1004,143 +1004,143 @@ export interface components {
             notes?: string | null;
         };
         CreatePersonalAccessTokenRequest: {
-            name?: string | null;
+            name: string;
             /** Format: int32 */
             expiresInDays?: number | null;
         };
         CreateResumeRequest: {
-            title?: string | null;
-            sourceKind?: string | null;
-            sourceText?: string | null;
+            title: string | null;
+            sourceKind: string | null;
+            sourceText: string;
             sourceFileName?: string | null;
         };
         CreatedPersonalAccessTokenDto: {
-            token?: string | null;
-            details?: components["schemas"]["PersonalAccessTokenDto"];
+            token: string;
+            details: components["schemas"]["PersonalAccessTokenDto"];
         };
         DashboardInboxCheckResult: {
-            cacheHit?: boolean;
-            sync?: components["schemas"]["EmailSyncResult"];
+            cacheHit: boolean;
+            sync: components["schemas"]["EmailSyncResult"];
             /** Format: int32 */
-            staleEmailsQueued?: number;
-            processing?: components["schemas"]["EmailProcessingResult"];
-            dashboard?: components["schemas"]["DashboardResponse"];
+            staleEmailsQueued: number;
+            processing: components["schemas"]["EmailProcessingResult"];
+            dashboard: components["schemas"]["DashboardResponse"];
         };
         DashboardMetricsDto: {
             /** Format: int32 */
-            totalApplications?: number;
+            totalApplications: number;
             /** Format: int32 */
-            activeApplications?: number;
+            activeApplications: number;
             /** Format: int32 */
-            needsAction?: number;
+            needsAction: number;
             /** Format: int32 */
-            needsReview?: number;
+            needsReview: number;
             /** Format: int32 */
-            waitingOnEmployer?: number;
+            waitingOnEmployer: number;
             /** Format: int32 */
-            interviews?: number;
+            interviews: number;
             /** Format: int32 */
-            offers?: number;
+            offers: number;
             /** Format: int32 */
-            rejections?: number;
+            rejections: number;
             /** Format: int32 */
-            reviewQueue?: number;
+            reviewQueue: number;
             /** Format: int32 */
             closedApplications?: number;
         };
         DashboardResponse: {
-            metrics?: components["schemas"]["DashboardMetricsDto"];
-            inbox?: components["schemas"]["InboxOverviewDto"];
-            applications?: components["schemas"]["ApplicationSummaryDto"][] | null;
-            pendingActions?: components["schemas"]["PendingActionDto"][] | null;
-            recentActivity?: components["schemas"]["RecentActivityDto"][] | null;
+            metrics: components["schemas"]["DashboardMetricsDto"];
+            inbox: components["schemas"]["InboxOverviewDto"];
+            applications: components["schemas"]["ApplicationSummaryDto"][];
+            pendingActions: components["schemas"]["PendingActionDto"][];
+            recentActivity: components["schemas"]["RecentActivityDto"][];
             nextCursor?: string | null;
         };
         DeleteImportedInboxDataRequest: {
-            confirmation?: string | null;
+            confirmation: string;
         };
         DeleteImportedInboxDataResponse: {
             /** Format: uuid */
-            inboxAccountId?: string;
-            emailAddress?: string | null;
+            inboxAccountId: string;
+            emailAddress: string;
             /** Format: int32 */
-            deletedEmails?: number;
+            deletedEmails: number;
             /** Format: int32 */
-            deletedProcessingJobs?: number;
+            deletedProcessingJobs: number;
             /** Format: int32 */
-            unlinkedEvents?: number;
+            unlinkedEvents: number;
             /** Format: int32 */
-            preservedApplications?: number;
+            preservedApplications: number;
         };
         DeleteInboxPurgeRequest: {
-            confirmation?: string | null;
+            confirmation: string;
         };
         DeleteInboxPurgeResponse: {
             /** Format: uuid */
-            inboxAccountId?: string;
-            emailAddress?: string | null;
+            inboxAccountId: string;
+            emailAddress: string;
             /** Format: int32 */
-            deletedEmails?: number;
+            deletedEmails: number;
             /** Format: int32 */
-            deletedProcessingJobs?: number;
+            deletedProcessingJobs: number;
             /** Format: int32 */
-            deletedApplications?: number;
+            deletedApplications: number;
             /** Format: int32 */
-            deletedReminders?: number;
+            deletedReminders: number;
             /** Format: int32 */
-            deletedEvents?: number;
+            deletedEvents: number;
             /** Format: int32 */
-            unlinkedEvents?: number;
+            unlinkedEvents: number;
             /** Format: int32 */
-            deletedInboxAccounts?: number;
+            deletedInboxAccounts: number;
         };
         EmailProcessingResult: {
             /** Format: int32 */
-            jobsProcessed?: number;
+            jobsProcessed: number;
             /** Format: int32 */
-            applicationsCreated?: number;
+            applicationsCreated: number;
             /** Format: int32 */
-            applicationsUpdated?: number;
+            applicationsUpdated: number;
             /** Format: int32 */
-            remindersCreated?: number;
+            remindersCreated: number;
         };
         EmailSyncResult: {
             /** Format: int32 */
-            emailsCreated?: number;
+            emailsCreated: number;
             /** Format: int32 */
-            jobsEnqueued?: number;
-            status?: string | null;
+            jobsEnqueued: number;
+            status?: string;
             message?: string | null;
         };
         InboxAccountSetupDto: {
             /** Format: uuid */
-            id?: string;
-            provider?: string | null;
-            providerLabel?: string | null;
-            emailAddress?: string | null;
-            setupMode?: string | null;
-            connectionStatus?: string | null;
-            nextStep?: string | null;
+            id: string;
+            provider: string;
+            providerLabel: string;
+            emailAddress: string;
+            setupMode: string;
+            connectionStatus: string;
+            nextStep: string;
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
             /** Format: date-time */
-            lastSyncedAtUtc?: string | null;
+            lastSyncedAtUtc: string | null;
             /** Format: int32 */
-            backfillMonths?: number | null;
-            backfillAllHistory?: boolean;
+            backfillMonths: number | null;
+            backfillAllHistory: boolean;
             /** Format: date-time */
-            initialBackfillCompletedAtUtc?: string | null;
+            initialBackfillCompletedAtUtc: string | null;
             isValid?: boolean | null;
             invalidReason?: string | null;
         };
         InboxOverviewDto: {
-            connectedAddress?: string | null;
+            connectedAddress: string;
             /** Format: int32 */
-            syncedEmails?: number;
+            syncedEmails: number;
             /** Format: int32 */
-            processedEmails?: number;
+            processedEmails: number;
             /** Format: date-time */
-            lastSyncAtUtc?: string | null;
+            lastSyncAtUtc: string | null;
             /** Format: int32 */
             pendingAnalysisEmails?: number;
             /** Format: int32 */
@@ -1156,39 +1156,39 @@ export interface components {
             totalEstimate?: number | null;
             /** Format: int32 */
             recognizedApplications?: number;
-            backfillStatus?: string | null;
+            backfillStatus?: string;
         };
         InboxSetupResponse: {
-            accounts?: components["schemas"]["InboxAccountSetupDto"][] | null;
+            accounts: components["schemas"]["InboxAccountSetupDto"][];
         };
         ManualReviewResponse: {
-            emails?: components["schemas"]["ReviewEmailDto"][] | null;
-            applications?: components["schemas"]["ReviewApplicationDto"][] | null;
-            categoryOptions?: string[] | null;
-            statusOptions?: string[] | null;
+            emails: components["schemas"]["ReviewEmailDto"][];
+            applications: components["schemas"]["ReviewApplicationDto"][];
+            categoryOptions: string[];
+            statusOptions: string[];
             /** Format: int32 */
-            totalWaiting?: number;
+            totalWaiting: number;
             /** Format: int32 */
-            totalUnassigned?: number;
+            totalUnassigned: number;
         };
         PendingActionDto: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            jobApplicationId?: string;
-            company?: string | null;
-            role?: string | null;
-            title?: string | null;
+            jobApplicationId: string;
+            company: string;
+            role: string;
+            title: string;
             /** Format: date-time */
-            dueAtUtc?: string;
-            source?: string | null;
-            status?: string | null;
+            dueAtUtc: string;
+            source: string;
+            status: string;
             /** Format: uuid */
-            sourceEmailId?: string | null;
-            sourceThreadId?: string | null;
-            sourceMessageId?: string | null;
-            hasExplicitDueDate?: boolean;
-            gmailUrl?: string | null;
+            sourceEmailId: string | null;
+            sourceThreadId: string | null;
+            sourceMessageId: string | null;
+            hasExplicitDueDate: boolean;
+            gmailUrl: string | null;
             taskType?: string | null;
             sourceSubject?: string | null;
             sourceSender?: string | null;
@@ -1200,364 +1200,364 @@ export interface components {
         };
         PersonalAccessTokenDto: {
             /** Format: uuid */
-            id?: string;
-            name?: string | null;
-            tokenPrefix?: string | null;
-            scope?: string | null;
+            id: string;
+            name: string;
+            tokenPrefix: string;
+            scope: string;
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
             /** Format: date-time */
-            expiresAtUtc?: string;
+            expiresAtUtc: string;
             /** Format: date-time */
-            lastUsedAtUtc?: string | null;
+            lastUsedAtUtc: string | null;
             /** Format: date-time */
-            revokedAtUtc?: string | null;
+            revokedAtUtc: string | null;
         };
         ProposedReminderDto: {
             /** Format: uuid */
-            applicationId?: string;
-            company?: string | null;
-            role?: string | null;
-            title?: string | null;
+            applicationId: string;
+            company: string;
+            role: string;
+            title: string;
             /** Format: int32 */
-            dueInDays?: number;
+            dueInDays: number;
         };
         RecentActivityDto: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            jobApplicationId?: string;
-            company?: string | null;
-            role?: string | null;
-            description?: string | null;
-            category?: string | null;
+            jobApplicationId: string;
+            company: string;
+            role: string;
+            description: string;
+            category: string;
             /** Format: date-time */
-            receivedAtUtc?: string;
+            receivedAtUtc: string;
             /** Format: date-time */
-            occurredAtUtc?: string;
+            occurredAtUtc: string;
             /** Format: int32 */
-            importanceScore?: number;
+            importanceScore: number;
         };
         RecruitingContactDto: {
             /** Format: uuid */
-            id?: string;
-            email?: string | null;
-            displayName?: string | null;
-            companyHint?: string | null;
-            roleHint?: string | null;
-            contactType?: string | null;
+            id: string;
+            email: string;
+            displayName: string | null;
+            companyHint: string | null;
+            roleHint: string | null;
+            contactType: string | null;
             /** Format: double */
-            confidence?: number | null;
+            confidence: number | null;
             /** Format: int32 */
-            messageCount?: number;
+            messageCount: number;
             /** Format: date-time */
-            firstSeenAtUtc?: string;
+            firstSeenAtUtc: string;
             /** Format: date-time */
-            lastSeenAtUtc?: string;
-            recentEmails?: components["schemas"]["RecruitingContactRecentEmailDto"][] | null;
+            lastSeenAtUtc: string;
+            recentEmails: components["schemas"]["RecruitingContactRecentEmailDto"][];
         };
         RecruitingContactListResponse: {
-            contacts?: components["schemas"]["RecruitingContactDto"][] | null;
+            contacts: components["schemas"]["RecruitingContactDto"][];
         };
         RecruitingContactRecentEmailDto: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            jobApplicationId?: string | null;
-            company?: string | null;
-            role?: string | null;
-            subject?: string | null;
-            sender?: string | null;
+            jobApplicationId: string | null;
+            company: string | null;
+            role: string | null;
+            subject: string;
+            sender: string;
             /** Format: date-time */
-            receivedAtUtc?: string;
+            receivedAtUtc: string;
         };
         RegisterInboxAccountRequest: {
-            emailAddress?: string | null;
+            emailAddress?: string;
             /** Format: int32 */
             backfillMonths?: number | null;
         };
         ResolveUserMemoryProposalRequest: {
-            action?: string | null;
+            action: string;
             /** Format: date-time */
             expectedUpdatedAtUtc?: string | null;
         };
         ResumeContactDto: {
-            name?: string | null;
-            email?: string | null;
-            phone?: string | null;
-            location?: string | null;
-            links?: components["schemas"]["ResumeLinkDto"][] | null;
+            name: string;
+            email: string;
+            phone: string;
+            location: string;
+            links: components["schemas"]["ResumeLinkDto"][];
         };
         ResumeDocumentDto: {
             /** Format: uuid */
-            id?: string;
-            title?: string | null;
-            sourceKind?: string | null;
-            sourceFileName?: string | null;
+            id: string;
+            title: string;
+            sourceKind: string;
+            sourceFileName: string | null;
             /** Format: int32 */
-            rawSourceCharacterCount?: number;
+            rawSourceCharacterCount: number;
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
             /** Format: date-time */
-            updatedAtUtc?: string;
-            latestVersion?: components["schemas"]["ResumeVersionDto"];
-            latestEvaluation?: components["schemas"]["ResumeEvaluationDto"];
+            updatedAtUtc: string;
+            latestVersion: components["schemas"]["ResumeVersionDto"] | null;
+            latestEvaluation: components["schemas"]["ResumeEvaluationDto"] | null;
             memoryProposals?: components["schemas"]["UserMemoryEntryDto"][] | null;
         };
         ResumeEducationDto: {
-            school?: string | null;
-            degree?: string | null;
-            field?: string | null;
-            dateRange?: string | null;
-            gpa?: string | null;
-            notes?: string[] | null;
+            school: string;
+            degree: string;
+            field: string;
+            dateRange: string;
+            gpa: string;
+            notes: string[];
         };
         ResumeEvaluationDto: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            resumeVersionId?: string;
+            resumeVersionId: string;
             /** Format: int32 */
-            score?: number;
-            headline?: string | null;
-            verdict?: string | null;
-            strengths?: string[] | null;
-            gaps?: string[] | null;
-            nextActions?: string[] | null;
-            sectionReviews?: components["schemas"]["ResumeSectionReviewDto"][] | null;
-            evidence?: components["schemas"]["ResumeEvaluationEvidenceDto"];
+            score: number;
+            headline: string;
+            verdict: string;
+            strengths: string[];
+            gaps: string[];
+            nextActions: string[];
+            sectionReviews: components["schemas"]["ResumeSectionReviewDto"][];
+            evidence: components["schemas"]["ResumeEvaluationEvidenceDto"];
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
         };
         ResumeEvaluationEvidenceDto: {
             /** Format: int32 */
-            skillCount?: number;
+            skillCount: number;
             /** Format: int32 */
-            experienceCount?: number;
+            experienceCount: number;
             /** Format: int32 */
-            projectCount?: number;
-            hasEducation?: boolean;
-            hasContact?: boolean;
-            hasLinks?: boolean;
+            projectCount: number;
+            hasEducation: boolean;
+            hasContact: boolean;
+            hasLinks: boolean;
             /** Format: int32 */
-            applicationCount?: number;
+            applicationCount: number;
             /** Format: int32 */
-            interviewOrOfferCount?: number;
-            targetRole?: string | null;
+            interviewOrOfferCount: number;
+            targetRole: string | null;
         };
         ResumeExperienceDto: {
-            company?: string | null;
-            title?: string | null;
-            location?: string | null;
-            dateRange?: string | null;
-            bullets?: string[] | null;
+            company: string;
+            title: string;
+            location: string;
+            dateRange: string;
+            bullets: string[];
         };
         ResumeExtractionMetadataDto: {
-            sourceKind?: string | null;
-            sourceFileName?: string | null;
+            sourceKind: string;
+            sourceFileName: string | null;
             /** Format: int32 */
-            rawSourceCharacterCount?: number;
-            extractionMethod?: string | null;
+            rawSourceCharacterCount: number;
+            extractionMethod: string;
             /** Format: date-time */
-            extractedAtUtc?: string;
+            extractedAtUtc: string;
             /** Format: int32 */
-            contactFieldCount?: number;
+            contactFieldCount: number;
             /** Format: int32 */
-            experienceCount?: number;
+            experienceCount: number;
             /** Format: int32 */
-            educationCount?: number;
+            educationCount: number;
             /** Format: int32 */
-            projectCount?: number;
+            projectCount: number;
             /** Format: int32 */
-            skillCount?: number;
-            promptVersion?: string | null;
+            skillCount: number;
+            promptVersion: string | null;
         };
         ResumeFitDto: {
             /** Format: uuid */
-            jobApplicationId?: string;
+            jobApplicationId: string;
             /** Format: uuid */
-            resumeVersionId?: string | null;
+            resumeVersionId: string | null;
             /** Format: int32 */
-            matchScore?: number;
-            strengths?: string[] | null;
-            gaps?: string[] | null;
-            rationale?: string | null;
+            matchScore: number;
+            strengths: string[];
+            gaps: string[];
+            rationale: string;
         };
         ResumeLinkDto: {
-            label?: string | null;
-            url?: string | null;
+            label: string;
+            url: string;
         };
         ResumeMailboxReviewDto: {
             /** Format: date-time */
-            generatedAtUtc?: string;
-            runtimePath?: string | null;
-            modelPath?: string | null;
-            summary?: string | null;
-            findings?: string[] | null;
-            nextActions?: string[] | null;
-            evidence?: components["schemas"]["ResumeMailboxReviewEvidenceDto"];
+            generatedAtUtc: string;
+            runtimePath: string;
+            modelPath: string;
+            summary: string;
+            findings: string[];
+            nextActions: string[];
+            evidence: components["schemas"]["ResumeMailboxReviewEvidenceDto"];
             threadId?: string | null;
-            status?: string | null;
+            status?: string;
             requiresHumanReview?: boolean;
             /** Format: double */
             confidence?: number | null;
-            trace?: components["schemas"]["ReviewAgentTraceDto"];
+            trace?: components["schemas"]["ReviewAgentTraceDto"] | null;
             proposedReminders?: components["schemas"]["ProposedReminderDto"][] | null;
             /** Format: int32 */
             remindersCreated?: number | null;
         };
         ResumeMailboxReviewEvidenceDto: {
             /** Format: int32 */
-            resumeVersions?: number;
+            resumeVersions: number;
             /** Format: int32 */
-            latestResumeScore?: number;
+            latestResumeScore: number;
             /** Format: int32 */
-            totalApplications?: number;
+            totalApplications: number;
             /** Format: int32 */
-            interviewOrOfferApplications?: number;
+            interviewOrOfferApplications: number;
             /** Format: int32 */
-            rejectedApplications?: number;
+            rejectedApplications: number;
             /** Format: uuid */
-            resumeVersionLinkedToOutcome?: string | null;
+            resumeVersionLinkedToOutcome: string | null;
         };
         ResumeProjectDto: {
-            name?: string | null;
-            description?: string | null;
-            tech?: string[] | null;
-            links?: string[] | null;
-            bullets?: string[] | null;
+            name: string;
+            description: string;
+            tech: string[];
+            links: string[];
+            bullets: string[];
         };
         ResumeReadinessDto: {
-            hasResume?: boolean;
-            summary?: string | null;
-            nextActions?: string[] | null;
+            hasResume: boolean;
+            summary: string;
+            nextActions: string[];
         };
         ResumeSectionReviewDto: {
-            section?: string | null;
+            section: string;
             /** Format: int32 */
-            score?: number;
-            strengths?: string[] | null;
-            weaknesses?: string[] | null;
-            suggestions?: string[] | null;
+            score: number;
+            strengths: string[];
+            weaknesses: string[];
+            suggestions: string[];
         };
         ResumeSkillGroupsDto: {
-            technical?: string[] | null;
-            languages?: string[] | null;
-            other?: string[] | null;
+            technical: string[];
+            languages: string[];
+            other: string[];
         };
         ResumeStructuredDataDto: {
-            contact?: components["schemas"]["ResumeContactDto"];
-            experience?: components["schemas"]["ResumeExperienceDto"][] | null;
-            education?: components["schemas"]["ResumeEducationDto"][] | null;
-            skills?: components["schemas"]["ResumeSkillGroupsDto"];
-            projects?: components["schemas"]["ResumeProjectDto"][] | null;
+            contact: components["schemas"]["ResumeContactDto"];
+            experience: components["schemas"]["ResumeExperienceDto"][];
+            education: components["schemas"]["ResumeEducationDto"][];
+            skills: components["schemas"]["ResumeSkillGroupsDto"];
+            projects: components["schemas"]["ResumeProjectDto"][];
         };
         ResumeVersionDto: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            resumeDocumentId?: string;
-            summary?: string | null;
-            skills?: string[] | null;
-            projectHighlights?: string[] | null;
-            structuredData?: components["schemas"]["ResumeStructuredDataDto"];
-            extractionMetadata?: components["schemas"]["ResumeExtractionMetadataDto"];
+            resumeDocumentId: string;
+            summary: string;
+            skills: string[];
+            projectHighlights: string[];
+            structuredData: components["schemas"]["ResumeStructuredDataDto"];
+            extractionMetadata: components["schemas"]["ResumeExtractionMetadataDto"];
             /** Format: int32 */
-            experienceCount?: number;
+            experienceCount: number;
             /** Format: int32 */
-            projectCount?: number;
+            projectCount: number;
             /** Format: date-time */
-            createdAtUtc?: string;
+            createdAtUtc: string;
         };
         ResumeWorkspaceDto: {
-            documents?: components["schemas"]["ResumeDocumentDto"][] | null;
-            readiness?: components["schemas"]["ResumeReadinessDto"];
+            documents: components["schemas"]["ResumeDocumentDto"][];
+            readiness: components["schemas"]["ResumeReadinessDto"];
         };
         ReviewAgentTraceDto: {
             /** Format: date-time */
-            generatedAtUtc?: string | null;
-            steps?: components["schemas"]["ReviewAgentTraceStepDto"][] | null;
-            summary?: components["schemas"]["AgentTraceSummaryDto"];
+            generatedAtUtc: string | null;
+            steps: components["schemas"]["ReviewAgentTraceStepDto"][];
+            summary?: components["schemas"]["AgentTraceSummaryDto"] | null;
         };
         ReviewAgentTraceFactDto: {
-            label?: string | null;
-            value?: string | null;
+            label: string;
+            value: string;
         };
         ReviewAgentTraceStepDto: {
-            stage?: string | null;
-            agentName?: string | null;
-            summary?: string | null;
-            reason?: string | null;
-            facts?: components["schemas"]["ReviewAgentTraceFactDto"][] | null;
+            stage: string;
+            agentName: string;
+            summary: string;
+            reason: string | null;
+            facts: components["schemas"]["ReviewAgentTraceFactDto"][];
         };
         ReviewApplicationDto: {
             /** Format: uuid */
-            id?: string;
-            company?: string | null;
-            role?: string | null;
-            status?: string | null;
+            id: string;
+            company: string;
+            role: string;
+            status: string;
             /** Format: int32 */
-            priority?: number;
+            priority: number;
             /** Format: date-time */
-            lastActivityAtUtc?: string;
+            lastActivityAtUtc: string;
         };
         ReviewEmailDto: {
             /** Format: uuid */
-            id?: string;
-            threadId?: string | null;
-            sender?: string | null;
-            subject?: string | null;
-            snippet?: string | null;
-            bodyPreview?: string | null;
+            id: string;
+            threadId: string;
+            sender: string;
+            subject: string;
+            snippet: string;
+            bodyPreview: string;
             /** Format: date-time */
-            receivedAtUtc?: string;
+            receivedAtUtc: string;
             /** Format: double */
-            classificationConfidence?: number | null;
+            classificationConfidence: number | null;
             /** Format: double */
-            matchingConfidence?: number | null;
-            requiresManualReview?: boolean;
-            reviewReason?: string | null;
-            category?: string | null;
-            extractedCompany?: string | null;
-            extractedRole?: string | null;
-            contactName?: string | null;
-            contactEmail?: string | null;
-            contactType?: string | null;
-            contactRoleHint?: string | null;
-            actionRequired?: boolean;
+            matchingConfidence: number | null;
+            requiresManualReview: boolean;
+            reviewReason: string | null;
+            category: string | null;
+            extractedCompany: string | null;
+            extractedRole: string | null;
+            contactName: string | null;
+            contactEmail: string | null;
+            contactType: string | null;
+            contactRoleHint: string | null;
+            actionRequired: boolean;
             /** Format: date-time */
-            dueDateUtc?: string | null;
-            notes?: string | null;
-            processingSource?: string | null;
-            agentTrace?: components["schemas"]["ReviewAgentTraceDto"];
+            dueDateUtc: string | null;
+            notes: string | null;
+            processingSource: string | null;
+            agentTrace: components["schemas"]["ReviewAgentTraceDto"] | null;
             /** Format: uuid */
-            jobApplicationId?: string | null;
-            threadMessages?: components["schemas"]["ReviewThreadMessageDto"][] | null;
-            traceSummary?: components["schemas"]["AgentTraceSummaryDto"];
+            jobApplicationId: string | null;
+            threadMessages: components["schemas"]["ReviewThreadMessageDto"][];
+            traceSummary?: components["schemas"]["AgentTraceSummaryDto"] | null;
         };
         ReviewThreadMessageDto: {
             /** Format: uuid */
-            id?: string;
-            sender?: string | null;
-            subject?: string | null;
-            snippet?: string | null;
+            id: string;
+            sender: string;
+            subject: string;
+            snippet: string;
             /** Format: date-time */
-            receivedAtUtc?: string;
-            category?: string | null;
-            requiresManualReview?: boolean;
-            isCurrentEmail?: boolean;
+            receivedAtUtc: string;
+            category: string | null;
+            requiresManualReview: boolean;
+            isCurrentEmail: boolean;
         };
         SnoozeReminderRequest: {
             /** Format: date-time */
             until?: string;
         };
         SyncNowResponseDto: {
-            queued?: boolean;
+            queued: boolean;
             /** Format: date-time */
-            attemptedAtUtc?: string;
+            attemptedAtUtc: string;
         };
         UpdateApplicationStatusRequest: {
-            status?: string | null;
+            status?: string;
             /** Format: int32 */
             priority?: number | null;
         };
@@ -1566,86 +1566,86 @@ export interface components {
             backfillMonths?: number | null;
         };
         UpdateRecruitingContactRequest: {
-            displayName?: string | null;
-            companyHint?: string | null;
-            roleHint?: string | null;
-            contactType?: string | null;
+            displayName: string | null;
+            companyHint: string | null;
+            roleHint: string | null;
+            contactType: string | null;
             email?: string | null;
         };
         UpdateReminderStatusRequest: {
-            status?: string | null;
+            status?: string;
         };
         UpdateUserProfileRequest: {
-            name?: string | null;
-            timeZoneId?: string | null;
-            location?: string | null;
-            targetRole?: string | null;
+            name: string | null;
+            timeZoneId: string | null;
+            location: string | null;
+            targetRole: string | null;
             profileIcon?: string | null;
         };
         UserMemoryEntryDto: {
             /** Format: uuid */
-            id?: string;
-            kind?: string | null;
-            key?: string | null;
-            value?: string | null;
-            summary?: string | null;
-            sourceType?: string | null;
+            id: string;
+            kind: string;
+            key: string;
+            value: string;
+            summary: string | null;
+            sourceType: string;
             /** Format: uuid */
-            sourceId?: string | null;
+            sourceId: string | null;
             /** Format: double */
-            confidence?: number;
-            confirmationStatus?: string | null;
+            confidence: number;
+            confirmationStatus: string;
             /** Format: date-time */
-            updatedAtUtc?: string;
+            updatedAtUtc: string;
             /** Format: date-time */
-            expiresAtUtc?: string | null;
+            expiresAtUtc: string | null;
         };
         UserProfileDto: {
-            email?: string | null;
-            name?: string | null;
-            timeZoneId?: string | null;
-            profileIcon?: string | null;
-            location?: string | null;
-            targetRole?: string | null;
+            email: string;
+            name: string;
+            timeZoneId: string;
+            profileIcon: string;
+            location: string | null;
+            targetRole: string | null;
             /** Format: date-time */
-            welcomeDismissedAtUtc?: string | null;
+            welcomeDismissedAtUtc: string | null;
             /** Format: date-time */
-            createdAtUtc?: string;
-            evaluation?: components["schemas"]["UserProfileEvaluationDto"];
-            memory?: components["schemas"]["UserMemoryEntryDto"][] | null;
+            createdAtUtc: string;
+            evaluation: components["schemas"]["UserProfileEvaluationDto"];
+            memory: components["schemas"]["UserMemoryEntryDto"][];
         };
         UserProfileEvaluationDto: {
             /** Format: int32 */
-            readinessScore?: number;
-            summary?: string | null;
-            strengths?: string[] | null;
-            gaps?: string[] | null;
-            nextActions?: string[] | null;
-            evidence?: components["schemas"]["UserProfileEvaluationEvidenceDto"];
+            readinessScore: number;
+            summary: string;
+            strengths: string[];
+            gaps: string[];
+            nextActions: string[];
+            evidence: components["schemas"]["UserProfileEvaluationEvidenceDto"];
         };
         UserProfileEvaluationEvidenceDto: {
             /** Format: int32 */
-            totalApplications?: number;
+            totalApplications: number;
             /** Format: int32 */
-            activeApplications?: number;
+            activeApplications: number;
             /** Format: int32 */
-            interviewingApplications?: number;
+            interviewingApplications: number;
             /** Format: int32 */
-            offers?: number;
+            offers: number;
             /** Format: int32 */
-            connectedInboxes?: number;
+            connectedInboxes: number;
             /** Format: int32 */
-            totalInboxes?: number;
+            totalInboxes: number;
             /** Format: int32 */
-            memoryEntries?: number;
+            memoryEntries: number;
             /** Format: date-time */
-            lastApplicationActivityAtUtc?: string | null;
+            lastApplicationActivityAtUtc: string | null;
             /** Format: int32 */
-            resumeVersions?: number;
+            resumeVersions: number;
             /** Format: int32 */
-            latestResumeScore?: number | null;
-            latestResumeTitle?: string | null;
-            resumeMailboxSummary?: string | null;
+            latestResumeScore: number | null;
+            latestResumeTitle: string | null;
+            resumeMailboxSummary: string | null;
         };
     };
     responses: never;

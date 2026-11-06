@@ -75,6 +75,7 @@ Every step is a narrow, typed decision, not a free-form agent, so a wrong result
 The sync worker, recovery of jobs whose worker died, demo cleanup, and queue draining all run inside the API host.
 In Development the sync worker runs every 300 seconds; hosted deployments should use 900 seconds or more and `SyncWorker__RunOnStartup=false`.
 The web app can ask for a bounded inbox check, but it never owns the pipeline.
+The Sync inbox button puts the user on a bounded queue that `SyncNowWorker` drains four users at a time, one entry per user, and a full queue answers 429.
 Dashboard reads are cached per user for `Dashboard__ResponseCacheSeconds`, and a refresh after a change reloads the whole dashboard once.
 Gmail push notifications are not implemented.
 
@@ -127,7 +128,7 @@ Client components exist only for interaction, polling, or local UI state.
 
 Browsers never call the API directly.
 They call the same-origin proxy at `/api/careeroc/*`, which checks the session and the request origin, signs the user context, and forwards the call; server components use `careeroc-api-server.ts` the same way.
-To add an API call: add or reuse the DTO in `src/Careeroc.Contracts`, regenerate `src/lib/api-schema.ts` with `pnpm --dir apps/web gen:api`, and fetch through a server helper or the proxy.
+To add an API call: add or reuse the DTO in `src/Careeroc.Contracts`, regenerate `src/lib/api-schema.ts` with `pnpm --dir apps/web gen:api`, alias the response type from `components["schemas"]`, and fetch through a server helper or the proxy.
 
 Polling is narrow.
 The header sync pill polls slowly and only triggers an inbox check while the first sync or analysis is incomplete; the inbox page polls faster only while analysis is active; resume work runs from explicit actions.

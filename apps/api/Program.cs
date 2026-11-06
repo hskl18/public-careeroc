@@ -6,6 +6,7 @@ using Careeroc.Application.Services;
 using Careeroc.Api.Background;
 using Careeroc.Api.Endpoints;
 using Careeroc.Api.Mcp;
+using Careeroc.Api.OpenApi;
 using Careeroc.Api.Security;
 using Careeroc.Infrastructure;
 using Careeroc.Infrastructure.Configuration;
@@ -25,7 +26,15 @@ var maxRequestBodyBytes = builder.Configuration.GetValue<long?>("Security:MaxReq
 
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = maxRequestBodyBytes);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // apps/web derives its API types from this document, so it must state nullability and required
+    // fields the way the C# contracts do.
+    options.SupportNonNullableReferenceTypes();
+    // OpenAPI 3.0 drops `nullable` beside a bare $ref; wrapping it in allOf keeps `Dto? X` nullable.
+    options.UseAllOfToExtendReferenceSchemas();
+    options.SchemaFilter<RequiredRecordPropertiesSchemaFilter>();
+});
 builder.Services.AddMemoryCache();
 AddCareerocOpenTelemetry(builder.Services, builder.Configuration, builder.Environment);
 builder.Services.AddApplicationServices();
@@ -33,6 +42,8 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddSingleton<ApiSecurityEventLogger>();
 builder.Services.AddSingleton<ConfiguredUserAccess>();
 builder.Services.AddHostedService<InboxSyncWorker>();
+builder.Services.AddSingleton(new SyncNowQueue(capacity: 200));
+builder.Services.AddHostedService<SyncNowWorker>();
 builder.Services.AddHostedService<DemoWorkspaceCleanupWorker>();
 builder.Services.AddHttpContextAccessor();
 builder.Services

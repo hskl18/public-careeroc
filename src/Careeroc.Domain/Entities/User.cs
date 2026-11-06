@@ -12,7 +12,7 @@ public sealed class User
     public string? Location { get; set; }
     public string? TargetRole { get; set; }
     public DateTimeOffset? WelcomeDismissedAtUtc { get; set; }
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public ICollection<InboxAccount> InboxAccounts { get; set; } = new List<InboxAccount>();
     public ICollection<RecruitingContact> RecruitingContacts { get; set; } = new List<RecruitingContact>();
     public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();

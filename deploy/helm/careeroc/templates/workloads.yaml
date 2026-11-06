@@ -4,10 +4,11 @@ so install one release per namespace.
 */ -}}
 {{- $root := . -}}
 {{- $publicUrl := include "careeroc.publicUrl" . -}}
+{{- /* callers: the release's pods that call this service, for networkPolicy. */ -}}
 {{- $components := dict
-  "web" (dict "port" 3000 "ready" "/" "live" "/" "values" .Values.web)
-  "api" (dict "port" 8080 "ready" "/health/ready" "live" "/health" "values" .Values.api)
-  "agent-runtime" (dict "port" 8123 "ready" "/health/ready" "live" "/health" "values" .Values.agentRuntime)
+  "web" (dict "port" 3000 "ready" "/" "live" "/" "values" .Values.web "callers" (list))
+  "api" (dict "port" 8080 "ready" "/health/ready" "live" "/health" "values" .Values.api "callers" (list "web" "agent-runtime"))
+  "agent-runtime" (dict "port" 8123 "ready" "/health/ready" "live" "/health" "values" .Values.agentRuntime "callers" (list "api"))
 -}}
 {{- range $name, $component := $components }}
 ---
@@ -132,4 +133,30 @@ spec:
     - name: http
       port: {{ $component.port }}
       targetPort: http
+{{- if $root.Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "careeroc.labels" $root | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - port: http
+      from:
+        - namespaceSelector:
+            matchLabels:
+              {{- toYaml $root.Values.networkPolicy.ingressControllerNamespaceLabels | nindent 14 }}
+        {{- range $component.callers }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ . }}
+        {{- end }}
+{{- end }}
 {{- end }}

@@ -10,7 +10,7 @@ public sealed class PersonalAccessToken
     public string TokenPrefix { get; set; } = string.Empty;
     public string TokenHash { get; set; } = string.Empty;
     public string Scope { get; set; } = "read";
-    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset ExpiresAtUtc { get; set; }
     public DateTimeOffset? LastUsedAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }

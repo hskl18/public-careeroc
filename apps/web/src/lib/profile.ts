@@ -1,125 +1,20 @@
+import type { components } from "./api-schema";
 import type { CareerocApiUser } from "./api-user";
 
-export type UserProfile = {
-  email: string;
-  name: string;
-  timeZoneId: string;
-  profileIcon: string;
-  location: string | null;
-  targetRole: string | null;
-  welcomeDismissedAtUtc: string | null;
-  createdAtUtc: string;
-  evaluation: UserProfileEvaluation;
-  memory: UserMemoryEntry[];
-};
+type Schemas = components["schemas"];
 
-export type UserMemoryEntry = {
-  id: string;
-  kind: string;
-  key: string;
-  value: string;
-  summary: string | null;
-  sourceType: string | null;
-  sourceId: string | null;
-  confidence: number;
-  confirmationStatus: string;
-  updatedAtUtc: string;
-  expiresAtUtc?: string | null;
-};
-
-export type UserProfileEvaluation = {
-  readinessScore: number;
-  summary: string;
-  strengths: string[];
-  gaps: string[];
-  nextActions: string[];
-  evidence: UserProfileEvaluationEvidence;
-};
-
-export type UserProfileEvaluationEvidence = {
-  totalApplications: number;
-  activeApplications: number;
-  interviewingApplications: number;
-  offers: number;
-  connectedInboxes: number;
-  totalInboxes: number;
-  memoryEntries: number;
-  lastApplicationActivityAtUtc: string | null;
-  resumeVersions: number;
-  latestResumeScore: number | null;
-  latestResumeTitle: string | null;
-  resumeMailboxSummary: string | null;
-};
-
-export type ResumeMailboxReviewEvidence = {
-  resumeVersions: number;
-  latestResumeScore: number;
-  totalApplications: number;
-  interviewOrOfferApplications: number;
-  rejectedApplications: number;
-  resumeVersionLinkedToOutcome: string | null;
-};
-
-export type ResumeMailboxReview = {
-  generatedAtUtc: string;
-  runtimePath: string;
-  modelPath: string;
-  summary: string;
-  findings: string[];
-  nextActions: string[];
-  evidence: ResumeMailboxReviewEvidence;
-  threadId: string | null;
-  status: string;
-  requiresHumanReview: boolean;
-  confidence: number | null;
-  trace: ReviewAgentTrace | null;
-  proposedReminders: ProposedReminder[];
-  remindersCreated: number | null;
-};
-
-export type ProposedReminder = {
-  applicationId: string;
-  company: string;
-  role: string;
-  title: string;
-  dueInDays: number;
-};
-
-export type ReviewAgentTrace = {
-  generatedAtUtc: string | null;
-  steps: ReviewAgentTraceStep[];
-  summary: ReviewAgentTraceSummary | null;
-};
-
-export type ReviewAgentTraceStep = {
-  stage: string;
-  agentName: string;
-  summary: string;
-  reason: string | null;
-  facts: ReviewAgentTraceFact[];
-};
-
-export type ReviewAgentTraceFact = {
-  label: string;
-  value: string;
-};
-
-export type ReviewAgentTraceSummary = {
-  modelPath: string | null;
-  purpose: string;
-  confidence: number | null;
-  evidenceSource: string;
-  reviewGateResult: string;
-  fallbackPath: string;
-};
-
-export type UpdateUserProfileRequest = {
-  name: string;
-  timeZoneId: string;
-  profileIcon: string;
-  location: string | null;
-  targetRole: string | null;
-};
+export type UserProfile = Schemas["UserProfileDto"];
+export type UserMemoryEntry = Schemas["UserMemoryEntryDto"];
+export type UserProfileEvaluation = Schemas["UserProfileEvaluationDto"];
+export type UserProfileEvaluationEvidence = Schemas["UserProfileEvaluationEvidenceDto"];
+export type ResumeMailboxReviewEvidence = Schemas["ResumeMailboxReviewEvidenceDto"];
+export type ResumeMailboxReview = Schemas["ResumeMailboxReviewDto"];
+export type ProposedReminder = Schemas["ProposedReminderDto"];
+export type ReviewAgentTrace = Schemas["ReviewAgentTraceDto"];
+export type ReviewAgentTraceStep = Schemas["ReviewAgentTraceStepDto"];
+export type ReviewAgentTraceFact = Schemas["ReviewAgentTraceFactDto"];
+export type ReviewAgentTraceSummary = Schemas["AgentTraceSummaryDto"];
+export type UpdateUserProfileRequest = Schemas["UpdateUserProfileRequest"];
 
 export function buildFallbackProfile(user: CareerocApiUser): UserProfile {
   const email = user.email.trim();

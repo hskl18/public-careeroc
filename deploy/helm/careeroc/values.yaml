@@ -20,6 +20,15 @@ agentProvider: deterministic
 agentModel: ""
 agentBaseUrl: ""
 
+# Lets each service accept traffic only from the ingress controller and the release's own callers
+# (web -> api, api <-> agent-runtime). Ingress rules only: egress stays open for Postgres, Google,
+# and a hosted model. Needs a CNI that enforces NetworkPolicy, such as Calico or Cilium.
+networkPolicy:
+  enabled: false
+  # Labels of the namespace your ingress controller runs in.
+  ingressControllerNamespaceLabels:
+    kubernetes.io/metadata.name: ingress-nginx
+
 images:
   registry: ghcr.io/hskl18/public-careeroc
   # Empty uses the chart's appVersion, so a chart release pins the images it was tested with.
