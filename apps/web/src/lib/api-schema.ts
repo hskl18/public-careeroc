@@ -292,22 +292,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/demo/workspace": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["EnsureDemoWorkspace"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/inbox-accounts": {
         parameters: {
             query?: never;
@@ -1109,15 +1093,6 @@ export interface components {
             unlinkedEvents?: number;
             /** Format: int32 */
             deletedInboxAccounts?: number;
-        };
-        DemoWorkspaceDto: {
-            created?: boolean;
-            /** Format: int32 */
-            emailsImported?: number;
-            /** Format: int32 */
-            applicationsCreated?: number;
-            /** Format: int32 */
-            remindersCreated?: number;
         };
         EmailProcessingResult: {
             /** Format: int32 */
@@ -2137,40 +2112,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DashboardInboxCheckResult"];
                 };
-            };
-        };
-    };
-    EnsureDemoWorkspace: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemoWorkspaceDto"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
