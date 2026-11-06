@@ -170,7 +170,9 @@ public sealed class UserMemoryProposalService
         }
 
         _dbContext.UserMemoryEntries.Remove(memory);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveOrAskToRetryAsync(
+            "This memory entry changed in another request. Reload and try again.",
+            cancellationToken);
         return true;
     }
 
@@ -247,17 +249,10 @@ public sealed class UserMemoryProposalService
 
     // Two requests that both read the pending proposal (a double click) cannot both resolve it:
     // UserMemoryEntry has a row version, so the second save conflicts and creates nothing.
-    private async Task SaveResolutionAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException exception)
-        {
-            throw new UserFacingException("This proposal was decided in another request. Reload to see the result.", exception);
-        }
-    }
+    private Task SaveResolutionAsync(CancellationToken cancellationToken) =>
+        _dbContext.SaveOrAskToRetryAsync(
+            "This proposal was decided in another request. Reload to see the result.",
+            cancellationToken);
 
     private async Task<User?> GetExistingUserAsync(string? userEmail, CancellationToken cancellationToken)
     {

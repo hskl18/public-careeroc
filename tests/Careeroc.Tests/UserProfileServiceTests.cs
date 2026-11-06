@@ -28,6 +28,41 @@ public sealed class UserProfileServiceTests
     }
 
     [Fact]
+    public async Task GetProfileAsync_SummarizesOnlyTheConfirmedReview()
+    {
+        await using var dbContext = TestDbContextFactory.Create(Guid.NewGuid().ToString("N"));
+        var clock = new TestClock(new DateTimeOffset(2026, 4, 26, 12, 0, 0, TimeSpan.Zero));
+        var user = new User { Email = "student@example.com", Name = "Student User" };
+        dbContext.Users.Add(user);
+        foreach (var (status, summary, ageDays) in new[]
+                 {
+                     ("confirmed", "Confirmed review.", 3),
+                     ("rejected", "Rejected review.", 1),
+                     ("pending", "Pending review.", 0)
+                 })
+        {
+            dbContext.UserMemoryEntries.Add(
+                new UserMemoryEntry
+                {
+                    User = user,
+                    Kind = "orchestrator",
+                    Key = "orchestrator.resume_mailbox_bridge",
+                    Value = "{}",
+                    Summary = summary,
+                    SourceType = "career_orchestrator_langgraph",
+                    ConfirmationStatus = status,
+                    UpdatedAtUtc = clock.UtcNow.AddDays(-ageDays)
+                });
+        }
+
+        await dbContext.SaveChangesAsync();
+
+        var profile = await new UserProfileService(dbContext, clock).GetProfileAsync(user.Email, user.Name);
+
+        Assert.Equal("Confirmed review.", profile.Evaluation.Evidence.ResumeMailboxSummary);
+    }
+
+    [Fact]
     public async Task UpdateProfileAsync_StoresCandidateContext()
     {
         var databaseName = Guid.NewGuid().ToString("N");

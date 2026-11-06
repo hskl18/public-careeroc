@@ -1,4 +1,9 @@
+using Careeroc.Application;
+using Careeroc.Application.Abstractions;
+using Careeroc.Application.Models;
 using Careeroc.Application.Services;
+using Careeroc.Infrastructure.Email;
+using Microsoft.Extensions.Logging.Abstractions;
 using Careeroc.Contracts.Profile;
 using Careeroc.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -91,4 +96,61 @@ public sealed class RowVersionPostgresTests
         Assert.NotNull(await service.ResolveProposalAsync(proposal.Id, request, user.Email));
         Assert.Null(await service.ResolveProposalAsync(proposal.Id, request, user.Email));
     }
+
+    [PostgresFact]
+    public async Task ASyncDropsItsResultsWhenThePersonDisconnectsTheInboxWhileItRuns()
+    {
+        await using var database = await PostgresTestDatabase.CreateAsync();
+        await using var syncContext = database.CreateContext();
+        var user = new User { Email = "alex@example.com", Name = "Alex Rivera" };
+        var account = new InboxAccount { User = user, Provider = ApplicationDefaults.DemoInboxProvider, EmailAddress = "alex@demo.careeroc.example" };
+        syncContext.AddRange(user, account);
+        await syncContext.SaveChangesAsync();
+        var clock = new TestClock(new DateTimeOffset(2026, 11, 6, 12, 0, 0, TimeSpan.Zero));
+        var source = new DisconnectingInboxSource(database, account.Id);
+        var service = TestServices.EmailSyncService(
+            syncContext,
+            source,
+            new DatabaseEmailProcessingQueue(syncContext, clock),
+            clock,
+            NullLogger<EmailSyncService>.Instance);
+
+        var result = await service.RunOnceAsync((string?)null);
+
+        Assert.Equal(EmailSyncStatuses.Skipped, result.Status);
+        await using var check = database.CreateContext();
+        var stored = await check.InboxAccounts.SingleAsync(candidate => candidate.Id == account.Id);
+        Assert.Contains("Disconnected", stored.OAuthMetadataJson, StringComparison.Ordinal);
+        Assert.Null(stored.LastSyncedAtUtc);
+        Assert.Empty(check.InboxEmails);
+    }
+
+    // Returns one email, but first disconnects the inbox from another connection, as a person
+    // clicking Disconnect during the Gmail call would.
+    private sealed class DisconnectingInboxSource(PostgresTestDatabase database, Guid accountId) : IInboxEmailSource
+    {
+        public async Task<IReadOnlyList<ExternalInboxEmail>> GetRecentEmailsAsync(
+            InboxAccount inboxAccount,
+            IReadOnlySet<string>? existingMessageIds = null,
+            IReadOnlySet<string>? existingThreadIds = null,
+            CancellationToken cancellationToken = default)
+        {
+            await using var person = database.CreateContext();
+            var account = await person.InboxAccounts.SingleAsync(candidate => candidate.Id == accountId, cancellationToken);
+            account.OAuthMetadataJson = """{"connectionStatus":"Disconnected"}""";
+            await person.SaveChangesAsync(cancellationToken);
+
+            return
+            [
+                new ExternalInboxEmail(
+                    "message-1",
+                    "thread-1",
+                    "Recruiter <recruiting@kestrel.example>",
+                    "Interview",
+                    "Let's talk.",
+                    new DateTimeOffset(2026, 11, 6, 9, 0, 0, TimeSpan.Zero))
+            ];
+        }
+    }
 }
+

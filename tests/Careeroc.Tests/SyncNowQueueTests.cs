@@ -5,34 +5,30 @@ namespace Careeroc.Tests;
 public sealed class SyncNowQueueTests
 {
     [Fact]
-    public async Task AClickDuringASyncQueuesOneMoreRunAfterItInsteadOfAParallelOne()
+    public async Task AClickWhileQueuedChangesNothingAndAClickWhileRunningQueuesOneRerun()
     {
         var queue = new SyncNowQueue(capacity: 10);
-
-        Assert.True(queue.TryEnqueue("ada@example.com"));
-        Assert.True(queue.TryEnqueue("ADA@example.com"));
-        Assert.True(queue.TryEnqueue("grace@example.com"));
-
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var reader = queue.ReadAllAsync(cancellation.Token).GetAsyncEnumerator();
+
+        Assert.True(queue.TryEnqueue("ada@example.com"));
+        // Still waiting in the queue: a second click asks for nothing more.
+        Assert.True(queue.TryEnqueue("ADA@example.com"));
         Assert.True(await reader.MoveNextAsync());
         Assert.Equal("ada@example.com", reader.Current);
-        // Ada's sync is running: two more clicks ask for one more run, not a parallel one.
-        Assert.True(queue.TryEnqueue("ada@example.com"));
+        queue.Complete("ada@example.com");
+        Assert.False(await HasNextWithinAsync(queue));
+
         Assert.True(queue.TryEnqueue("ada@example.com"));
         Assert.True(await reader.MoveNextAsync());
-        Assert.Equal("grace@example.com", reader.Current);
-
+        // Running now: two clicks ask for one more run after it, not a parallel one.
+        Assert.True(queue.TryEnqueue("ada@example.com"));
+        Assert.True(queue.TryEnqueue("ada@example.com"));
         queue.Complete("ada@example.com");
         Assert.True(await reader.MoveNextAsync());
         Assert.Equal("ada@example.com", reader.Current);
-
-        // The rerun finishes with no new click, so Ada is released and nothing else is queued.
         queue.Complete("ada@example.com");
-        queue.Complete("grace@example.com");
-        Assert.True(queue.TryEnqueue("ada@example.com"));
-        Assert.True(await reader.MoveNextAsync());
-        Assert.Equal("ada@example.com", reader.Current);
+        Assert.False(await HasNextWithinAsync(queue));
         await reader.DisposeAsync();
     }
 
@@ -46,5 +42,19 @@ public sealed class SyncNowQueueTests
         Assert.False(queue.TryEnqueue("three@example.com"));
         // A refused user is not left marked as queued.
         Assert.False(queue.TryEnqueue("three@example.com"));
+    }
+
+    private static async Task<bool> HasNextWithinAsync(SyncNowQueue queue)
+    {
+        using var shortWait = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        try
+        {
+            await using var probe = queue.ReadAllAsync(shortWait.Token).GetAsyncEnumerator();
+            return await probe.MoveNextAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
     }
 }

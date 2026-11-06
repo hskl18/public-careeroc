@@ -396,9 +396,10 @@ public sealed class CareerOrchestratorServiceTests
         var service = CreateService(dbContext, graphClient, clock);
         await service.ReviewResumeMailboxFitAsync(user.Email);
         var resolved = await ConfirmPendingReviewAsync(dbContext, clock, user.Email);
-        graphClient.OnDecide = () => throw new OperationCanceledException();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => service.ApplyReviewDecisionAsync(resolved));
+        // The request was aborted (a closed tab): its token is already cancelled.
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => service.ApplyReviewDecisionAsync(resolved, new CancellationToken(canceled: true)));
 
         Assert.Equal(interview.Id, Assert.Single(dbContext.Reminders).JobApplicationId);
         var stored = JsonSerializer.Deserialize<ResumeMailboxReviewDto>(
@@ -440,7 +441,7 @@ public sealed class CareerOrchestratorServiceTests
     {
         var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
         await using var _ = dbContext;
-        await CreateService(dbContext, ProposingClient(interview), clock).ReviewResumeMailboxFitAsync(user.Email);
+        var first = await CreateService(dbContext, ProposingClient(interview), clock).ReviewResumeMailboxFitAsync(user.Email);
         var passing = new StubCareerAgentGraphClient(
             request => CareerAgentGraphRunOutcome.Succeeded(
                 new CareerAgentGraphReviewResponse(
@@ -463,6 +464,38 @@ public sealed class CareerOrchestratorServiceTests
             .OrderBy(status => status)
             .ToList();
         Assert.Equal(["confirmed", "rejected"], reviews);
+        // The superseded review's paused run is rejected, which frees its checkpoints.
+        Assert.Equal((first.ThreadId!, false), passing.Decision);
+    }
+
+    [Fact]
+    public async Task ANewPendingReviewReleasesThePausedRunOfTheOneItOverwrites()
+    {
+        var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
+        await using var _ = dbContext;
+        var first = await CreateService(dbContext, ProposingClient(interview), clock).ReviewResumeMailboxFitAsync(user.Email);
+        var secondClient = ProposingClient(interview);
+
+        var second = await CreateService(dbContext, secondClient, clock).ReviewResumeMailboxFitAsync(user.Email);
+
+        Assert.NotEqual(first.ThreadId, second.ThreadId);
+        Assert.Equal((first.ThreadId!, false), secondClient.Decision);
+        Assert.Single(dbContext.UserMemoryEntries.Where(entry => entry.ConfirmationStatus == "pending"));
+    }
+
+    [Fact]
+    public async Task AFallbackReviewLeavesAPendingAgentReviewForThePersonToDecide()
+    {
+        var (dbContext, user, interview, clock) = await SeedOneApplicationAsync();
+        await using var _ = dbContext;
+        await CreateService(dbContext, ProposingClient(interview), clock).ReviewResumeMailboxFitAsync(user.Email);
+        var outage = new StubCareerAgentGraphClient(_ => CareerAgentGraphRunOutcome.Failed("Agent runtime returned HTTP 503."));
+
+        var fallback = await CreateService(dbContext, outage, clock).ReviewResumeMailboxFitAsync(user.Email);
+
+        Assert.Equal("completed_with_fallback", fallback.Status);
+        Assert.Single(dbContext.UserMemoryEntries.Where(entry => entry.ConfirmationStatus == "pending"));
+        Assert.Null(outage.Decision);
     }
 
     private static async Task<(Careeroc.Infrastructure.Persistence.CareerocDbContext DbContext, User User, JobApplication Interview, TestClock Clock)> SeedOneApplicationAsync()
@@ -553,6 +586,7 @@ public sealed class CareerOrchestratorServiceTests
             bool approved,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Decision = (threadId, approved);
             return Task.FromResult(OnDecide?.Invoke() ?? CareerAgentGraphRunOutcome.Skipped());
         }

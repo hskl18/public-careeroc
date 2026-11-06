@@ -176,7 +176,10 @@ public sealed partial class ResumeIntelligenceService
                 evaluationResult,
                 nowUtc,
                 cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            // The evaluation memory entry has a row version and can race with another save.
+            await _dbContext.SaveOrAskToRetryAsync(
+                "Your memory changed while saving this resume. Try again.",
+                cancellationToken);
 
             return await GetWorkspaceAsync(user.Email, cancellationToken);
         }
