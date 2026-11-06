@@ -8,6 +8,17 @@ cd "$(dirname "$0")/.."
 NAMESPACE=${NAMESPACE:-careeroc-smoke}
 IMAGE_TAG=${IMAGE_TAG:-smoke}
 
+# It installs a demo stack and a Postgres with the password "postgres", so it refuses a cluster that
+# is not a throwaway kind one unless asked.
+context=$(kubectl config current-context)
+if [[ "$context" != kind-* && "${SMOKE_ALLOW_ANY_CONTEXT:-}" != "true" ]]; then
+  echo "Refusing to install into kube context '$context'; use a kind cluster or set SMOKE_ALLOW_ANY_CONTEXT=true." >&2
+  exit 1
+fi
+if [[ "${CI:-}" != "true" ]]; then
+  trap 'kubectl delete namespace "$NAMESPACE" --wait=false >/dev/null 2>&1 || true' EXIT
+fi
+
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n "$NAMESPACE" apply -f - <<'EOF'
 apiVersion: apps/v1
@@ -54,7 +65,13 @@ if ! helm upgrade --install careeroc deploy/helm/careeroc -n "$NAMESPACE" --wait
 fi
 
 pids=()
-trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT
+cleanup() {
+  kill "${pids[@]}" 2>/dev/null || true
+  if [[ "${CI:-}" != "true" ]]; then
+    kubectl delete namespace "$NAMESPACE" --wait=false >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
 for forward in web:13000:3000 api:15114:8080 agent-runtime:18123:8123; do
   IFS=: read -r service local_port remote_port <<<"$forward"
   kubectl -n "$NAMESPACE" port-forward "service/$service" "$local_port:$remote_port" >/dev/null &

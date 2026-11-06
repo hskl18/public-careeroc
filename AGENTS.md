@@ -31,7 +31,7 @@ CAREEROC_E2E_CONNECTION_STRING='Host=localhost;Port=5432;Database=careeroc_e2e;U
 # Development loop: Postgres and the agent runtime in Docker, the API and web app from source
 ./scripts/dev-up.sh       # Ctrl-C stops the API and web app; `docker compose stop` stops the containers
 
-# Start individually
+# Start individually; only the API reads the root .env, so export the web app's variables first (dev-up.sh does)
 docker compose up -d postgres agent-runtime
 dotnet run --project apps/api                       # port 5114, applies migrations
 pnpm --dir apps/web dev                             # port 3000

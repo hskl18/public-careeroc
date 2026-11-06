@@ -20,8 +20,12 @@ API_PORT="${API_PORT:-5114}"
 export API_BASE_URL="http://localhost:${API_PORT}" API_PUBLIC_BASE_URL="http://localhost:${API_PORT}"
 export AUTH_URL="http://localhost:${WEB_PORT}" NEXT_PUBLIC_SITE_URL="http://localhost:${WEB_PORT}"
 export ConnectionStrings__Careeroc="${ConnectionStrings__Careeroc:-Host=localhost;Port=5432;Database=careeroc;Username=postgres;Password=postgres}"
-export AgentRuntime__Enabled="${AgentRuntime__Enabled:-true}"
+# This script starts the runtime, so it is on even when .env (copied from .env.example) turns it off
+# for running the API alone.
+export AgentRuntime__Enabled=true
 export AgentRuntime__BaseUrl="${AgentRuntime__BaseUrl:-http://localhost:8123}"
+# The runtime container checks A2A tokens against the API, which runs on this host here.
+export AGENT_API_BASE_URL="${AGENT_API_BASE_URL:-http://host.docker.internal:${API_PORT}}"
 # The runtime container and the API must share this secret, or every review silently falls back.
 export AgentRuntime__SharedSecret="${AgentRuntime__SharedSecret:-local-compose-only-agent-shared-secret-01}"
 export AGENT_SHARED_SECRET="$AgentRuntime__SharedSecret"

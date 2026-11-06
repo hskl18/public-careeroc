@@ -5,8 +5,10 @@
 # The app services pull the prebuilt images published on each release (.github/workflows/images.yml)
 # and build from source only when no image is available. Add --build to run your own changes.
 #
-# Ports are published on 127.0.0.1 only. The fallback secrets below are public: the API and web app
-# refuse them once real accounts can sign in, so set your own before enabling Google sign-in.
+# Compose runs the demo only: the web app and API are fixed to demo mode and the demo domain. For
+# Google sign-in and a real inbox, run ./scripts/dev-up.sh, or deploy with Helm (docs/deploy).
+# Ports are published on 127.0.0.1 only. The fallback secrets below are public, and the API and web
+# app refuse them once real accounts can sign in. AGENT_SHARED_SECRET sets the runtime's secret.
 # The Postgres passwords are fixed and local-only too; use your own database outside this file.
 
 x-api-signing-secret: &api-signing-secret ${CAREEROC_API_AUTH_SECRET:-local-compose-only-api-signing-secret-0001}
@@ -38,6 +40,9 @@ services:
       context: ./services/agent-runtime
     container_name: careeroc-agent-runtime
     restart: unless-stopped
+    # Lets AGENT_BASE_URL and AGENT_API_BASE_URL reach the host as host.docker.internal on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${AGENT_RUNTIME_PORT:-8123}:8123"
     environment:
@@ -76,6 +81,9 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: careeroc-api
     restart: unless-stopped
+    # Lets Ollama__BaseUrl reach a model on the host as host.docker.internal on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:5114:8080"
     environment:

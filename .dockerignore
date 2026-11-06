@@ -3,9 +3,10 @@
 .dockerignore
 
 .DS_Store
-.env
-.env.*
-!.env.example
+# Next's standalone build copies apps/web/.env* into the image, so these match at any depth.
+**/.env
+**/.env.*
+!**/.env.example
 
 .artifacts/
 .careeroc/

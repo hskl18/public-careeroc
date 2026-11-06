@@ -1,5 +1,5 @@
 # Build stage: uv installs the locked dependencies into /app/.venv; only that venv ships.
-FROM python:3.14-slim AS build
+FROM python:3.14-slim@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d AS build
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
@@ -15,7 +15,7 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --locked --no-dev --no-editable
 
-FROM python:3.14-slim AS runtime
+FROM python:3.14-slim@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/hskl18/public-careeroc" \
       org.opencontainers.image.licenses="MIT"

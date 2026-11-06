@@ -3,7 +3,11 @@ host: careeroc.example.com
 ingress:
   className: nginx
   tlsSecretName: careeroc-tls
-  annotations: {}
+  # A review runs up to 100 seconds behind one synchronous request, past ingress-nginx's 60-second
+  # default; other controllers ignore these, so set their own timeout.
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "130"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "130"
 
 # Secret you create before installing (kubectl create secret generic ...). Required keys:
 #   DATABASE_URL, CAREEROC_API_AUTH_SECRET, CAREEROC_TOKEN_PROTECTION_KEY,
@@ -13,7 +17,9 @@ ingress:
 existingSecret: careeroc
 
 demoMode: true
-# Google accounts allowed to sign in when demoMode is false.
+# Google accounts allowed to sign in when demoMode is false; set at least one. Use allowedEmails for
+# personal addresses: allowedEmailDomains=gmail.com would admit every Gmail account.
+allowedEmails: ""
 allowedEmailDomains: ""
 # deterministic needs no model. For ollama or openai, set the model and the server's URL too.
 agentProvider: deterministic
@@ -28,6 +34,9 @@ networkPolicy:
   # Labels of the namespace your ingress controller runs in.
   ingressControllerNamespaceLabels:
     kubernetes.io/metadata.name: ingress-nginx
+  # More allowed sources for every service, as NetworkPolicy `from` entries: for example an ipBlock
+  # for a cloud load balancer that sends straight to pods, or a hostNetwork ingress controller.
+  extraFrom: []
 
 images:
   registry: ghcr.io/hskl18/public-careeroc
@@ -35,13 +44,17 @@ images:
   tag: ""
   pullPolicy: IfNotPresent
 
+# extraEnv on each component adds environment variables, such as OTEL_EXPORTER_OTLP_ENDPOINT or
+# Ollama__* for the optional model pass on the API.
 web:
   replicas: 1
+  extraEnv: []
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { memory: 512Mi }
 api:
   replicas: 1
+  extraEnv: []
   resources:
     requests: { cpu: 200m, memory: 384Mi }
     limits: { memory: 1Gi }
@@ -50,6 +63,7 @@ agentRuntime:
   # never saw the review. A2A tasks stay in each pod's memory, so A2A clients also need one replica
   # or session affinity.
   replicas: 1
+  extraEnv: []
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { memory: 512Mi }

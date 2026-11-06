@@ -19,8 +19,8 @@ Generate each with `openssl rand -hex 32`, and never reuse the local fallbacks f
 | Secret | Used by | Purpose |
 |---|---|---|
 | `CAREEROC_API_AUTH_SECRET` | web, api | Signs every web-to-API request |
-| `CAREEROC_TOKEN_PROTECTION_KEY` | api | Encrypts stored Gmail OAuth tokens |
-| `AgentRuntime__SharedSecret` / `CAREEROC_AGENT_SHARED_SECRET` | api, agent-runtime | Authenticates the API to the runtime; required, at least 32 characters |
+| `CAREEROC_TOKEN_PROTECTION_KEY` | api | Encrypts stored Gmail OAuth tokens; changing it disconnects every Gmail inbox until its user reconnects |
+| `AgentRuntime__SharedSecret` / `CAREEROC_AGENT_SHARED_SECRET` (Compose: `AGENT_SHARED_SECRET`) | api, agent-runtime | Authenticates the API to the runtime; required, at least 32 characters |
 | `AUTH_SECRET` | web | Encrypts Auth.js sessions |
 
 ## Demo or real accounts
@@ -29,6 +29,7 @@ Generate each with `openssl rand -hex 32`, and never reuse the local fallbacks f
   No Google client is needed.
 - **Google sign-in and Gmail**: set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` on web and `Google__ClientId` and `Google__ClientSecret` on the API, and set `ACCESS_ALLOWED_EMAILS` or `ACCESS_ALLOWED_DOMAINS`.
   Register `https://<web host>/api/auth/callback/google` (sign-in) and `https://<web host>/api/inbox-accounts/gmail/oauth/callback` (Gmail) as redirect URIs and set `NEXT_PUBLIC_SITE_URL` on the API to the web URL.
+  Enable the Gmail API in the same Google Cloud project, and while the OAuth consent screen is in testing, add each user as a test user; otherwise Google answers 403 and the inbox stays "Reconnect required".
   The callback goes through the web app so it reaches the API signed as the user who started the connection; without that URL, Gmail sign-in is refused.
 
 ## Agent checkpoints
@@ -66,6 +67,8 @@ Deploy from the repository root, because the root `.vercelignore` decides what i
 
 Re-record the snapshot on an empty database when an API response changes shape.
 Its emails and review come from real models, here free ones through a signed-in local Ollama, and a test fails if the recording fell back to the rules or the deterministic review:
+
+Stop the main stack first (`docker compose --profile full down` keeps its volume), because the containers have fixed names and ports.
 
 ```bash
 export OLLAMA=http://host.docker.internal:11434

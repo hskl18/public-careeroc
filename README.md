@@ -139,7 +139,8 @@ Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 has
   `AGENT_*` sets the review agents, which see only the bounded snapshot; set `AGENT_PROVIDER=openai` and `AGENT_API_KEY` for an OpenAI-compatible endpoint.
   The free models differ on email: [DESIGN.md](DESIGN.md#evals) has their scores, and `scripts/eval-model.sh` reproduces them.
   The rules and the deterministic suite stay the fallback.
-- **Gmail.** Create a Google OAuth client with two redirect URIs, `<web URL>/api/auth/callback/google` for sign-in and the Gmail one from `.env.example`, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` for the web app, `Google__ClientId` and `Google__ClientSecret` for the API, and an access allowlist, and run the services outside demo mode as described in [AGENTS.md](AGENTS.md).
+- **Gmail.** Create a Google OAuth client with two redirect URIs, `<web URL>/api/auth/callback/google` for sign-in and the Gmail one from `.env.example`, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` for the web app, `Google__ClientId` and `Google__ClientSecret` for the API, and an access allowlist (`ACCESS_ALLOWED_EMAILS`, with `ACCESS_ALLOW_ALL_USERS=false`), then run `./scripts/dev-up.sh`, because Compose runs the demo only.
+  Enable the Gmail API in the Google Cloud project, and add yourself as a test user on the OAuth consent screen.
   Before you do, replace the `local-compose-only-*` secrets: the API and web app refuse them once real accounts can sign in.
 
 ## Deploy
