@@ -161,7 +161,7 @@ export function AnalyticsWorkspace({
           {source === "fallback" &&
             (selectedRange !== "all" || selectedProvider !== "all") && (
               <div role="status" className="alert alert-warning mt-3">
-                Offline.
+                API offline.
               </div>
             )}
         </section>

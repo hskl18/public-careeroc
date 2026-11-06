@@ -20,7 +20,7 @@ export default async function MemoryPage() {
 
         {profileSource === "fallback" ? (
           <div role="status" className="alert alert-warning">
-            API unavailable.
+            API offline.
           </div>
         ) : null}
 

@@ -34,7 +34,7 @@ export default async function ReviewPage() {
       <div className="flex min-h-full w-full flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 animate-in md:h-full md:overflow-hidden">
         {inboxSetupSource === "fallback" || source === "fallback" ? (
           <div role="status" className="alert alert-warning shrink-0">
-            API unavailable. Showing empty data.
+            API offline. Showing empty data.
           </div>
         ) : null}
         <ManualReviewWorkspace

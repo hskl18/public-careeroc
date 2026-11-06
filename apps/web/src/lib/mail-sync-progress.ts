@@ -219,7 +219,7 @@ export function buildMailSyncStatus(input: {
   estimate: ProgressEstimate | null;
 }): MailSyncStatus {
   if (!input.setupLive) {
-    return { label: "API offline", ...yellow, pulse: false, detail: "Gmail setup status is unavailable right now." };
+    return { label: "API offline", ...yellow, pulse: false, detail: "Gmail setup status is unavailable." };
   }
 
   if (input.connectedCount === 0 && input.reconnectableCount === 0) {
@@ -231,7 +231,7 @@ export function buildMailSyncStatus(input: {
   }
 
   if (!input.dashboardLive) {
-    return { label: "API offline", ...yellow, pulse: false, detail: "Live sync status is unavailable right now." };
+    return { label: "API offline", ...yellow, pulse: false, detail: "Live sync status is unavailable." };
   }
 
   if (input.setupNeededCount > 0) {

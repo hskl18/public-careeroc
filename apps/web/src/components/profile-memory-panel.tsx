@@ -234,7 +234,7 @@ export function ProfileMemoryPanel({
       <section className="card p-4">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">Long-term memory</h2>
         <p className="mt-3 text-sm text-[var(--text-secondary)]">
-          Memory is unavailable until the live API is connected.
+          API offline. Memory is unavailable.
         </p>
       </section>
     );

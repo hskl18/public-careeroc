@@ -339,7 +339,7 @@ export function ApplicationDetailWorkspace({
             </h1>
             <div className="flex flex-wrap items-center gap-2">
               {source === "fallback" ? (
-                <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">Offline</span>
+                <span className="badge bg-[var(--yellow-soft)] text-[var(--yellow)]">API offline</span>
               ) : null}
               <Link href="/app/applications" className="btn btn-secondary btn-sm">
                 Applications

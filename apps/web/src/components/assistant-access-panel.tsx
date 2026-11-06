@@ -107,7 +107,7 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
           </button>
         </form>
       ) : (
-        <p role="status" className="alert alert-warning mt-4">Tokens are unavailable while the API is offline.</p>
+        <p role="status" className="alert alert-warning mt-4">API offline. Tokens are unavailable.</p>
       )}
 
       {error ? <p role="alert" className="alert alert-error mt-3">{error}</p> : null}

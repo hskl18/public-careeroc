@@ -55,7 +55,7 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
       <div className="workspace-shell flex w-full flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 animate-in">
         {source !== "api" ? (
           <div role="status" className="alert alert-warning shrink-0">
-            API unavailable. Showing empty data.
+            API offline. Showing empty data.
           </div>
         ) : null}
 
@@ -85,7 +85,9 @@ export default async function UpdatesPage({ searchParams }: UpdatesPageProps) {
               })}
             </nav>
             <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-              <span className="tabular-nums text-[var(--text-tertiary)]">{filteredActivity.length}</span>
+              <span className="tabular-nums text-[var(--text-tertiary)]">
+                {filteredActivity.length} update{filteredActivity.length === 1 ? "" : "s"}
+              </span>
               {previousHref ? (
                 <Link href={previousHref} className="btn btn-secondary btn-sm">
                   First page
