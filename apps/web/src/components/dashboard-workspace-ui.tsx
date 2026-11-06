@@ -176,16 +176,22 @@ export function AttentionSection({
   // The reminder whose actions are swapped for snooze durations; one at a time.
   const [choosingSnoozeFor, setChoosingSnoozeFor] = useState<string | null>(null);
   const snoozeButtons = useRef(new Map<string, HTMLButtonElement>());
-  // Closing the choice removes the focused button, so focus returns to that row's Snooze.
-  function closeSnoozeChoice(reminderId: string) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Closing the choice removes the focused button. Cancel returns focus to the row's Snooze; a
+  // chosen duration disables that button and then removes the row, so focus goes to the heading.
+  function closeSnoozeChoice(reminderId: string, snoozed: boolean) {
     setChoosingSnoozeFor(null);
-    requestAnimationFrame(() => snoozeButtons.current.get(reminderId)?.focus());
+    requestAnimationFrame(() =>
+      (snoozed ? heading.current : snoozeButtons.current.get(reminderId))?.focus(),
+    );
   }
 
   return (
     <section className="card flex h-full min-h-0 flex-col p-0">
       <div className="flex shrink-0 items-center justify-between gap-3 px-4 pt-3">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">To do</h2>
+        <h2 ref={heading} tabIndex={-1} className="text-base font-semibold text-[var(--text-primary)]">
+          To do
+        </h2>
         <span className="text-xs tabular-nums text-[var(--text-tertiary)]">
           {pendingActions.length + attentionAccounts.length}
         </span>
@@ -288,7 +294,7 @@ export function AttentionSection({
                       aria-label={`Snooze ${action.title} for`}
                       className="flex shrink-0 flex-wrap items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]"
                       onKeyDown={(event) => {
-                        if (event.key === "Escape") closeSnoozeChoice(action.id);
+                        if (event.key === "Escape") closeSnoozeChoice(action.id, false);
                       }}
                     >
                       {(["1h", "tomorrow", "next-week"] as const).map((preset, index) => (
@@ -299,7 +305,7 @@ export function AttentionSection({
                           className="hover:text-[var(--text-primary)] hover:underline disabled:opacity-50 max-sm:min-h-6"
                           disabled={reminderActionsDisabled}
                           onClick={() => {
-                            closeSnoozeChoice(action.id);
+                            closeSnoozeChoice(action.id, true);
                             onReminderSnooze(action, preset);
                           }}
                         >
@@ -309,7 +315,7 @@ export function AttentionSection({
                       <button
                         type="button"
                         className="hover:text-[var(--text-primary)] hover:underline max-sm:min-h-6"
-                        onClick={() => closeSnoozeChoice(action.id)}
+                        onClick={() => closeSnoozeChoice(action.id, false)}
                       >
                         Cancel
                       </button>
