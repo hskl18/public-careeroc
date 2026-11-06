@@ -22,5 +22,7 @@ helm install careeroc deploy/helm/careeroc -n careeroc --set host=careeroc.examp
 - Images default to `ghcr.io/hskl18/public-careeroc/<service>`, published by `.github/workflows/images.yml` on version tags.
 - Services use fixed short names (`api`, `agent-runtime`, `web`) that match the other deployments, so install one release per namespace.
 - Set `demoMode=false`, `allowedEmailDomains`, and the Google secret keys for a real deployment.
+- `networkPolicy.enabled=true` lets each service accept traffic only from the ingress controller's namespace and the release's own callers; set `networkPolicy.ingressControllerNamespaceLabels` to match your controller's namespace.
+  It restricts ingress only, and needs a CNI that enforces NetworkPolicy; the kind smoke test installs with it on.
 
-The chart is checked with `helm lint` and `kubeconform -strict` in both modes; it has not been installed on a live cluster by this project.
+The chart is checked with `helm lint` and with `kubeconform -strict` in demo mode, real mode, and with the network policy on; it has not been installed on a live cluster by this project.

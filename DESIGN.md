@@ -253,7 +253,7 @@ flowchart TB
 | Web to API | HMAC-signed user context with a server-only secret; per-user rate limits | The secret must leak; it never reaches the browser |
 | Gmail OAuth callback | Forwarded by the web app signed as the signed-in user; the API completes only that user's own pending connection | A forwarded consent link cannot attach someone else's mailbox |
 | Assistant to API | Personal access token, read-only, user-scoped, rate limited, rechecked against the allowlist | Read access to one user's pipeline until revoked or expired |
-| API to agent runtime | Required shared secret; the runtime refuses every call without one. Compose publishes the runtime on 127.0.0.1 only, and the Helm ingress routes only `/a2a` and the agent card to it; the chart has no NetworkPolicy, so other pods in the cluster can reach it and the secret is the guard | The runtime sees only bounded snapshots |
+| API to agent runtime | Required shared secret; the runtime refuses every call without one. Compose publishes the runtime on 127.0.0.1 only, and the Helm ingress routes only `/a2a` and the agent card to it; by default other pods in the cluster can reach it and the secret is the guard; `networkPolicy.enabled` limits it to the API and the ingress controller | The runtime sees only bounded snapshots |
 | A2A client to runtime | Token forwarded to the API, which enforces scope; tasks are scoped per caller | Same as the assistant boundary |
 | Agent output to writes | Typed proposals, the evidence gate, human approval, and an ownership check in the API | A declined suggestion, not a write |
 | Email content to models | Treated as untrusted; typed outputs, confidence gates, review queue | A wrong suggestion or a review item, not a write |
