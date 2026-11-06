@@ -138,21 +138,21 @@ class CallerAuthMiddleware:
         try:
             owner = await self._resolve_owner(token) if token else None
         except (httpx.HTTPError, ValueError, KeyError) as exc:
-            # 403 means the API no longer allows this account; anything else is an outage or a
-            # malformed answer.
-            forbidden = (
+            # 429 is the API's limit on failed tokens, so it is passed on; anything else is an
+            # outage or a malformed answer.
+            throttled = (
                 isinstance(exc, httpx.HTTPStatusError)
-                and exc.response.status_code == httpx.codes.FORBIDDEN
+                and exc.response.status_code == httpx.codes.TOO_MANY_REQUESTS
             )
-            if not forbidden:
+            if not throttled:
                 logger.warning("Could not authenticate an A2A caller with the careeroc API.")
             await JSONResponse(
                 {
-                    "error": "This account no longer has access to careeroc."
-                    if forbidden
+                    "error": "Too many failed attempts. Retry later."
+                    if throttled
                     else "careeroc is unavailable."
                 },
-                status_code=403 if forbidden else 503,
+                status_code=429 if throttled else 503,
             )(scope, receive, send)
             return
 

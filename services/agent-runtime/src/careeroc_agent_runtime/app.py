@@ -6,6 +6,7 @@ import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from importlib.metadata import version
+from typing import Any
 
 import httpx
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -182,6 +183,15 @@ def create_app(
                 ) from exc
         return {"status": "ready"}
 
+    async def forget_thread(graph: Any, thread_id: str) -> None:
+        # The API stores every finished review itself; only a paused one needs its checkpoints.
+        if graph.checkpointer is None:
+            return
+        try:
+            await graph.checkpointer.adelete_thread(thread_id)
+        except Exception:
+            logger.warning("Could not delete the checkpoints of a finished review.", exc_info=True)
+
     @runtime.post(
         "/v1/resume-mailbox-review",
         response_model=ResumeMailboxReviewResponse,
@@ -210,9 +220,12 @@ def create_app(
                     },
                     config=config,
                 )
+            if not (await graph.aget_state(config)).interrupts:
+                await forget_thread(graph, payload.thread_id)
             return ResumeMailboxReviewResponse.model_validate(state["review"])
         except Exception as exc:
             logger.exception("LangGraph resume-mailbox review failed", exc_info=exc)
+            await forget_thread(graph, payload.thread_id)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Agent graph execution failed",
@@ -240,6 +253,7 @@ def create_app(
         state = await graph.ainvoke(
             Command(resume=decision.model_dump(mode="json", by_alias=True)), config=config
         )
+        await forget_thread(graph, thread_id)
         return ResumeMailboxReviewResponse.model_validate(state["review"])
 
     return runtime

@@ -134,6 +134,19 @@ CASES = {
         {},
         ("review_required", 0, 0, []),
     ),
+    "a timestamp or id cited by its own label is not evidence": (
+        [
+            "requestedAtUtc:2026",
+            "applications.lastActivityAtUtc:07",
+            "id:7b0c6c1e",
+            "threadId:review",
+            "Roblox · interviewing",
+        ],
+        0.9,
+        [],
+        {},
+        ("review_required", 1, 0.18, []),
+    ),
     "a reminder for a rejected application is dropped": (
         ["Roblox · Software Engineer"],
         0.9,
@@ -188,3 +201,25 @@ async def test_the_gate_trace_names_every_citation_it_dropped() -> None:
     assert state["review"]["trace"][-1]["facts"] == [
         {"label": "Dropped citation", "value": "Stripe · offer"}
     ]
+
+
+@pytest.mark.asyncio
+async def test_a_blank_or_over_long_citation_is_dropped_instead_of_failing_the_run() -> None:
+    request = build_request("review:eval-003")
+    suite = ScriptedSuite(["", "Roblox · interviewing", "x" * 1200], 0.9, [])
+    graph = build_graph(suite, InMemorySaver())
+
+    state = await graph.ainvoke(
+        {"request": request.model_dump(mode="json", by_alias=True), "analyses": [], "trace": []},
+        config={"configurable": {"thread_id": request.thread_id}},
+    )
+
+    synthesis = next(step for step in state["review"]["trace"] if step["stage"] == "synthesis")
+    assert [len(fact["value"]) for fact in synthesis["facts"]] == [21, 1000]
+    assert state["review"]["confidence"] == 0.45
+
+
+def test_a_reminder_proposal_is_clamped_instead_of_rejected() -> None:
+    proposal = ReminderProposal(application_id=KNOWN_APPLICATION, title="t" * 200, due_in_days=45)
+
+    assert (proposal.due_in_days, len(proposal.title)) == (30, 160)

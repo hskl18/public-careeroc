@@ -23,7 +23,13 @@ from careeroc_agent_runtime.telemetry import agent_span
 
 _WORD = re.compile(r"[^\W_]+")
 # Fields that are not evidence: their digits (timestamps, ids) would let invented numbers pass.
-_NOT_EVIDENCE = {"threadid", "requestedatutc", "lastactivityatutc", "id"}
+_NOT_EVIDENCE = {
+    "threadid",
+    "requestedatutc",
+    "lastactivityatutc",
+    "id",
+    "resumeversionlinkedtooutcome",
+}
 
 
 class CareerGraphState(TypedDict, total=False):
@@ -50,6 +56,15 @@ def _deduplicate(values: list[str], limit: int) -> list[str]:
 
 def count_reminders(count: int) -> str:
     return "1 reminder" if count == 1 else f"{count} reminders"
+
+
+def _evidence_facts(references: list[str], limit: int) -> list[TraceFact]:
+    # Citations are model text; an empty or over-long one must not fail the run before the gate.
+    return [
+        TraceFact(label="Evidence", value=reference[:1000])
+        for reference in references[:limit]
+        if reference.strip()
+    ]
 
 
 def _collect_terms(node: Any, by_label: dict[str, set[str]]) -> set[str]:
@@ -82,6 +97,9 @@ def _grounded_references(references: list[str], request: ResumeMailboxReviewRequ
         label, separator, value = reference.partition(":")
         # Models cite nested fields by path: latestResume.skills:TypeScript.
         path = [part.strip().casefold() for part in label.split(".")]
+        if separator and any(part in _NOT_EVIDENCE for part in path):
+            # Timestamps and ids are not evidence, cited by label or not.
+            return False
         if separator and all(part in by_label for part in path):
             pool, claimed = by_label[path[-1]], value
         else:
@@ -128,10 +146,7 @@ def build_graph(
             agent_name=analysis.agent_name,
             summary=analysis.summary,
             reason=f"Specialist confidence {analysis.confidence:.2f}",
-            facts=[
-                TraceFact(label="Evidence", value=value)
-                for value in analysis.evidence_references[:6]
-            ],
+            facts=_evidence_facts(analysis.evidence_references, 6),
         )
         return {
             "analyses": [analysis.model_dump(mode="json", by_alias=True)],
@@ -158,9 +173,7 @@ def build_graph(
             agent_name="career_supervisor",
             summary=review.summary,
             reason=f"Synthesized {len(analyses)} independent specialist outputs.",
-            facts=[
-                TraceFact(label="Evidence", value=value) for value in review.evidence_references[:8]
-            ],
+            facts=_evidence_facts(review.evidence_references, 8),
         )
         return {
             "review": review.model_dump(mode="json", by_alias=True),
@@ -252,9 +265,15 @@ def build_graph(
         step = TraceStep(
             stage="human_review",
             agent_name="human_reviewer",
+            # careeroc creates the approved reminders itself and may skip some (a closed
+            # application, an open reminder), so this names what was proposed, not what was created.
             summary=(
-                "The user approved this review and "
-                f"{count_reminders(len(review.proposed_reminders))}."
+                "The user approved this review"
+                + (
+                    f" and the {count_reminders(len(review.proposed_reminders))} it proposed."
+                    if review.proposed_reminders
+                    else "."
+                )
                 if decision.approved
                 else "The user rejected this review; nothing from it is saved."
             ),

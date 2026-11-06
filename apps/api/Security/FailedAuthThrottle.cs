@@ -4,7 +4,8 @@ namespace Careeroc.Api.Security;
 
 // The global limiter runs after authentication so it can partition by user, which leaves rejected
 // credentials unthrottled. This counts only failures, per client address and claimed subject, and is
-// checked before any signature work or token lookup. Every browser request reaches the API from the
+// checked before any signature work; a personal access token is looked up first, because A2A callers
+// share the agent runtime's address and a valid token must not inherit a stranger's failures. Every browser request reaches the API from the
 // web host's one address, so signed requests are counted per claimed user as well: one user's
 // failures must not lock everyone out.
 internal sealed class FailedAuthThrottle : IDisposable

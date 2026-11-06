@@ -198,9 +198,9 @@ def test_skill_routing_matches_word_starts(text: str, skill: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_a_caller_the_api_no_longer_allows_gets_403() -> None:
-    def forbidding_api(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(403)
+async def test_the_apis_failed_token_limit_reaches_the_caller_as_429() -> None:
+    def throttling_api(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429)
 
     app = create_app(
         settings=AgentRuntimeSettings(
@@ -211,7 +211,7 @@ async def test_a_caller_the_api_no_longer_allows_gets_403() -> None:
         suite=DeterministicAgentSuite(),
         checkpointer=InMemorySaver(),
         a2a_http_client_factory=lambda: httpx.AsyncClient(
-            transport=httpx.MockTransport(forbidding_api)
+            transport=httpx.MockTransport(throttling_api)
         ),
     )
     async with app.router.lifespan_context(app):
@@ -219,4 +219,4 @@ async def test_a_caller_the_api_no_longer_allows_gets_403() -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://runtime") as client:
             response = await call(client, "ListTasks", {})
 
-    assert response.status_code == 403
+    assert response.status_code == 429

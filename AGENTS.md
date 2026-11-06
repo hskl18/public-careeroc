@@ -118,7 +118,7 @@ Agent traces are shown in the review queue and on application detail, not hidden
 - `ResumeIntelligenceService`: turns pasted resume text into structured data and a rule-based evaluation; backs `/api/resumes`.
 - `UserProfileService`, `UserMemoryProposalService`, and `UserAgentContextSnapshotService`: profile, durable memory (pending, then confirmed), and the context snapshot agents read; backs `/api/profile*`.
 - `CareerOrchestratorService`: builds the bounded snapshot for the LangGraph review and stores the result as confirmed or pending memory.
-  When the user approves a pending review, it creates the reminders the agents proposed, after checking each application belongs to the user, and resumes the paused graph so the trace ends with the decision.
+  When the user approves a pending review, it creates the reminders the agents proposed, after checking each application belongs to the user and still has no open reminder, and resumes the paused graph so the trace ends with the decision.
   It falls back to a deterministic review when the runtime fails.
 - `PersonalAccessTokenService` and `AgentQueryService`: tokens and the read-only queries behind `/mcp` and `/agent/v1/*`.
 
