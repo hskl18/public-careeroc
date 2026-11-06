@@ -10,8 +10,6 @@ type ResumeFitPanelProps = {
   proxyPrefix: string | null;
 };
 
-const resumeFitCache = new Map<string, ResumeFit>();
-
 function normalizeFit(payload: Partial<ResumeFit>): ResumeFit {
   return {
     jobApplicationId: payload.jobApplicationId ?? "",
@@ -24,19 +22,12 @@ function normalizeFit(payload: Partial<ResumeFit>): ResumeFit {
 }
 
 export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelProps) {
-  const [fit, setFit] = useState<ResumeFit | null>(
-    () => resumeFitCache.get(applicationId) ?? null,
-  );
+  // The API caches each fit per resume version, so a new resume shows up on the next visit.
+  const [fit, setFit] = useState<ResumeFit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cachedFit = resumeFitCache.get(applicationId);
-    if (cachedFit) {
-      queueMicrotask(() => setFit(cachedFit));
-      return;
-    }
-
     if (!proxyPrefix) {
       return;
     }
@@ -61,7 +52,6 @@ export function ResumeFitPanel({ applicationId, proxyPrefix }: ResumeFitPanelPro
           throw new Error(await readErrorMessage(response));
         }
         const nextFit = normalizeFit((await response.json()) as Partial<ResumeFit>);
-        resumeFitCache.set(applicationId, nextFit);
         if (!cancelled) {
           setFit(nextFit);
         }

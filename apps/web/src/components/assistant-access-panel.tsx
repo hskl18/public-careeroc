@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { LocalTime } from "@/components/local-time";
 import { readErrorMessage } from "@/lib/client-fetch";
-import type { AccessToken } from "@/lib/access-tokens";
+import type { AccessToken, CreatedAccessToken } from "@/lib/access-tokens";
 
 type AssistantAccessPanelProps = {
   initialTokens: AccessToken[];
@@ -46,7 +46,7 @@ export function AssistantAccessPanel({ initialTokens, proxyPrefix, mcpUrl, agent
         body: JSON.stringify({ name, expiresInDays: lifetimeDays }),
       });
       if (!response.ok) throw new Error(await readErrorMessage(response));
-      const created = (await response.json()) as { token: string };
+      const created = (await response.json()) as CreatedAccessToken;
       setNewToken(created.token);
       await load();
     } catch (createError) {

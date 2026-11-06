@@ -11,7 +11,6 @@ import {
 import {
   buildBackfillSelections,
   canUseSignedInEmail,
-  defaultGmailBackfillMonths,
   formatBackfillWindow,
   getBackfillOptionValue,
   isConnectedAccount,
@@ -123,15 +122,11 @@ export function InboxSetupPanel({
     setError(null);
     setPendingAction("gmail");
 
+    // No backfillMonths: the API keeps a reconnecting inbox's window and gives a new one 3 months.
     const searchParams = new URLSearchParams({
       emailAddress: trimmed,
       returnUrl: `${window.location.pathname}${window.location.search}${window.location.hash}`,
     });
-
-    searchParams.set(
-      "backfillMonths",
-      defaultGmailBackfillMonths,
-    );
 
     // A full navigation is required: this API route redirects the browser to Google's consent screen.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination

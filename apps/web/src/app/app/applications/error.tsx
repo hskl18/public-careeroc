@@ -4,15 +4,16 @@ import { RouteErrorState } from "@/components/route-error-state";
 
 export default function ApplicationsErrorBoundary({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  // retry re-fetches the failed segment; reset would only re-render it.
+  retry: () => void;
 }) {
   return (
     <RouteErrorState
       error={error}
-      reset={reset}
+      retry={retry}
       title="Applications could not load."
       description="Your data is unchanged."
     />

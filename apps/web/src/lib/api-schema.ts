@@ -1551,6 +1551,11 @@ export interface components {
             /** Format: date-time */
             until?: string;
         };
+        SyncNowBusyResponse: {
+            error: string;
+            /** Format: int32 */
+            retryAfterSeconds: number;
+        };
         SyncNowResponseDto: {
             queued: boolean;
             /** Format: date-time */
@@ -2158,7 +2163,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SyncNowBusyResponse"];
+                };
             };
         };
     };

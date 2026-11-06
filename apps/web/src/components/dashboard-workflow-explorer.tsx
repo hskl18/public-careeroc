@@ -14,7 +14,6 @@ import type {
   ApplicationCard,
   DashboardResponse,
   DashboardView,
-  PendingAction,
 } from "@/lib/dashboard";
 import { readErrorMessage } from "@/lib/client-fetch";
 import {
@@ -126,9 +125,12 @@ export function DashboardWorkflowExplorer({
 }: WorkflowExplorerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [completedActions, setCompletedActions] = useState<
-    Array<{ applicationId: string; reminderId?: string }>
-  >([]);
+  // Tasks marked done here, shown until the refreshed dashboard arrives; a new dashboard prop
+  // already reflects them, so the list belongs to the dashboard it was made against.
+  const [completed, setCompleted] = useState<{
+    base: DashboardResponse;
+    actions: Array<{ applicationId: string; reminderId?: string }>;
+  }>({ base: dashboard, actions: [] });
   const [pendingCompletionKey, setPendingCompletionKey] = useState<string | null>(
     null,
   );
@@ -136,16 +138,12 @@ export function DashboardWorkflowExplorer({
   const [actionError, setActionError] = useState<string | null>(null);
   const currentDashboard = useMemo(
     () =>
-      completedActions.reduce(
-        (current, completed) =>
-          completeApplicationActionLocally(
-            current,
-            completed.applicationId,
-            completed.reminderId,
-          ),
+      (completed.base === dashboard ? completed.actions : []).reduce(
+        (current, action) =>
+          completeApplicationActionLocally(current, action.applicationId, action.reminderId),
         dashboard,
       ),
-    [completedActions, dashboard],
+    [completed, dashboard],
   );
   const initialQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
@@ -221,25 +219,22 @@ export function DashboardWorkflowExplorer({
     setSelectedApplicationId(applicationId);
   }
 
-  async function completeApplicationAction(
-    application: ApplicationCard,
-    reminder?: PendingAction,
-  ) {
+  async function completeApplicationAction(application: ApplicationCard, reminderId?: string) {
     const shouldMoveOaToApplied = application.status === "Oa Pending";
-    if (!reminder && !shouldMoveOaToApplied) {
+    if (!reminderId && !shouldMoveOaToApplied) {
       setActionNotice("No open task is attached to this action.");
       return;
     }
 
-    const requestKey = `${application.id}:${reminder?.id ?? "stage"}:Completed`;
+    const requestKey = `${application.id}:${reminderId ?? "stage"}:Completed`;
     setPendingCompletionKey(requestKey);
     setActionError(null);
     setActionNotice(null);
 
     try {
-      if (reminder) {
+      if (reminderId) {
         const reminderResponse = await fetch(
-          `/api/careeroc/api/reminders/${reminder.id}/status`,
+          `/api/careeroc/api/reminders/${reminderId}/status`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -270,10 +265,13 @@ export function DashboardWorkflowExplorer({
         }
       }
 
-      setCompletedActions((current) => [
-        ...current,
-        { applicationId: application.id, reminderId: reminder?.id },
-      ]);
+      setCompleted((current) => ({
+        base: dashboard,
+        actions: [
+          ...(current.base === dashboard ? current.actions : []),
+          { applicationId: application.id, reminderId },
+        ],
+      }));
       setActionNotice(`Marked done: ${application.company}.`);
       router.refresh();
     } catch (requestError) {

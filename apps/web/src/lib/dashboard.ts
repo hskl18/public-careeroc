@@ -10,6 +10,7 @@ export type ApplicationLatestEvidence = Schemas["ApplicationSummaryEvidenceDto"]
 export type PendingAction = Schemas["PendingActionDto"];
 export type RecentActivity = Schemas["RecentActivityDto"];
 export type DashboardResponse = Schemas["DashboardResponse"];
+export type DashboardInboxCheckResponse = Schemas["DashboardInboxCheckResult"];
 
 export type DashboardView =
   | "needs-action"
