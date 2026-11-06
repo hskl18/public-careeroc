@@ -19,7 +19,7 @@ function normalizeFit(payload: Partial<ResumeFit>): ResumeFit {
     matchScore: Number(payload.matchScore ?? 0),
     strengths: Array.isArray(payload.strengths) ? payload.strengths : [],
     gaps: Array.isArray(payload.gaps) ? payload.gaps : [],
-    rationale: payload.rationale ?? null,
+    rationale: payload.rationale ?? "",
   };
 }
 

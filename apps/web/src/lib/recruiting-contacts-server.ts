@@ -5,10 +5,7 @@ import {
   warnFallback,
 } from "./careeroc-api-server";
 import type { CareerocApiUser } from "./api-user";
-import {
-  mapRecruitingContactListResponse,
-  type RecruitingContactListResponse,
-} from "./recruiting-contacts";
+import type { RecruitingContactListResponse } from "./recruiting-contacts";
 import { createUserScopedCache } from "./server-user-cache";
 
 const fallbackContacts: RecruitingContactListResponse = { contacts: [] };
@@ -46,7 +43,7 @@ const getRecruitingContactsForUserCached = createUserScopedCache(async (
     }
 
     return {
-      contacts: mapRecruitingContactListResponse(await response.json()),
+      contacts: (await response.json()) as RecruitingContactListResponse,
       source: "api",
       proxyPrefix: getCareerocClientApiBaseUrl(),
     };

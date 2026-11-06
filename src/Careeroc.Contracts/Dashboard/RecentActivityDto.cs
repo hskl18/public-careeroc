@@ -9,4 +9,4 @@ public sealed record RecentActivityDto(
     string Category,
     DateTimeOffset ReceivedAtUtc,
     DateTimeOffset OccurredAtUtc,
-    int ImportanceScore = 0);
+    int ImportanceScore);

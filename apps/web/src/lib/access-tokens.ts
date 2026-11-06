@@ -1,9 +1,3 @@
-export type AccessToken = {
-  id: string;
-  name: string;
-  tokenPrefix: string;
-  createdAtUtc: string;
-  expiresAtUtc: string;
-  lastUsedAtUtc: string | null;
-  revokedAtUtc: string | null;
-};
+import type { components } from "./api-schema";
+
+export type AccessToken = components["schemas"]["PersonalAccessTokenDto"];

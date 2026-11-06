@@ -1,63 +1,16 @@
+import type { components } from "./api-schema";
+
 export type AnalyticsRange = "all" | "30d" | "90d";
 export type AnalyticsProvider = "all" | "gmail";
 
-export type AnalyticsMetrics = {
-  applicationsCount: number;
-  uniqueCompanies: number;
-  rolesCount: number;
-  replyRate: number;
-  interviewRate: number;
-  offerRate: number;
-  avgTimeToFirstResponseHours: number | null;
-  responseRates?: AnalyticsResponseRates | null;
-};
+type Schemas = components["schemas"];
 
-export type AnalyticsResponseRates = {
-  anyResponseRate: number;
-  autoReceiptRate: number;
-  humanResponseRate: number;
-  assessmentRate: number;
-  interviewRate: number;
-  offerRate: number;
-  rejectionRate: number;
-};
-
-export type AnalyticsBreakdownItem = {
-  label: string;
-  applicationsCount: number;
-  replyRate: number;
-  interviewRate: number;
-  offerRate: number;
-  avgTimeToFirstResponseHours: number | null;
-  responseRates?: AnalyticsResponseRates | null;
-};
-
-export type AnalyticsFunnelStage = {
-  key: string;
-  label: string;
-  count: number;
-  continuationRateFromPreviousStage: number;
-};
-
-export type AnalyticsInsight = {
-  id: string;
-  tone: "warning" | "win" | "info";
-  headline: string;
-  body: string;
-  drillHref: string | null;
-};
-
-export type AnalyticsResponse = {
-  metrics: AnalyticsMetrics;
-  companyBreakdown: AnalyticsBreakdownItem[];
-  roleBreakdown: AnalyticsBreakdownItem[];
-  funnel?: AnalyticsFunnelStage[] | null;
-  sourceBreakdown?: AnalyticsBreakdownItem[] | null;
-  locationBreakdown?: AnalyticsBreakdownItem[] | null;
-  seniorityBreakdown?: AnalyticsBreakdownItem[] | null;
-  insights?: AnalyticsInsight[] | null;
-  lastSyncAtUtc?: string | null;
-};
+export type AnalyticsMetrics = Schemas["AnalyticsMetricsDto"];
+export type AnalyticsResponseRates = Schemas["AnalyticsResponseRatesDto"];
+export type AnalyticsBreakdownItem = Schemas["AnalyticsBreakdownItemDto"];
+export type AnalyticsFunnelStage = Schemas["AnalyticsFunnelStageDto"];
+export type AnalyticsInsight = Schemas["AnalyticsInsightDto"];
+export type AnalyticsResponse = Schemas["AnalyticsResponse"];
 
 export const analyticsRangeOptions: Array<{
   value: AnalyticsRange;

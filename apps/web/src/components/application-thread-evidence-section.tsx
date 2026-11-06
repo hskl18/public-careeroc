@@ -34,7 +34,7 @@ type AgentTraceSummaryCardSummary = {
 };
 
 type AgentTraceSummaryCardProps = {
-  summary: AgentTraceSummaryCardSummary | null;
+  summary?: AgentTraceSummaryCardSummary | null;
   title?: string;
   compact?: boolean;
 };
