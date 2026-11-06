@@ -1,6 +1,6 @@
 [project]
 name = "careeroc-agent-runtime"
-version = "1.3.0"
+version = "1.3.1"
 description = "Durable LangGraph multi-agent runtime for careeroc workflows"
 requires-python = ">=3.11"
 dependencies = [
