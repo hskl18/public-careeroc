@@ -259,7 +259,7 @@ flowchart TB
 | Email content to models | Treated as untrusted; typed outputs, confidence gates, review queue | A wrong suggestion or a review item, not a write |
 
 Demo identities cannot connect Gmail or change backfill settings, demo workspaces are capped per hour, and each is removed from the product database after 24 hours.
-The runtime deletes a review's checkpoints once the review finishes or fails; only a review waiting for a decision keeps them.
+The runtime deletes a review's checkpoints once the review finishes or fails; only a review waiting for a decision keeps them, and the API rejects that run when a newer review replaces it.
 Compose publishes its ports on 127.0.0.1, and its public fallback secrets are refused as soon as real accounts can sign in.
 More detail is in [SECURITY.md](SECURITY.md).
 

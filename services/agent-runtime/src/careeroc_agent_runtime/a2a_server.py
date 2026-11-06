@@ -138,21 +138,27 @@ class CallerAuthMiddleware:
         try:
             owner = await self._resolve_owner(token) if token else None
         except (httpx.HTTPError, ValueError, KeyError) as exc:
-            # 429 is the API's limit on failed tokens, so it is passed on; anything else is an
-            # outage or a malformed answer.
+            # 429 is one of the API's rate limits (failed tokens, or a busy caller), so it is passed
+            # on with its Retry-After; anything else is an outage or a malformed answer.
             throttled = (
                 isinstance(exc, httpx.HTTPStatusError)
                 and exc.response.status_code == httpx.codes.TOO_MANY_REQUESTS
             )
             if not throttled:
                 logger.warning("Could not authenticate an A2A caller with the careeroc API.")
+            retry_after = (
+                exc.response.headers.get("retry-after")
+                if isinstance(exc, httpx.HTTPStatusError)
+                else None
+            )
             await JSONResponse(
                 {
-                    "error": "Too many failed attempts. Retry later."
+                    "error": "Too many requests. Retry later."
                     if throttled
                     else "careeroc is unavailable."
                 },
                 status_code=429 if throttled else 503,
+                headers={"Retry-After": retry_after} if throttled and retry_after else None,
             )(scope, receive, send)
             return
 

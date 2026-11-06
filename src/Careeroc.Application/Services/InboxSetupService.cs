@@ -748,19 +748,11 @@ public sealed class InboxSetupService
         return existingAccount;
     }
 
-    // A sync that saves this inbox between this request's read and write makes the save conflict
-    // (InboxAccount has a row version); the person can simply retry.
-    private async Task SaveAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException exception)
-        {
-            throw new UserFacingException("This inbox changed while saving, for example during a sync. Try again.", exception);
-        }
-    }
+    // A sync that saves this inbox between this request's read and write makes the save conflict.
+    private Task SaveAsync(CancellationToken cancellationToken) =>
+        _dbContext.SaveOrAskToRetryAsync(
+            "This inbox changed while saving, for example during a sync. Try again.",
+            cancellationToken);
 
     private static string CreateSecureToken()
     {

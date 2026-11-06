@@ -53,8 +53,17 @@ public sealed class CareerOrchestratorService
             BuildGraphRequest(mailboxSnapshot, withOpenReminders, baselineReview),
             cancellationToken);
         var review = ApplyGraphOutcome(baselineReview, graphOutcome, mailboxSnapshot.Applications);
-        await UpsertReviewMemoryAsync(user.Id, review, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        var releasedThreads = await UpsertReviewMemoryAsync(user.Id, review, cancellationToken);
+        await _dbContext.SaveOrAskToRetryAsync(
+            "Another review finished at the same time. Reload to see it.",
+            cancellationToken);
+        // A superseded or overwritten review will never be decided, so its paused run is rejected
+        // to free its checkpoints; best effort, since the review is already settled here.
+        foreach (var threadId in releasedThreads)
+        {
+            await _agentGraphClient.DecideReviewAsync(threadId, approved: false, cancellationToken);
+        }
+
         return review;
     }
 
@@ -108,7 +117,9 @@ public sealed class CareerOrchestratorService
         };
         entry.Value = SerializeReview(decided);
         entry.UpdatedAtUtc = _clock.UtcNow;
-        await _dbContext.SaveChangesAsync(CancellationToken.None);
+        await _dbContext.SaveOrAskToRetryAsync(
+            "This review changed while saving your decision. Reload and decide again.",
+            CancellationToken.None);
 
         var outcome = review.ThreadId is { Length: > 0 } threadId
             ? await _agentGraphClient.DecideReviewAsync(threadId, approved, cancellationToken)
@@ -117,7 +128,15 @@ public sealed class CareerOrchestratorService
         {
             entry.Value = SerializeReview(decided with { Trace = BuildGraphTrace(resumed) });
             entry.UpdatedAtUtc = _clock.UtcNow;
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // The resumed trace is display detail; the decision itself is already saved.
+                _dbContext.ChangeTracker.DiscardPendingChanges();
+            }
         }
 
         return resolvedEntry with { Value = entry.Value, UpdatedAtUtc = entry.UpdatedAtUtc };
@@ -505,11 +524,13 @@ public sealed class CareerOrchestratorService
         return "Mailbox outcomes exist, but the latest resume still needs stronger evidence before scaling outreach.";
     }
 
-    private async Task UpsertReviewMemoryAsync(
+    // Returns the runtime threads of the reviews this replaces, so their paused runs can be released.
+    private async Task<IReadOnlyList<string>> UpsertReviewMemoryAsync(
         Guid userId,
         ResumeMailboxReviewDto review,
         CancellationToken cancellationToken)
     {
+        var releasedThreads = new List<string>();
         var nowUtc = _clock.UtcNow;
         var value = SerializeReview(review);
         // The runtime allows a longer summary than this column; the full text stays in the value.
@@ -532,10 +553,11 @@ public sealed class CareerOrchestratorService
             .OrderByDescending(candidate => candidate.UpdatedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (confirmationStatus == "confirmed")
+        if (confirmationStatus == "confirmed" && usesLangGraph)
         {
-            // A newer review that passed the gate supersedes any review still waiting for a decision;
-            // approving the old one from an open tab would copy it over this one.
+            // A newer agent review that passed the gate supersedes any review still waiting for a
+            // decision; approving the old one from an open tab would copy it over this one. A
+            // fallback review does not, so a runtime outage leaves a pending agent review in place.
             var superseded = await _dbContext.UserMemoryEntries
                 .Where(
                     candidate =>
@@ -548,6 +570,7 @@ public sealed class CareerOrchestratorService
             {
                 pending.ConfirmationStatus = "rejected";
                 pending.UpdatedAtUtc = nowUtc;
+                AddThread(releasedThreads, pending.Value);
             }
         }
 
@@ -567,7 +590,13 @@ public sealed class CareerOrchestratorService
                     CreatedAtUtc = nowUtc,
                     UpdatedAtUtc = nowUtc
                 });
-            return;
+            return releasedThreads;
+        }
+
+        // A newer pending review overwrites the older one, whose paused run nobody can decide now.
+        if (confirmationStatus == "pending")
+        {
+            AddThread(releasedThreads, entry.Value);
         }
 
         entry.Value = value;
@@ -575,6 +604,23 @@ public sealed class CareerOrchestratorService
         entry.SourceType = sourceType;
         entry.Confidence = (double)confidence;
         entry.UpdatedAtUtc = nowUtc;
+        return releasedThreads;
+    }
+
+    private static void AddThread(List<string> threads, string storedReview)
+    {
+        try
+        {
+            if (JsonSerializer.Deserialize<ResumeMailboxReviewDto>(storedReview, JsonOptions) is
+                { Status: "review_required", ThreadId: { Length: > 0 } threadId })
+            {
+                threads.Add(threadId);
+            }
+        }
+        catch (JsonException)
+        {
+            // A stored review that does not parse names no thread to release.
+        }
     }
 
     private static string SerializeReview(ResumeMailboxReviewDto review)

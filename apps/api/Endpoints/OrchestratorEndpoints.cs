@@ -1,4 +1,5 @@
 using Careeroc.Api.Security;
+using Careeroc.Application;
 using Careeroc.Application.Services;
 using Careeroc.Contracts.Orchestrator;
 
@@ -18,9 +19,18 @@ public static class OrchestratorEndpoints
                     CancellationToken cancellationToken) =>
                 {
                     var userEmail = RequestUserContext.GetUserEmail(request);
-                    var response = await careerOrchestratorService.ReviewResumeMailboxFitAsync(
-                        userEmail,
-                        cancellationToken);
+                    ResumeMailboxReviewDto response;
+                    try
+                    {
+                        response = await careerOrchestratorService.ReviewResumeMailboxFitAsync(
+                            userEmail,
+                            cancellationToken);
+                    }
+                    catch (UserFacingException exception)
+                    {
+                        return Results.BadRequest(new { error = exception.Message });
+                    }
+
                     await securityEventLogger.LogMutationAsync(
                         request,
                         "orchestrator.resume_mailbox_reviewed",

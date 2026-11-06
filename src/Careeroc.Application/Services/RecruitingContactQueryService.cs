@@ -276,13 +276,7 @@ public sealed class RecruitingContactQueryService
             return null;
         }
 
-        var normalized = trimmed.Replace(" ", string.Empty, StringComparison.Ordinal);
-        if (Enum.TryParse<RecruitingContactType>(normalized, ignoreCase: true, out var contactType))
-        {
-            return contactType;
-        }
-
-        throw new UserFacingException("Unsupported recruiting contact type.");
+        return RequestEnum.Parse<RecruitingContactType>(trimmed);
     }
 
     private static string? FirstNonEmpty(params string?[] values)

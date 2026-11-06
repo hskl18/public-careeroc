@@ -200,7 +200,7 @@ def test_skill_routing_matches_word_starts(text: str, skill: str) -> None:
 @pytest.mark.asyncio
 async def test_the_apis_failed_token_limit_reaches_the_caller_as_429() -> None:
     def throttling_api(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(429)
+        return httpx.Response(429, headers={"Retry-After": "42"})
 
     app = create_app(
         settings=AgentRuntimeSettings(
@@ -220,3 +220,4 @@ async def test_the_apis_failed_token_limit_reaches_the_caller_as_429() -> None:
             response = await call(client, "ListTasks", {})
 
     assert response.status_code == 429
+    assert response.headers["retry-after"] == "42"

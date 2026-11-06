@@ -227,7 +227,9 @@ public sealed class UserProfileService
             .Where(entry =>
                 entry.UserId == user.Id &&
                 entry.Kind == "orchestrator" &&
-                entry.Key == "orchestrator.resume_mailbox_bridge")
+                entry.Key == "orchestrator.resume_mailbox_bridge" &&
+                // A pending, rejected, or superseded review is not what careeroc concluded.
+                entry.ConfirmationStatus == "confirmed")
             .OrderByDescending(entry => entry.UpdatedAtUtc)
             .Select(entry => entry.Summary)
             .FirstOrDefaultAsync(cancellationToken);

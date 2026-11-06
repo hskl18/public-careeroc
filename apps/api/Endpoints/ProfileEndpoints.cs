@@ -74,10 +74,18 @@ public static class ProfileEndpoints
                     CancellationToken cancellationToken) =>
                 {
                     var userEmail = RequestUserContext.GetUserEmail(request);
-                    var deleted = await memoryProposalService.DeleteMemoryAsync(
-                        memoryEntryId,
-                        userEmail,
-                        cancellationToken);
+                    bool deleted;
+                    try
+                    {
+                        deleted = await memoryProposalService.DeleteMemoryAsync(
+                            memoryEntryId,
+                            userEmail,
+                            cancellationToken);
+                    }
+                    catch (UserFacingException exception)
+                    {
+                        return Results.BadRequest(new { error = exception.Message });
+                    }
 
                     await auditLogger.LogMutationAsync(
                         request,
