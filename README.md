@@ -1,5 +1,8 @@
 # careeroc
 
+> The current careeroc is a job search skill for your agent: [hskl18/careeroc-skill](https://github.com/hskl18/careeroc-skill), with its site at [careeroc.com](https://www.careeroc.com).
+> This repository is the earlier hosted product, kept as a reference implementation.
+
 An open-source, multi-agent job search workspace.
 careeroc reads recruiting email and keeps an evidence-backed pipeline of applications, deadlines, and next actions.
 Specialist agents review the search, a person approves what they propose, and your own assistant can read the pipeline over MCP or A2A.
