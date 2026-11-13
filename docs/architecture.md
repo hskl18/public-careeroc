@@ -51,7 +51,7 @@ services/agent-runtime            LangGraph graph, evidence gate and its eval, A
 tests/Careeroc.Tests              .NET unit, API, eval, and Postgres tests
 eval                              labeled demo inbox and the latest eval results
 deploy/helm                       Kubernetes chart
-docs                              design notes, ADRs, and deploy guides
+docs                              design notes, ADRs, usage, testing, and deploy guides, and the architecture diagram
 ```
 
 ## Email pipeline

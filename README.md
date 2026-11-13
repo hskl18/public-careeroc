@@ -49,7 +49,7 @@ One "Run review" click, traced across all three services in Jaeger:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
-  <img alt="The browser talks to the Next.js 16 web app, which sends HMAC-signed requests to the .NET 10 API. The API reads the Gmail API or the demo inbox and stores data in PostgreSQL 17. It sends a bounded snapshot to the LangGraph runtime in Python 3.14, which returns proposals, keeps checkpoints in its own database, and reads back with a scoped token. Your own assistant reaches the API over MCP with a token, other agents reach the runtime over A2A, and all three services send traces to OpenTelemetry and Jaeger." src="docs/architecture-light.svg">
+  <img alt="The browser talks to the Next.js 16 web app, which sends HMAC-signed requests to the .NET 10 API. The API reads the Gmail API or the demo inbox and stores data in PostgreSQL 17. It sends a bounded snapshot to the LangGraph runtime in Python 3.14, which returns proposals, keeps checkpoints in its own database, and reads back with a scoped token. Your own assistant reaches the API over MCP with a token, other agents reach the runtime over A2A with a token, and all three services can send traces to OpenTelemetry and Jaeger." src="docs/architecture-light.svg">
 </picture>
 
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
