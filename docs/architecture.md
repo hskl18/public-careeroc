@@ -2,6 +2,7 @@
 
 This document describes how the code is organized and how data moves through it.
 [DESIGN.md](../DESIGN.md) explains why it is built this way, [UI.md](../UI.md) covers the interface, and [routing.md](routing.md) lists the routes.
+The system diagram in the README is rendered from [architecture.mmd](architecture.mmd).
 
 ## Projects and layers
 
@@ -36,6 +37,22 @@ Raw email (`InboxEmail`) and the pipeline record (`JobApplication`) are separate
 - Setup and profile: `InboxSetupService`, `UserProfileService`, `DemoWorkspaceService`.
 - Resume and strategy: `ResumeIntelligenceService`, `ResumeMailboxContextBuilder`, `UserMemoryProposalService`, `UserAgentContextSnapshotService`, `CareerOrchestratorService`.
 - Assistant access: `PersonalAccessTokenService` and `AgentQueryService`.
+
+## Repository layout
+
+```text
+apps/api                          .NET 10 minimal API host: endpoints, auth, MCP, demo, background workers
+apps/web                          Next.js 16 app: public site, workspace, same-origin API proxy
+src/Careeroc.Domain               entities and enums
+src/Careeroc.Application          pipeline, agents, orchestrator, and query services
+src/Careeroc.Infrastructure       EF Core, Gmail, parsers, demo inbox, migrations
+src/Careeroc.Contracts            API DTOs shared with the web app
+services/agent-runtime            LangGraph graph, evidence gate and its eval, A2A server, OpenTelemetry
+tests/Careeroc.Tests              .NET unit, API, eval, and Postgres tests
+eval                              labeled demo inbox and the latest eval results
+deploy/helm                       Kubernetes chart
+docs                              design notes, ADRs, usage, testing, and deploy guides, and the architecture diagram
+```
 
 ## Email pipeline
 

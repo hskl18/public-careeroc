@@ -1,0 +1,15 @@
+flowchart LR
+  Browser["Browser"] --> Web["Next.js 16 web<br/>Auth.js, same-origin proxy"]
+  Web -- "HMAC-signed requests" --> API[".NET 10 API<br/>pipeline, auth, user scope"]
+  Inbox["Gmail API or demo inbox"] --> API
+  API --> DB[("PostgreSQL 17")]
+  API -- "bounded snapshot" --> Agents["LangGraph runtime<br/>Python 3.14"]
+  Agents -- "proposals" --> API
+  Agents -- "checkpoints" --> CP[("Checkpoint DB<br/>own role")]
+  Assistant["Your assistant<br/>Claude, Codex, ..."] -- "MCP + token" --> API
+  Peer["Other agents"] -- "A2A + token" --> Agents
+  Agents -- "token-scoped read" --> API
+  Web -.-> OTel["OpenTelemetry<br/>Jaeger"]
+  API -.-> OTel
+  Agents -.-> OTel
+%% Edit this file; the owner renders architecture-light.svg and architecture-dark.svg from it with a shared theme.

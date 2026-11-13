@@ -12,6 +12,8 @@ Expose `api` only behind a proxy or ingress that sets `X-Forwarded-For`; if clie
 | Vercel (web only) | steps below | Not tested |
 | Vercel (read-only demo) | steps below | Runs [careeroc.vercel.app](https://careeroc.vercel.app); CI builds it and walks it in a browser |
 
+Images for all three services are published to GHCR for `linux/amd64` and `linux/arm64` on version tags, after every CI check passes.
+
 ## Secrets
 
 Generate each with `openssl rand -hex 32`, and never reuse the local fallbacks from `docker-compose.yml`.
