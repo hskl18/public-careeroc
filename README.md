@@ -47,22 +47,10 @@ One "Run review" click, traced across all three services in Jaeger:
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  Browser["Browser"] --> Web["Next.js 16 web<br/>Auth.js, same-origin proxy"]
-  Web -- "HMAC-signed requests" --> API[".NET 10 API<br/>pipeline, auth, user scope"]
-  Inbox["Gmail API or demo inbox"] --> API
-  API --> DB[("PostgreSQL 17")]
-  API -- "bounded snapshot" --> Agents["LangGraph runtime<br/>Python 3.14"]
-  Agents -- "proposals" --> API
-  Agents -- "checkpoints" --> CP[("Checkpoint DB<br/>own role")]
-  Assistant["Your assistant<br/>Claude, Codex, ..."] -- "MCP + token" --> API
-  Peer["Other agents"] -- "A2A + token" --> Agents
-  Agents -- "token-scoped read" --> API
-  Web -.-> OTel["OpenTelemetry<br/>Jaeger"]
-  API -.-> OTel
-  Agents -.-> OTel
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
+  <img alt="The browser talks to the Next.js 16 web app, which sends HMAC-signed requests to the .NET 10 API. The API reads the Gmail API or the demo inbox and stores data in PostgreSQL 17. It sends a bounded snapshot to the LangGraph runtime in Python 3.14, which returns proposals, keeps checkpoints in its own database, and reads back with a scoped token. Your own assistant reaches the API over MCP with a token, other agents reach the runtime over A2A, and all three services send traces to OpenTelemetry and Jaeger." src="docs/architecture-light.svg">
+</picture>
 
 - **The API owns every write.** Agents receive a bounded snapshot with no email bodies, OAuth tokens, or database credentials, and return typed results and proposals; the API applies a proposal only after the user approves it and the application is theirs.
 - **Deterministic first.** The email pipeline is rule-based and tested; models enrich it and are never required.
@@ -95,115 +83,20 @@ Compose downloads the prebuilt images of the latest release for your CPU (amd64 
 Running, the four containers use about 600 MB of memory and almost no CPU.
 Their ports are published on 127.0.0.1 only.
 
-With `--build`, compiling all three services from source takes several minutes and uses every CPU core Docker is allowed; lower that limit in Docker Desktop under **Settings > Resources** if your machine slows down.
-
-To see traces, start Jaeger as well and open http://localhost:16686:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 \
-  docker compose --profile full --profile observability up -d
-```
-
-### Connect your own assistant
-
-In the app, open **Settings**, create a token under **Connect your own assistant**, and copy it.
-
-MCP, for example in Claude Code:
-
-```bash
-claude mcp add --transport http careeroc http://localhost:5114/mcp \
-  --header "Authorization: Bearer coc_..."
-```
-
-The server exposes three read-only tools: `get_pipeline_summary`, `list_applications`, and `get_application`.
-
-A2A: the agent card is at http://localhost:8123/.well-known/agent-card.json, with two skills, `pipeline_status` and `career_review`.
-
-```bash
-curl -s http://localhost:8123/a2a \
-  -H "Authorization: Bearer coc_..." -H "A2A-Version: 1.0" -H "content-type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{"message":{"messageId":"m1","role":"ROLE_USER","parts":[{"text":"Review my search and suggest next steps."}]}}}'
-```
-
-Tokens are read-only, expire after 1 to 365 days, are stored only as SHA-256 hashes, and can be revoked at any time.
-
-### Use a real model or your own Gmail
-
-- **Model.** Free Ollama models run both steps with no API key, after `ollama signin`; this is how the hosted demo was recorded:
-
-  ```bash
-  export OLLAMA=http://host.docker.internal:11434   # Docker Desktop
-  Ollama__Enabled=true Ollama__BaseUrl=$OLLAMA Ollama__Model=gemma4:31b-cloud \
-    AGENT_PROVIDER=ollama AGENT_BASE_URL=$OLLAMA AGENT_MODEL=gpt-oss:120b-cloud \
-    docker compose --profile full up -d
-  ```
-
-  `Ollama__*` sets the pass on each email, which sends the email's text to that model, so use it on real mail only with a provider you trust.
-  `AGENT_*` sets the review agents, which see only the bounded snapshot; set `AGENT_PROVIDER=openai` and `AGENT_API_KEY` for an OpenAI-compatible endpoint.
-  The free models differ on email: [DESIGN.md](DESIGN.md#evals) has their scores, and `scripts/eval-model.sh` reproduces them.
-  The rules and the deterministic suite stay the fallback.
-- **Gmail.** Create a Google OAuth client with two redirect URIs, `<web URL>/api/auth/callback/google` for sign-in and the Gmail one from `.env.example`, copy `.env.example` to `.env`, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` for the web app, `Google__ClientId` and `Google__ClientSecret` for the API, and an access allowlist (`ACCESS_ALLOWED_EMAILS`, with `ACCESS_ALLOW_ALL_USERS=false`), then run `./scripts/dev-up.sh`, because Compose runs the demo only.
-  Enable the Gmail API in the Google Cloud project, and add yourself as a test user on the OAuth consent screen.
-  Before you do, replace the `local-compose-only-*` secrets: the API and web app refuse them once real accounts can sign in.
-
-## Deploy
-
-| Target | Shape | Guide |
-|---|---|---|
-| Docker Compose | One host, all services, optional Jaeger | [docker-compose.yml](docker-compose.yml) |
-| Kubernetes | Helm chart for GKE, AKS, EKS, or self-managed clusters | [deploy/helm/careeroc](deploy/helm/careeroc/README.md) |
-| Vercel | The web app with the API and agents hosted elsewhere, or alone as the [read-only demo](docs/deploy/README.md#vercel-read-only-demo) | [docs/deploy](docs/deploy/README.md#vercel-web-only) |
-
-Images for all three services are published to GHCR for `linux/amd64` and `linux/arm64` on version tags, after every CI check passes.
-
-## Repository layout
-
-```text
-apps/api                          .NET 10 minimal API host: endpoints, auth, MCP, demo, background workers
-apps/web                          Next.js 16 app: public site, workspace, same-origin API proxy
-src/Careeroc.Domain               entities and enums
-src/Careeroc.Application          pipeline, agents, orchestrator, and query services
-src/Careeroc.Infrastructure       EF Core, Gmail, parsers, demo inbox, migrations
-src/Careeroc.Contracts            API DTOs shared with the web app
-services/agent-runtime            LangGraph graph, evidence gate and its eval, A2A server, OpenTelemetry
-tests/Careeroc.Tests              .NET unit, API, eval, and Postgres tests
-eval                              labeled demo inbox and the latest eval results
-deploy/helm                       Kubernetes chart
-docs                              design notes, ADRs, and deploy guides
-```
-
-## Testing
-
-You need the .NET SDK from `global.json`, Node 26 with pnpm 10, and Python 3.14 with uv; `pnpm install` once first.
-
-```bash
-dotnet test Careeroc.sln                       # .NET: pipeline, API, MCP, tokens, evals
-pnpm --dir apps/web lint && pnpm --dir apps/web test:unit && pnpm web:build
-cd services/agent-runtime && uv run ruff check . && uv run ruff format --check . && uv run pytest
-```
-
-Set `CAREEROC_TEST_POSTGRES` to a Postgres connection string to also run the tests that need real Postgres behavior.
-
-Two CI jobs start the whole system and drive it like a visitor and their assistant would, with [scripts/smoke-demo.sh](scripts/smoke-demo.sh): demo sign-in, the processed pipeline, a multi-agent review and its approval, a personal access token, MCP, A2A, and revoking the token.
-One runs it on Docker Compose; the other installs the Helm chart on a kind Kubernetes cluster ([scripts/smoke-kubernetes.sh](scripts/smoke-kubernetes.sh)).
-A third drives the review in Chromium against the real API with a scripted agent runtime ([scripts/e2e-multi-agent.sh](scripts/e2e-multi-agent.sh)).
-The frontend job also builds the hosted demo with `DEMO_SNAPSHOT` and walks it in Chromium on desktop and phone sizes, including the refused writes ([hosted-demo.spec.ts](apps/web/e2e/hosted-demo.spec.ts)).
-CI also validates the Helm chart with `helm lint` and `kubeconform`.
-
-The pipeline eval in [eval/pipeline-results.json](eval/pipeline-results.json) is 1.0 on every metric.
-The labeled set was written while fixing the defects it found, so treat it as a regression guard rather than a benchmark.
-The evidence-gate eval and its cases are in [DESIGN.md](DESIGN.md#evals).
+The [usage guide](docs/usage.md) covers building from source, traces, connecting your own assistant over MCP or A2A, and running on a real model or your own Gmail.
 
 ## Documentation
 
 - [DESIGN.md](DESIGN.md) - system design, decisions, and trade-offs
-- [docs/architecture.md](docs/architecture.md) - layers and processing flows
+- [docs/usage.md](docs/usage.md) - building from source, traces, your own assistant, a real model, and Gmail
+- [docs/architecture.md](docs/architecture.md) - layers, repository layout, and processing flows
+- [docs/testing.md](docs/testing.md) - local suites, what CI runs, and the evals
 - API reference - the OpenAPI document at `/swagger` when the API runs in Development; [apps/web/src/lib/api-schema.ts](apps/web/src/lib/api-schema.ts) is generated from it and checked for drift in CI
 - [UI.md](UI.md) - product surfaces and the UI contract
 - [docs/routing.md](docs/routing.md) - web routes and API endpoints
 - [docs/backend/agentic-workflow-engine-decision.md](docs/backend/agentic-workflow-engine-decision.md) - why LangGraph, and how the graph is shaped
 - [docs/adr](docs/adr) - architecture decision records
-- [docs/deploy/README.md](docs/deploy/README.md) - deployment targets and secrets
+- [docs/deploy/README.md](docs/deploy/README.md) - Compose, Kubernetes, and Vercel targets, images, and secrets
 - [SECURITY.md](SECURITY.md) - controls and how to report a vulnerability
 - [CONTRIBUTING.md](CONTRIBUTING.md) - what changes are welcome and how to send them
 - [AGENTS.md](AGENTS.md) - commands and conventions for contributors and coding agents
